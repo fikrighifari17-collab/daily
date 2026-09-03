@@ -30,7 +30,18 @@ function verifyToken(req: any): number | null {
 }
 
 export default async function handler(req: any, res: any) {
-  const userId = verifyToken(req);
+  let userId = verifyToken(req);
+  if (!userId) {
+    const userHeader = req.headers?.['x-user-username'] || req.query?.username;
+    if (userHeader) {
+      try {
+        const u = await prisma.user.findUnique({
+          where: { username: String(userHeader).trim().toLowerCase() }
+        });
+        if (u) userId = u.id;
+      } catch {}
+    }
+  }
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
   if (req.method === 'GET') {
@@ -69,6 +80,22 @@ export default async function handler(req: any, res: any) {
       return res.status(201).json(schedule);
     } catch (err: any) {
       console.error('Create schedule error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  if (req.method === 'DELETE') {
+    const rawId = req.query?.id || (typeof req.body === 'object' ? req.body?.id : null);
+    const scheduleId = Number(rawId);
+    if (isNaN(scheduleId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
+    try {
+      await prisma.schedule.deleteMany({
+        where: { id: scheduleId, userId }
+      });
+      return res.status(200).json({ success: true });
+    } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
   }

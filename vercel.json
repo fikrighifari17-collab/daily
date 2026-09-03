@@ -3,6 +3,9 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/api/academic-courses/:id", "destination": "/api/academic-courses?id=:id" },
+    { "source": "/api/schedule/:id", "destination": "/api/schedule?id=:id" },
+    { "source": "/api/mood/:id", "destination": "/api/mood?id=:id" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

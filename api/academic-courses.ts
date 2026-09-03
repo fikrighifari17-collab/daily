@@ -17,33 +17,34 @@ const prisma = new PrismaClient({
   }
 });
 
-async function getUserId(req: any): Promise<number | null> {
+function verifyToken(req: any): number | null {
   const authHeader = req.headers?.authorization;
-  if (authHeader) {
-    try {
-      const token = authHeader.replace('Bearer ', '').trim();
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || "Jrfikrizero123SuperSecretDailyAuthKey2026") as { userId: number };
-      if (decoded?.userId) return decoded.userId;
-    } catch {}
+  if (!authHeader) return null;
+  try {
+    const token = authHeader.replace('Bearer ', '').trim();
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "Jrfikrizero123SuperSecretDailyAuthKey2026") as { userId: number };
+    return decoded.userId;
+  } catch {
+    return null;
   }
-
-  // Fallback for offline token: lookup by username
-  const username = req.headers?.['x-user-username'] || req.headers?.['x-username'] || req.query?.username;
-  if (username) {
-    try {
-      const clean = String(username).trim().toLowerCase();
-      const user = await prisma.user.findUnique({ where: { username: clean } });
-      if (user) return user.id;
-    } catch {}
-  }
-
-  return null;
 }
 
 export default async function handler(req: any, res: any) {
-  const userId = await getUserId(req);
+  let userId = verifyToken(req);
+  if (!userId) {
+    const userHeader = req.headers?.['x-user-username'] || req.query?.username;
+    if (userHeader) {
+      try {
+        const u = await prisma.user.findUnique({
+          where: { username: String(userHeader).trim().toLowerCase() }
+        });
+        if (u) userId = u.id;
+      } catch {}
+    }
+  }
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
+  // GET: Fetch all courses for user
   if (req.method === 'GET') {
     try {
       const courses = await prisma.academicCourse.findMany({
@@ -57,6 +58,7 @@ export default async function handler(req: any, res: any) {
     }
   }
 
+  // POST: Create single or bulk upload courses
   if (req.method === 'POST') {
     try {
       let body = req.body;
@@ -64,7 +66,6 @@ export default async function handler(req: any, res: any) {
         try { body = JSON.parse(body); } catch {}
       }
 
-      // Handle bulk sync
       if (body?.bulkCourses && Array.isArray(body.bulkCourses)) {
         const createdCourses = [];
         for (const item of body.bulkCourses) {
@@ -125,6 +126,67 @@ export default async function handler(req: any, res: any) {
       return res.status(201).json(course);
     } catch (err: any) {
       console.error('Create academic course error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // Extract ID for PUT/DELETE
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch {}
+  }
+  const rawId = req.query?.id || body?.id;
+  const courseId = Number(rawId);
+
+  // PUT: Update course
+  if (req.method === 'PUT') {
+    if (isNaN(courseId)) return res.status(400).json({ error: 'Invalid course ID' });
+    try {
+      const updateData: any = {};
+      if (body.mataKuliah !== undefined) updateData.mataKuliah = String(body.mataKuliah).trim();
+      if (body.dosen !== undefined) updateData.dosen = String(body.dosen).trim();
+      if (body.hari !== undefined) updateData.hari = body.hari;
+      if (body.jamMulai !== undefined) updateData.jamMulai = body.jamMulai;
+      if (body.jamSelesai !== undefined) updateData.jamSelesai = body.jamSelesai;
+      if (body.ruangan !== undefined) updateData.ruangan = String(body.ruangan).trim();
+      if (body.sks !== undefined) updateData.sks = Number(body.sks);
+      if (body.warna !== undefined) updateData.warna = body.warna;
+      if (body.link !== undefined) updateData.link = String(body.link).trim();
+      if (body.attendance !== undefined) updateData.attendance = body.attendance;
+
+      const course = await prisma.academicCourse.updateMany({
+        where: { id: courseId, userId },
+        data: updateData
+      });
+
+      if (course.count === 0) {
+        return res.status(404).json({ error: 'Course not found or unauthorized' });
+      }
+
+      const updated = await prisma.academicCourse.findUnique({
+        where: { id: courseId }
+      });
+      return res.status(200).json(updated);
+    } catch (err: any) {
+      console.error('Update academic course error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // DELETE: Remove course
+  if (req.method === 'DELETE') {
+    if (isNaN(courseId)) return res.status(400).json({ error: 'Invalid course ID' });
+    try {
+      const deleted = await prisma.academicCourse.deleteMany({
+        where: { id: courseId, userId }
+      });
+
+      if (deleted.count === 0) {
+        return res.status(404).json({ error: 'Course not found or unauthorized' });
+      }
+      return res.status(200).json({ success: true });
+    } catch (err: any) {
+      console.error('Delete academic course error:', err);
       return res.status(500).json({ error: err.message });
     }
   }
