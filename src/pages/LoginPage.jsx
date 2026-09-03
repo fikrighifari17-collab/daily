@@ -300,7 +300,7 @@ export default function LoginPage() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '4px 10px',
+              padding: '4px 12px',
               borderRadius: '8px',
               background: 'rgba(0, 173, 181, 0.2)',
               border: '1px solid rgba(0, 173, 181, 0.4)',
@@ -308,18 +308,18 @@ export default function LoginPage() {
             }}>
               <Sparkles size={13} color="#00FFF5" />
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#00FFF5', letterSpacing: '0.04em' }}>
-                STUDENT MENTAL HEALTH & WELLBEING
+                🌿 YOUR MENTAL HEALTH MATTERS
               </span>
             </div>
 
             {/* Main Headline */}
-            <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#EEEEEE', lineHeight: 1.3, marginBottom: '12px' }}>
-              Understand Your Emotions, <br />
-              <span className="text-gradient-teal">Master Your Academic Journey.</span>
+            <h2 style={{ fontSize: '26px', fontWeight: 800, color: '#EEEEEE', lineHeight: 1.3, marginBottom: '12px' }}>
+              Understand Your Feelings, <br />
+              <span className="text-gradient-teal">Own Your Semester.</span>
             </h2>
 
             <p style={{ fontSize: '13px', color: '#b0b8c1', lineHeight: 1.6, marginBottom: '22px' }}>
-              A dedicated private sanctuary for university students to log daily emotional states, correlate moods with assignments and exams, and preserve mental clarity.
+              Your safe, private space to track how you're feeling, see how your workload affects your mood, and keep your mind clear throughout the semester.
             </p>
 
             {/* Feature Highlights Grid */}
@@ -338,10 +338,10 @@ export default function LoginPage() {
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE', marginBottom: '2px' }}>
-                    Schedule & Mood Correlation
+                    Spot Your Stress Patterns
                   </div>
                   <div style={{ fontSize: '11px', color: '#b0b8c1', lineHeight: 1.4 }}>
-                    Pinpoint when stress levels peak based on midterm, final exam, and course workload timelines.
+                    Find out exactly when your stress peaks—whether it's during midterms, finals, or when assignments start piling up.
                   </div>
                 </div>
               </div>
@@ -360,10 +360,10 @@ export default function LoginPage() {
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE', marginBottom: '2px' }}>
-                    Brain Dump & Coping Library
+                    Brain Dump & Coping Tools
                   </div>
                   <div style={{ fontSize: '11px', color: '#b0b8c1', lineHeight: 1.4 }}>
-                    Safely discharge overwhelming thoughts and practice 4-7-8 breathing techniques to reset your mind.
+                    Let go of overwhelming thoughts safely here, and try out the 4-7-8 breathing technique whenever you need a quick mental reset.
                   </div>
                 </div>
               </div>
@@ -382,10 +382,10 @@ export default function LoginPage() {
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE', marginBottom: '2px' }}>
-                    100% Private & Confidential
+                    100% Safe & Private
                   </div>
                   <div style={{ fontSize: '11px', color: '#b0b8c1', lineHeight: 1.4 }}>
-                    Accessible only by you. Strictly zero reporting to campus administrations or third-party entities.
+                    For your eyes only. We never share or report your data to the campus administration or anyone else. This space is purely yours.
                   </div>
                 </div>
               </div>
@@ -401,7 +401,7 @@ export default function LoginPage() {
             borderRadius: '8px'
           }}>
             <p style={{ fontSize: '12px', fontStyle: 'italic', color: '#EEEEEE', margin: 0, lineHeight: 1.5 }}>
-              "Recognizing emotions is not a sign of vulnerability, but the sharpest strategy to conquer every semester with clarity and resilience."
+              "Acknowledging how you feel isn't a weakness—it's the smartest way to get through every semester with a clear head and a strong mind."
             </p>
           </div>
 
