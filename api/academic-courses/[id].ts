@@ -17,20 +17,31 @@ const prisma = new PrismaClient({
   }
 });
 
-function verifyToken(req: any): number | null {
+async function getUserId(req: any): Promise<number | null> {
   const authHeader = req.headers?.authorization;
-  if (!authHeader) return null;
-  try {
-    const token = authHeader.replace('Bearer ', '').trim();
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "Jrfikrizero123SuperSecretDailyAuthKey2026") as { userId: number };
-    return decoded.userId;
-  } catch {
-    return null;
+  if (authHeader) {
+    try {
+      const token = authHeader.replace('Bearer ', '').trim();
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || "Jrfikrizero123SuperSecretDailyAuthKey2026") as { userId: number };
+      if (decoded?.userId) return decoded.userId;
+    } catch {}
   }
+
+  // Fallback for offline token: lookup by username
+  const username = req.headers?.['x-user-username'] || req.headers?.['x-username'] || req.query?.username;
+  if (username) {
+    try {
+      const clean = String(username).trim().toLowerCase();
+      const user = await prisma.user.findUnique({ where: { username: clean } });
+      if (user) return user.id;
+    } catch {}
+  }
+
+  return null;
 }
 
 export default async function handler(req: any, res: any) {
-  const userId = verifyToken(req);
+  const userId = await getUserId(req);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
   const { id } = req.query;

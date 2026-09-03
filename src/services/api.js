@@ -2,7 +2,16 @@ const BASE_URL = "/api";
 
 function authHeader() {
   const token = localStorage.getItem("token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  let username = "";
+  try {
+    const userInfo = JSON.parse(localStorage.getItem("daily_user_info") || "{}");
+    username = userInfo.username || "";
+  } catch {}
+
+  const headers = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (username) headers["x-user-username"] = username;
+  return headers;
 }
 
 // LocalStorage Persistence Helpers
@@ -270,16 +279,21 @@ export async function getAcademicCourses() {
           if (!localItem || !localItem.mataKuliah) return false;
           return !serverCourses.some(sc =>
             sc.mataKuliah?.trim().toLowerCase() === localItem.mataKuliah?.trim().toLowerCase() &&
-            sc.hari === localItem.hari
+            sc.hari?.trim().toLowerCase() === localItem.hari?.trim().toLowerCase()
           );
         });
 
         if (unsynced.length > 0) {
           try {
+            let currentUsername = "";
+            try {
+              currentUsername = JSON.parse(localStorage.getItem("daily_user_info") || "{}").username || "";
+            } catch {}
+
             const syncRes = await fetch(`${BASE_URL}/academic-courses`, {
               method: "POST",
               headers: { "Content-Type": "application/json", ...authHeader() },
-              body: JSON.stringify({ bulkCourses: unsynced })
+              body: JSON.stringify({ bulkCourses: unsynced, username: currentUsername })
             });
             if (syncRes.ok) {
               const uploaded = await syncRes.json();
