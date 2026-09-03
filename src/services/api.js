@@ -73,12 +73,19 @@ export async function registerUser(username, password, nama) {
   }
 
   // Resilient fallback: store user locally so user is never blocked
-  const user = { id: Date.now(), username: cleanUsername, nama: nama ? String(nama).trim() : cleanUsername, pinLock: null };
+  const users = getLocal('daily_registered_users_v1', []);
+  let user = users.find(u => u.username === cleanUsername);
+  if (!user) {
+    user = { id: Date.now(), username: cleanUsername, password, nama: nama ? String(nama).trim() : cleanUsername, pinLock: null };
+    users.push(user);
+    setLocal('daily_registered_users_v1', users);
+  }
+  const { password: _p, ...safeUser } = user;
   const token = "jwt-local-token-" + Date.now();
   localStorage.setItem("token", token);
-  localStorage.setItem("daily_user_info", JSON.stringify(user));
-  setLocal(STORAGE_KEYS.USER, user);
-  return { token, user };
+  localStorage.setItem("daily_user_info", JSON.stringify(safeUser));
+  setLocal(STORAGE_KEYS.USER, safeUser);
+  return { token, user: safeUser };
 }
 
 export async function loginUser(username, password) {
@@ -94,14 +101,17 @@ export async function loginUser(username, password) {
       if (data.token) localStorage.setItem("token", data.token);
       if (data.user) localStorage.setItem("daily_user_info", JSON.stringify(data.user));
       return data;
-    } else if (res.status === 401) {
-      // Try local credentials before failing
-      const storedUser = getLocal(STORAGE_KEYS.USER, null);
-      if (storedUser && (storedUser.username === cleanUsername || storedUser.email === cleanUsername)) {
+    } else if (res.status === 400 || res.status === 401) {
+      // If server explicitly said invalid, also check local fallback before rejecting
+      const users = getLocal('daily_registered_users_v1', []);
+      const matched = users.find(u => u.username === cleanUsername && u.password === password);
+      if (matched) {
+        const { password: _, ...safeUser } = matched;
         const token = "jwt-local-token-" + Date.now();
         localStorage.setItem("token", token);
-        localStorage.setItem("daily_user_info", JSON.stringify(storedUser));
-        return { token, user: storedUser };
+        localStorage.setItem("daily_user_info", JSON.stringify(safeUser));
+        setLocal(STORAGE_KEYS.USER, safeUser);
+        return { token, user: safeUser };
       }
       throw new Error("Invalid username or password");
     }
@@ -113,12 +123,15 @@ export async function loginUser(username, password) {
   }
 
   // Local fallback
-  const storedUser = getLocal(STORAGE_KEYS.USER, null);
-  if (storedUser && (storedUser.username === cleanUsername || storedUser.email === cleanUsername)) {
+  const users = getLocal('daily_registered_users_v1', []);
+  const matched = users.find(u => u.username === cleanUsername && u.password === password);
+  if (matched) {
+    const { password: _, ...safeUser } = matched;
     const token = "jwt-local-token-" + Date.now();
     localStorage.setItem("token", token);
-    localStorage.setItem("daily_user_info", JSON.stringify(storedUser));
-    return { token, user: storedUser };
+    localStorage.setItem("daily_user_info", JSON.stringify(safeUser));
+    setLocal(STORAGE_KEYS.USER, safeUser);
+    return { token, user: safeUser };
   }
   throw new Error("Invalid username or password");
 }
