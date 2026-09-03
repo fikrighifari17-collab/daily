@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './_lib/prisma';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const result: any = {
@@ -9,12 +9,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   };
 
   try {
-    const prisma = new PrismaClient();
-    await prisma.$connect();
     const count = await prisma.user.count();
     result.databaseConnected = true;
     result.userCount = count;
-    await prisma.$disconnect();
   } catch (err: any) {
     result.databaseConnected = false;
     result.databaseError = err.message || String(err);
