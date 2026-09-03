@@ -25,14 +25,14 @@ export default function Navbar() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Main navigation items (Privacy & PIN is now accessible by clicking the user profile chip)
   const navItems = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
     { to: '/checkin/new', label: 'Mood Check-in', icon: PlusCircle },
     { to: '/checkin', label: 'Mood History', icon: History, end: true },
     { to: '/insight', label: 'Insights & Analytics', icon: BarChart3 },
     { to: '/academic-schedule', label: 'Academic Schedule', icon: BookOpen },
-    { to: '/schedule', label: 'Tasks & Deadlines', icon: Calendar },
-    { to: '/settings', label: 'Privacy & PIN', icon: ShieldCheck }
+    { to: '/schedule', label: 'Tasks & Deadlines', icon: Calendar }
   ];
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
@@ -95,7 +95,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* ================= DESKTOP NAVIGATION ================= */}
+          {/* ================= DESKTOP NAVIGATION BUBBLE PILL ================= */}
           <nav className="nav-desktop" style={{
             gap: '4px',
             alignItems: 'center',
@@ -103,9 +103,8 @@ export default function Navbar() {
             background: 'rgba(57, 62, 70, 0.55)',
             padding: '4px 6px',
             borderRadius: '8px',
-            border: '1px solid rgba(0, 173, 181, 0.2)',
-            flex: 1,
-            maxWidth: '740px'
+            border: '1px solid rgba(0, 173, 181, 0.25)',
+            flexShrink: 0
           }}>
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -117,14 +116,18 @@ export default function Navbar() {
                   className={({ isActive }) => `glass-button ${isActive ? 'glass-button-primary' : ''}`}
                   style={({ isActive }) => ({
                     fontSize: '12px',
-                    padding: '6px 10px',
+                    padding: '6px 11px',
                     borderRadius: '8px',
                     background: isActive ? 'linear-gradient(135deg, #00ADB5, #00888f)' : 'transparent',
                     border: isActive ? '1px solid rgba(255, 255, 255, 0.3)' : 'none',
                     boxShadow: isActive ? '0 4px 12px rgba(0, 173, 181, 0.4)' : 'none',
                     color: isActive ? '#ffffff' : '#b0b8c1',
                     fontWeight: isActive ? 700 : 500,
-                    whiteSpace: 'nowrap'
+                    whiteSpace: 'nowrap',
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
                   })}
                 >
                   <Icon size={14} />
@@ -138,21 +141,31 @@ export default function Navbar() {
           <div className="nav-desktop" style={{ alignItems: 'center', gap: '8px', flexShrink: 0 }}>
             {user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 10px',
-                  background: 'rgba(0, 173, 181, 0.15)',
-                  border: '1px solid rgba(0, 173, 181, 0.35)',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                  color: '#00FFF5',
-                  fontWeight: 600
-                }}>
+                {/* Clicking user chip navigates to Privacy & PIN settings */}
+                <NavLink
+                  to="/settings"
+                  title="Click to open Privacy & PIN Settings"
+                  style={({ isActive }) => ({
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    background: isActive ? 'linear-gradient(135deg, #00ADB5, #00888f)' : 'rgba(0, 173, 181, 0.15)',
+                    border: isActive ? '1px solid rgba(255, 255, 255, 0.4)' : '1px solid rgba(0, 173, 181, 0.35)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    color: isActive ? '#ffffff' : '#00FFF5',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    cursor: 'pointer',
+                    boxShadow: isActive ? '0 4px 12px rgba(0, 173, 181, 0.4)' : 'none',
+                    transition: 'all 0.2s ease'
+                  })}
+                >
                   <User size={13} />
                   <span>{user.nama || user.username}</span>
-                </div>
+                  <ShieldCheck size={12} opacity={0.75} />
+                </NavLink>
 
                 {pinCode && (
                   <button
@@ -205,25 +218,33 @@ export default function Navbar() {
           {/* ================= MOBILE RIGHT CONTROLS ================= */}
           <div className="nav-mobile-toggle" style={{ alignItems: 'center', gap: '8px' }}>
             {user && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '5px 9px',
-                background: 'rgba(0, 173, 181, 0.15)',
-                border: '1px solid rgba(0, 173, 181, 0.35)',
-                borderRadius: '8px',
-                fontSize: '12px',
-                color: '#00FFF5',
-                fontWeight: 600,
-                maxWidth: '120px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}>
+              <NavLink
+                to="/settings"
+                onClick={closeMobileMenu}
+                title="Privacy & PIN Settings"
+                style={({ isActive }) => ({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  padding: '6px 10px',
+                  background: isActive ? 'linear-gradient(135deg, #00ADB5, #00888f)' : 'rgba(0, 173, 181, 0.15)',
+                  border: isActive ? '1px solid rgba(255, 255, 255, 0.4)' : '1px solid rgba(0, 173, 181, 0.35)',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  color: isActive ? '#ffffff' : '#00FFF5',
+                  fontWeight: 700,
+                  maxWidth: '130px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  textDecoration: 'none',
+                  boxShadow: isActive ? '0 4px 12px rgba(0, 173, 181, 0.4)' : 'none'
+                })}
+              >
                 <User size={13} />
                 <span>{user.nama || user.username}</span>
-              </div>
+                <ShieldCheck size={11} opacity={0.7} />
+              </NavLink>
             )}
 
             {/* Mobile Hamburger Menu Toggle Button */}
@@ -262,22 +283,27 @@ export default function Navbar() {
               borderBottomRightRadius: '8px'
             }}
           >
-            {/* User Greeting & Status Card */}
+            {/* User Greeting & Status Card (Links to Privacy & PIN) */}
             {user && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '10px 14px',
-                background: 'rgba(57, 62, 70, 0.5)',
-                border: '1px solid rgba(0, 173, 181, 0.25)',
-                borderRadius: '8px',
-                marginBottom: '12px'
-              }}>
+              <Link
+                to="/settings"
+                onClick={closeMobileMenu}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  background: 'rgba(57, 62, 70, 0.55)',
+                  border: '1px solid rgba(0, 173, 181, 0.3)',
+                  borderRadius: '8px',
+                  marginBottom: '12px',
+                  textDecoration: 'none'
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{
-                    width: '28px',
-                    height: '28px',
+                    width: '32px',
+                    height: '32px',
                     borderRadius: '8px',
                     background: 'rgba(0, 173, 181, 0.25)',
                     border: '1px solid rgba(0, 173, 181, 0.4)',
@@ -286,14 +312,15 @@ export default function Navbar() {
                     justifyContent: 'center',
                     color: '#00FFF5'
                   }}>
-                    <User size={15} />
+                    <User size={16} />
                   </div>
                   <div>
                     <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE' }}>
                       {user.nama || user.username}
                     </div>
-                    <div style={{ fontSize: '10px', color: '#00ADB5' }}>
-                      Online &bull; Supabase Connected
+                    <div style={{ fontSize: '11px', color: '#00FFF5', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <ShieldCheck size={11} />
+                      Privacy & PIN Settings
                     </div>
                   </div>
                 </div>
@@ -301,9 +328,9 @@ export default function Navbar() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   {pinCode && (
                     <button
-                      onClick={() => { closeMobileMenu(); lockAppNow(); }}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); closeMobileMenu(); lockAppNow(); }}
                       style={{
-                        padding: '6px 8px',
+                        padding: '5px 8px',
                         borderRadius: '8px',
                         background: 'rgba(239, 68, 68, 0.15)',
                         border: '1px solid rgba(239, 68, 68, 0.35)',
@@ -319,8 +346,9 @@ export default function Navbar() {
                       Lock
                     </button>
                   )}
+                  <ChevronRight size={16} color="#00ADB5" />
                 </div>
-              </div>
+              </Link>
             )}
 
             {/* Nav Items List */}
