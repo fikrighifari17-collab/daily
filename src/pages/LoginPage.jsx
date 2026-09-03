@@ -54,9 +54,9 @@ export default function LoginPage() {
       alignItems: 'center',
       justifyContent: 'center',
       background: 'radial-gradient(circle at 20% 30%, rgba(0, 173, 181, 0.2), rgba(34, 40, 49, 1) 75%)',
-      padding: '20px 12px'
+      padding: '8px' // 8px for top, right, bottom, left (kiri, kanan, atas, bawah)
     }}>
-      {/* Split Screen Container (with 8px border-radius and Pixel 8 mobile optimization) */}
+      {/* Split Screen Container (with 8px border-radius on all corners) */}
       <div className="glass-panel animate-fade-in" style={{
         width: '100%',
         maxWidth: '1040px',
