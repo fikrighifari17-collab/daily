@@ -25,8 +25,7 @@ try {
     'daily_tags_v2',
     'daily_coping_v2',
     'daily_dumps_v2',
-    'daily_user_v2',
-    'daily_user_info'
+    'daily_user_v2'
   ].forEach(k => localStorage.removeItem(k));
 } catch (e) {}
 
