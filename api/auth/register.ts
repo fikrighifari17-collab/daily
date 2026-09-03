@@ -1,9 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../_lib/prisma';
+import { PrismaClient } from '@prisma/client';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+const prisma = new PrismaClient();
+
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -39,7 +40,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     });
 
-    const secret = process.env.JWT_SECRET || 'fallback-secret-for-local-dev';
+    const secret = process.env.JWT_SECRET || 'Jrfikrizero123SuperSecretDailyAuthKey2026';
     const token = jwt.sign({ userId: user.id, username: user.username }, secret, { expiresIn: '30d' });
 
     return res.status(201).json({
