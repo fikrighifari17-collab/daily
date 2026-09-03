@@ -203,7 +203,7 @@ export default function AuthModal({ isOpen, onClose }) {
                 <User size={16} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type="text"
-                  placeholder="e.g. Fikri Ghifari"
+                  placeholder="e.g. John Doe"
                   value={nama}
                   onChange={(e) => setNama(e.target.value)}
                   style={{
