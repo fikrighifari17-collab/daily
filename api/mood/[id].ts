@@ -1,8 +1,35 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { prisma } from '../_lib/prisma';
-import { verifyToken } from '../_lib/auth-middleware';
+import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+const SUPABASE_URL = "postgresql://postgres.nkfyyhsihmwpwmahyyqd:Jrfikrizero123@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres";
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = SUPABASE_URL;
+}
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = "Jrfikrizero123SuperSecretDailyAuthKey2026";
+}
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL
+    }
+  }
+});
+
+function verifyToken(req: any): number | null {
+  const authHeader = req.headers?.authorization;
+  if (!authHeader) return null;
+  try {
+    const token = authHeader.replace('Bearer ', '').trim();
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "Jrfikrizero123SuperSecretDailyAuthKey2026") as { userId: number };
+    return decoded.userId;
+  } catch {
+    return null;
+  }
+}
+
+export default async function handler(req: any, res: any) {
   const userId = verifyToken(req);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -19,25 +46,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         where: { id: moodId, userId }
       });
       return res.status(200).json({ success: true });
-    } catch (err: any) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-
-  if (req.method === 'PUT') {
-    try {
-      const { moodScore, catatan, waktu, tanggal } = req.body;
-      const updated = await prisma.moodEntry.update({
-        where: { id: moodId },
-        data: {
-          moodScore: moodScore ? Number(moodScore) : undefined,
-          catatan,
-          waktu,
-          tanggal: tanggal ? new Date(tanggal) : undefined,
-        },
-        include: { tags: { include: { tag: true } } }
-      });
-      return res.status(200).json(updated);
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
