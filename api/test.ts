@@ -1,21 +1,23 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+const SUPABASE_URL = "postgresql://postgres.nkfyyhsihmwpwmahyyqd:Jrfikrizero123@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres";
 
-const prisma = new PrismaClient();
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = SUPABASE_URL;
+}
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = "Jrfikrizero123SuperSecretDailyAuthKey2026";
+}
 
 export default async function handler(req: any, res: any) {
   try {
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
     const userCount = await prisma.user.count();
-    const hash = await bcrypt.hash('test', 10);
-    const valid = await bcrypt.compare('test', hash);
-    const token = jwt.sign({ test: 1 }, 'secret');
+    await prisma.$disconnect();
 
     return res.status(200).json({
       ok: true,
       userCount,
-      bcryptWorks: valid,
-      jwtWorks: !!token
+      message: 'Successfully connected to Supabase from Vercel!'
     });
   } catch (err: any) {
     return res.status(500).json({
