@@ -85,13 +85,13 @@ export default function Navbar() {
               <HeartPulse size={18} color="#00FFF5" />
             </div>
             <span style={{ 
-              fontSize: '15px', 
+              fontSize: '16px', 
               fontWeight: 800, 
               color: '#EEEEEE',
-              letterSpacing: '-0.01em',
+              letterSpacing: '-0.02em',
               whiteSpace: 'nowrap'
             }}>
-              Daily <span className="text-gradient-teal">Emotion</span>
+              Semest<span className="text-gradient-teal">ara</span>
             </span>
           </Link>
 

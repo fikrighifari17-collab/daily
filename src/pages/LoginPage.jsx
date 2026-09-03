@@ -95,13 +95,13 @@ export default function LoginPage() {
             }}>
               <HeartPulse size={26} color="#00FFF5" />
             </div>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#EEEEEE', margin: '0 0 4px 0', letterSpacing: '-0.02em' }}>
-              Daily <span className="text-gradient-teal">Emotion Tracker</span>
+            <h1 style={{ fontSize: '26px', fontWeight: 800, color: '#EEEEEE', margin: '0 0 4px 0', letterSpacing: '-0.02em' }}>
+              Semest<span className="text-gradient-teal">ara</span>
             </h1>
             <p style={{ fontSize: '13px', color: '#b0b8c1', margin: 0 }}>
               {mode === 'login'
-                ? 'Sign in with your username and password'
-                : 'Create an account to start tracking your daily mood'}
+                ? 'Sign in to balance your mood and academic pace'
+                : 'Create an account to start tracking your daily wellbeing'}
             </p>
           </div>
 
