@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { HeartPulse, Calendar, PlusCircle, Sparkles, ArrowRight, ShieldCheck, CheckCircle2, TrendingUp, Sun, Moon, Clock, BookOpen, CheckSquare } from 'lucide-react';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 
 import CalendarOverlay from '../components/CalendarOverlay';
 import MentalHealthSummaryWidget from '../components/MentalHealthSummaryWidget';
@@ -11,6 +12,7 @@ const MOOD_LABELS = { 1: 'Very Bad', 2: 'Bad / Stressed', 3: 'Neutral', 4: 'Good
 const MOOD_COLORS = { 1: '#ef4444', 2: '#f97316', 3: '#eab308', 4: '#00ADB5', 5: '#10b981' };
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const { moods, schedules, courses, copingList } = useData();
 
   // Find today's checkin
@@ -60,7 +62,7 @@ export default function Dashboard() {
             <span style={{ fontSize: '11px', fontWeight: 700, color: '#00FFF5' }}>Mental Health Dashboard</span>
           </div>
           <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#EEEEEE', marginBottom: '6px', lineHeight: 1.2 }}>
-            {greeting}, <span className="text-gradient-teal">Student!</span>
+            {greeting}, <span className="text-gradient-teal">{user?.nama || 'Friend'}!</span>
           </h2>
           <p style={{ fontSize: '13px', color: '#b0b8c1', lineHeight: 1.5 }}>
             Track daily emotional patterns, align with academic workloads, and maintain performance with peace of mind.

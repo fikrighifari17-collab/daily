@@ -1,12 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { loginUser, registerUser } from '../services/api';
+import { loginUser, registerUser, logoutUser } from '../services/api';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('daily_user_info');
-    return saved ? JSON.parse(saved) : { id: 1, nama: 'Student', email: 'student@university.edu', pinLock: null };
+    try {
+      const saved = localStorage.getItem('daily_user_info');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
 
   const [pinInput, setPinInput] = useState('');
@@ -38,6 +42,11 @@ export function AuthProvider({ children }) {
       setUser(res.user);
     }
     return res;
+  };
+
+  const handleLogout = () => {
+    logoutUser();
+    setUser(null);
   };
 
   const setAppPin = (pin) => {
@@ -76,6 +85,7 @@ export function AuthProvider({ children }) {
         setUser,
         handleLogin,
         handleRegister,
+        handleLogout,
         pinCode,
         isPinLocked,
         setAppPin,

@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import * as api from '../services/api';
+import { useAuth } from './AuthContext';
 
 const DataContext = createContext();
 
 export function DataProvider({ children }) {
+  const { user } = useAuth();
   const [moods, setMoods] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -15,6 +17,16 @@ export function DataProvider({ children }) {
   const reloadData = useCallback(async () => {
     setLoading(true);
     try {
+      if (!user) {
+        setMoods([]);
+        setSchedules([]);
+        setCourses([]);
+        setTags([]);
+        setCopingList([]);
+        setBrainDumps([]);
+        setLoading(false);
+        return;
+      }
       const [m, s, cList, t, c, b] = await Promise.all([
         api.getMoodHistory(),
         api.getSchedules(),
@@ -34,7 +46,7 @@ export function DataProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     reloadData();

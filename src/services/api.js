@@ -5,16 +5,30 @@ function authHeader() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-// LocalStorage Persistence Helpers for Offline / Local Preview Fallback
+// LocalStorage Persistence Helpers
 const STORAGE_KEYS = {
-  MOODS: "daily_mood_entries_v2",
-  SCHEDULES: "daily_schedules_v2",
-  COURSES: "daily_courses_v2",
-  TAGS: "daily_tags_v2",
-  COPING: "daily_coping_v2",
-  DUMPS: "daily_dumps_v2",
-  USER: "daily_user_v2"
+  MOODS: "daily_mood_entries_v3",
+  SCHEDULES: "daily_schedules_v3",
+  COURSES: "daily_courses_v3",
+  TAGS: "daily_tags_v3",
+  COPING: "daily_coping_v3",
+  DUMPS: "daily_dumps_v3",
+  USER: "daily_user_v3"
 };
+
+// Purge legacy mock data
+try {
+  [
+    'daily_mood_entries_v2',
+    'daily_schedules_v2',
+    'daily_courses_v2',
+    'daily_tags_v2',
+    'daily_coping_v2',
+    'daily_dumps_v2',
+    'daily_user_v2',
+    'daily_user_info'
+  ].forEach(k => localStorage.removeItem(k));
+} catch (e) {}
 
 function getLocal(key, defaultValue) {
   try {
@@ -33,151 +47,6 @@ function setLocal(key, value) {
   }
 }
 
-// Seed initial default data for interactive preview if empty
-if (!localStorage.getItem(STORAGE_KEYS.TAGS)) {
-  setLocal(STORAGE_KEYS.TAGS, [
-    { id: 1, nama: "Tasks Done" },
-    { id: 2, nama: "Exam Stress" },
-    { id: 3, nama: "Late Night Study" },
-    { id: 4, nama: "Pop Quiz" },
-    { id: 5, nama: "Hanging Out" },
-    { id: 6, nama: "Workout / Exercise" }
-  ]);
-}
-
-if (!localStorage.getItem(STORAGE_KEYS.SCHEDULES)) {
-  const today = new Date();
-  const formatIso = (offsetDays) => {
-    const d = new Date(today);
-    d.setDate(d.getDate() + offsetDays);
-    return d.toISOString().split('T')[0];
-  };
-
-  setLocal(STORAGE_KEYS.SCHEDULES, [
-    { id: 101, judul: "AI Practicum Report", jenis: "tugas", tanggal: formatIso(1) },
-    { id: 102, judul: "Web Development Midterm", jenis: "uts", tanggal: formatIso(3) },
-    { id: 103, judul: "Database Group Presentation", jenis: "presentasi", tanggal: formatIso(5) },
-    { id: 104, judul: "Computer Networks Final Exam", jenis: "uas", tanggal: formatIso(12) }
-  ]);
-}
-
-if (!localStorage.getItem(STORAGE_KEYS.COPING)) {
-  setLocal(STORAGE_KEYS.COPING, [
-    { id: 201, namaStrategi: "4-7-8 Breathing Technique", deskripsi: "Inhale for 4 seconds, hold for 7 seconds, exhale slowly for 8 seconds." },
-    { id: 202, namaStrategi: "10-Minute Walk", deskripsi: "Step away from your study desk to get some fresh air and clear your thoughts." },
-    { id: 203, namaStrategi: "Pomodoro Focus (25/5)", deskripsi: "Focus on your tasks for 25 minutes, then take a 5-minute restorative break." }
-  ]);
-}
-
-if (!localStorage.getItem(STORAGE_KEYS.MOODS)) {
-  const today = new Date();
-  const formatIso = (offsetDays) => {
-    const d = new Date(today);
-    d.setDate(d.getDate() - offsetDays);
-    return d.toISOString().split('T')[0];
-  };
-
-  setLocal(STORAGE_KEYS.MOODS, [
-    {
-      id: 301,
-      moodScore: 4,
-      catatan: "Finished database presentation smoothly!",
-      waktu: "01:30 PM",
-      tanggal: formatIso(0),
-      createdAt: new Date().toISOString(),
-      tags: [{ tag: { id: 1, nama: "Tasks Done" } }]
-    },
-    {
-      id: 302,
-      moodScore: 2,
-      catatan: "Quite anxious preparing for tomorrow's midterm exam",
-      waktu: "08:15 PM",
-      tanggal: formatIso(1),
-      createdAt: new Date().toISOString(),
-      tags: [{ tag: { id: 2, nama: "Exam Stress" } }, { tag: { id: 3, nama: "Late Night Study" } }]
-    },
-    {
-      id: 303,
-      moodScore: 5,
-      catatan: "Played games with classmates, feeling refreshed and relieved",
-      waktu: "09:45 PM",
-      tanggal: formatIso(2),
-      createdAt: new Date().toISOString(),
-      tags: [{ tag: { id: 5, nama: "Hanging Out" } }]
-    }
-  ]);
-}
-
-if (!localStorage.getItem(STORAGE_KEYS.COURSES)) {
-  setLocal(STORAGE_KEYS.COURSES, [
-    {
-      id: 1,
-      mataKuliah: "Software Engineering",
-      dosen: "Prof. Alan Turing",
-      hari: "Monday",
-      jamMulai: "08:00",
-      jamSelesai: "10:30",
-      ruangan: "Room 304 (Lab A)",
-      sks: 3,
-      warna: "#00ADB5",
-      link: "https://classroom.google.com",
-      attendance: { present: 10, absent: 1, excused: 1, target: 16 }
-    },
-    {
-      id: 2,
-      mataKuliah: "Artificial Intelligence",
-      dosen: "Dr. Sarah Jenkins",
-      hari: "Tuesday",
-      jamMulai: "10:45",
-      jamSelesai: "13:15",
-      ruangan: "Lab AI (Building B)",
-      sks: 3,
-      warna: "#10b981",
-      link: "https://meet.google.com",
-      attendance: { present: 11, absent: 0, excused: 1, target: 16 }
-    },
-    {
-      id: 3,
-      mataKuliah: "Database Management Systems",
-      dosen: "Prof. Michael Chen",
-      hari: "Wednesday",
-      jamMulai: "08:00",
-      jamSelesai: "10:30",
-      ruangan: "Room 205",
-      sks: 3,
-      warna: "#f59e0b",
-      link: "https://zoom.us",
-      attendance: { present: 8, absent: 3, excused: 1, target: 16 }
-    },
-    {
-      id: 4,
-      mataKuliah: "Web Application Development",
-      dosen: "Dr. Emily Watson",
-      hari: "Thursday",
-      jamMulai: "13:30",
-      jamSelesai: "16:00",
-      ruangan: "Multimedia Lab",
-      sks: 4,
-      warna: "#8b5cf6",
-      link: "https://github.com",
-      attendance: { present: 12, absent: 0, excused: 0, target: 16 }
-    },
-    {
-      id: 5,
-      mataKuliah: "Human-Computer Interaction",
-      dosen: "Prof. Robert Davis",
-      hari: "Friday",
-      jamMulai: "09:00",
-      jamSelesai: "11:30",
-      ruangan: "Room 401",
-      sks: 2,
-      warna: "#ec4899",
-      link: "",
-      attendance: { present: 9, absent: 2, excused: 0, target: 16 }
-    }
-  ]);
-}
-
 // API Functions
 export async function registerUser(nama, email, password) {
   try {
@@ -186,17 +55,28 @@ export async function registerUser(nama, email, password) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nama, email, password })
     });
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (data.token) localStorage.setItem("token", data.token);
+      if (data.user) localStorage.setItem("daily_user_info", JSON.stringify(data.user));
+      return data;
+    } else {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "Registration failed");
+    }
   } catch (e) {
+    if (e.message && e.message !== 'Failed to fetch') {
+      throw e;
+    }
+    // Offline local fallback if server unreachable
     console.warn("Using offline fallback for register");
+    const user = { id: Date.now(), nama, email, pinLock: null };
+    const token = "mock-jwt-token-" + Date.now();
+    localStorage.setItem("token", token);
+    localStorage.setItem("daily_user_info", JSON.stringify(user));
+    setLocal(STORAGE_KEYS.USER, user);
+    return { token, user };
   }
-
-  // Local fallback
-  const user = { id: Date.now(), nama, email, pinLock: null };
-  const token = "mock-jwt-token-" + Date.now();
-  localStorage.setItem("token", token);
-  setLocal(STORAGE_KEYS.USER, user);
-  return { token, user };
 }
 
 export async function loginUser(email, password) {
@@ -206,16 +86,36 @@ export async function loginUser(email, password) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
     });
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (data.token) localStorage.setItem("token", data.token);
+      if (data.user) localStorage.setItem("daily_user_info", JSON.stringify(data.user));
+      return data;
+    } else {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "Invalid email or password");
+    }
   } catch (e) {
+    if (e.message && e.message !== 'Failed to fetch') {
+      throw e;
+    }
+    // Offline local fallback if server unreachable
     console.warn("Using offline fallback for login");
+    const storedUser = getLocal(STORAGE_KEYS.USER, null);
+    if (!storedUser || storedUser.email !== email) {
+      throw new Error("Invalid email or password");
+    }
+    const token = "mock-jwt-token-" + Date.now();
+    localStorage.setItem("token", token);
+    localStorage.setItem("daily_user_info", JSON.stringify(storedUser));
+    return { token, user: storedUser };
   }
+}
 
-  // Local fallback
-  const storedUser = getLocal(STORAGE_KEYS.USER, { id: 1, nama: "Student", email, pinLock: null });
-  const token = "mock-jwt-token-" + Date.now();
-  localStorage.setItem("token", token);
-  return { token, user: storedUser };
+export function logoutUser() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("daily_user_info");
+  localStorage.removeItem(STORAGE_KEYS.USER);
 }
 
 export async function getMoodHistory() {
