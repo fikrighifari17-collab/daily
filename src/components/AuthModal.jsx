@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, User, Mail, Lock, LogIn, UserPlus, Sparkles, AlertCircle } from 'lucide-react';
+import { X, User, Lock, LogIn, UserPlus, Sparkles, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
@@ -10,7 +10,7 @@ export default function AuthModal({ isOpen, onClose }) {
 
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [nama, setNama] = useState('');
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -24,29 +24,29 @@ export default function AuthModal({ isOpen, onClose }) {
 
     try {
       if (mode === 'login') {
-        const res = await handleLogin(email, password);
+        const res = await handleLogin(username, password);
         if (res?.user) {
-          toast.success(`Welcome back, ${res.user.nama}!`);
+          toast.success(`Selamat datang kembali, ${res.user.nama || res.user.username}!`);
           onClose();
         } else {
-          setErrorMsg('Invalid login response');
+          setErrorMsg('Username atau password salah');
         }
       } else {
-        if (!nama.trim()) {
-          setErrorMsg('Please enter your full name');
+        if (!username.trim() || !password.trim()) {
+          setErrorMsg('Username dan password wajib diisi');
           setLoading(false);
           return;
         }
-        const res = await handleRegister(nama, email, password);
+        const res = await handleRegister(username, password, nama || username);
         if (res?.user) {
-          toast.success(`Account created! Welcome, ${res.user.nama}!`);
+          toast.success(`Akun berhasil dibuat! Selamat datang, ${res.user.nama || res.user.username}!`);
           onClose();
         } else {
-          setErrorMsg('Registration failed');
+          setErrorMsg('Pendaftaran gagal. Silakan gunakan username lain');
         }
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Authentication error. Please check your connection.');
+      setErrorMsg(err.message || 'Terjadi kesalahan autentikasi.');
     } finally {
       setLoading(false);
     }
@@ -111,10 +111,10 @@ export default function AuthModal({ isOpen, onClose }) {
             <Sparkles size={24} color="#00FFF5" />
           </div>
           <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#EEEEEE', margin: '0 0 4px 0' }}>
-            {mode === 'login' ? 'Sign In to Your Space' : 'Create Student Account'}
+            {mode === 'login' ? 'Masuk ke Akun Anda' : 'Buat Akun Baru'}
           </h3>
           <p style={{ fontSize: '12px', color: '#b0b8c1', margin: 0 }}>
-            {mode === 'login' ? 'Access your private emotional tracker & schedule' : 'Start your personal, completely private emotion calendar'}
+            {mode === 'login' ? 'Gunakan username dan password Anda' : 'Daftar dengan username & password untuk mulai melacak emosi'}
           </p>
         </div>
 
@@ -146,7 +146,7 @@ export default function AuthModal({ isOpen, onClose }) {
             }}
           >
             <LogIn size={14} />
-            Sign In
+            Masuk
           </button>
           <button
             type="button"
@@ -166,7 +166,7 @@ export default function AuthModal({ isOpen, onClose }) {
             }}
           >
             <UserPlus size={14} />
-            Register
+            Daftar
           </button>
         </div>
 
@@ -193,13 +193,12 @@ export default function AuthModal({ isOpen, onClose }) {
           {mode === 'register' && (
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '6px' }}>
-                Full Name (Nama Lengkap)
+                Nama Lengkap
               </label>
               <div style={{ position: 'relative' }}>
                 <User size={16} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type="text"
-                  required
                   placeholder="e.g. Fikri Ghifari"
                   value={nama}
                   onChange={(e) => setNama(e.target.value)}
@@ -219,16 +218,16 @@ export default function AuthModal({ isOpen, onClose }) {
 
           <div>
             <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '6px' }}>
-              Email Address
+              Username
             </label>
             <div style={{ position: 'relative' }}>
-              <Mail size={16} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+              <User size={16} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
               <input
-                type="email"
+                type="text"
                 required
-                placeholder="you@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Masukkan username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 style={{
                   width: '100%',
                   padding: '10px 12px 10px 38px',
@@ -281,12 +280,12 @@ export default function AuthModal({ isOpen, onClose }) {
               opacity: loading ? 0.7 : 1
             }}
           >
-            {loading ? 'Processing...' : mode === 'login' ? 'Sign In Now' : 'Create My Account'}
+            {loading ? 'Memproses...' : mode === 'login' ? 'Masuk Sekarang' : 'Daftar Akun'}
           </button>
         </form>
 
         <p style={{ textAlign: 'center', fontSize: '11px', color: '#b0b8c1', marginTop: '16px', marginBottom: 0 }}>
-          🔒 Your emotional & academic data is strictly isolated and private.
+          🔒 100% Data Privat Mahasiswa &bull; Tanpa Email
         </p>
       </div>
     </div>,

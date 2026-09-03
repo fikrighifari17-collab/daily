@@ -48,12 +48,12 @@ function setLocal(key, value) {
 }
 
 // API Functions
-export async function registerUser(nama, email, password) {
+export async function registerUser(username, password, nama) {
   try {
     const res = await fetch(`${BASE_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nama, email, password })
+      body: JSON.stringify({ username, password, nama: nama || username })
     });
     if (res.ok) {
       const data = await res.json();
@@ -62,7 +62,7 @@ export async function registerUser(nama, email, password) {
       return data;
     } else {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || "Registration failed");
+      throw new Error(err.error || "Pendaftaran gagal");
     }
   } catch (e) {
     if (e.message && e.message !== 'Failed to fetch') {
@@ -70,7 +70,8 @@ export async function registerUser(nama, email, password) {
     }
     // Offline local fallback if server unreachable
     console.warn("Using offline fallback for register");
-    const user = { id: Date.now(), nama, email, pinLock: null };
+    const cleanUsername = String(username).trim().toLowerCase();
+    const user = { id: Date.now(), username: cleanUsername, nama: nama || cleanUsername, pinLock: null };
     const token = "mock-jwt-token-" + Date.now();
     localStorage.setItem("token", token);
     localStorage.setItem("daily_user_info", JSON.stringify(user));
@@ -79,12 +80,12 @@ export async function registerUser(nama, email, password) {
   }
 }
 
-export async function loginUser(email, password) {
+export async function loginUser(username, password) {
   try {
     const res = await fetch(`${BASE_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ username, password })
     });
     if (res.ok) {
       const data = await res.json();
@@ -93,7 +94,7 @@ export async function loginUser(email, password) {
       return data;
     } else {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || "Invalid email or password");
+      throw new Error(err.error || "Username atau password salah");
     }
   } catch (e) {
     if (e.message && e.message !== 'Failed to fetch') {
@@ -101,9 +102,10 @@ export async function loginUser(email, password) {
     }
     // Offline local fallback if server unreachable
     console.warn("Using offline fallback for login");
+    const cleanUsername = String(username).trim().toLowerCase();
     const storedUser = getLocal(STORAGE_KEYS.USER, null);
-    if (!storedUser || storedUser.email !== email) {
-      throw new Error("Invalid email or password");
+    if (!storedUser || (storedUser.username !== cleanUsername && storedUser.email !== cleanUsername)) {
+      throw new Error("Username atau password salah");
     }
     const token = "mock-jwt-token-" + Date.now();
     localStorage.setItem("token", token);

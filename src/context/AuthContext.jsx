@@ -28,16 +28,16 @@ export function AuthProvider({ children }) {
     }
   }, [user]);
 
-  const handleLogin = async (email, password) => {
-    const res = await loginUser(email, password);
+  const handleLogin = async (username, password) => {
+    const res = await loginUser(username, password);
     if (res?.user) {
       setUser(res.user);
     }
     return res;
   };
 
-  const handleRegister = async (nama, email, password) => {
-    const res = await registerUser(nama, email, password);
+  const handleRegister = async (username, password, nama) => {
+    const res = await registerUser(username, password, nama);
     if (res?.user) {
       setUser(res.user);
     }
