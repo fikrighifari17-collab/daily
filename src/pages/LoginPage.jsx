@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Lock, User, LogIn, UserPlus, ShieldCheck, HeartPulse, BookOpen, Brain, Activity, CheckCircle, Flame, Clock, Award } from 'lucide-react';
+import { Sparkles, Lock, User, LogIn, UserPlus, ShieldCheck, HeartPulse, BookOpen, Brain, Activity } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
@@ -23,25 +23,25 @@ export default function LoginPage() {
       if (mode === 'login') {
         const res = await handleLogin(username, password);
         if (res?.user) {
-          toast.success(`Selamat datang kembali, ${res.user.nama || res.user.username}!`);
+          toast.success(`Welcome back, ${res.user.nama || res.user.username}!`);
         } else {
-          setErrorMsg('Username atau password salah.');
+          setErrorMsg('Invalid username or password.');
         }
       } else {
         if (!username.trim() || !password.trim()) {
-          setErrorMsg('Username dan password wajib diisi.');
+          setErrorMsg('Username and password are required.');
           setLoading(false);
           return;
         }
         const res = await handleRegister(username, password, nama || username);
         if (res?.user) {
-          toast.success(`Akun berhasil dibuat! Selamat datang, ${res.user.nama || res.user.username}!`);
+          toast.success(`Account created! Welcome, ${res.user.nama || res.user.username}!`);
         } else {
-          setErrorMsg('Pendaftaran gagal. Silakan coba username lain.');
+          setErrorMsg('Registration failed. Please try a different username.');
         }
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Terjadi kesalahan autentikasi. Pastikan koneksi internet aktif.');
+      setErrorMsg(err.message || 'Authentication error. Please check your network connection.');
     } finally {
       setLoading(false);
     }
@@ -53,25 +53,25 @@ export default function LoginPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'radial-gradient(circle at 20% 30%, rgba(0, 173, 181, 0.18), rgba(34, 40, 49, 1) 75%)',
-      padding: '24px 16px'
+      background: 'radial-gradient(circle at 20% 30%, rgba(0, 173, 181, 0.2), rgba(34, 40, 49, 1) 75%)',
+      padding: '20px 12px'
     }}>
-      {/* Split Screen Container */}
+      {/* Split Screen Container (with 8px border-radius and Pixel 8 mobile optimization) */}
       <div className="glass-panel animate-fade-in" style={{
         width: '100%',
-        maxWidth: '1080px',
+        maxWidth: '1040px',
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
         background: 'linear-gradient(135deg, rgba(34, 40, 49, 0.96), rgba(57, 62, 70, 0.92))',
         border: '1px solid rgba(0, 173, 181, 0.35)',
         boxShadow: '0 25px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(0, 173, 181, 0.2)',
-        borderRadius: '0px',
+        borderRadius: '8px',
         overflow: 'hidden'
       }}>
         
-        {/* ================= SEBELAH KIRI: FORM LOGIN / REGISTER ================= */}
+        {/* ================= LEFT COLUMN: LOGIN / REGISTER FORM ================= */}
         <div style={{
-          padding: '40px 36px',
+          padding: '36px 30px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
@@ -79,14 +79,14 @@ export default function LoginPage() {
           background: 'rgba(34, 40, 49, 0.85)'
         }}>
           {/* Logo & Title */}
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '22px' }}>
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '50px',
-              height: '50px',
-              borderRadius: '0px',
+              width: '48px',
+              height: '48px',
+              borderRadius: '8px',
               background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.3), rgba(0, 255, 245, 0.15))',
               border: '1px solid rgba(0, 173, 181, 0.5)',
               marginBottom: '12px',
@@ -94,13 +94,13 @@ export default function LoginPage() {
             }}>
               <HeartPulse size={26} color="#00FFF5" />
             </div>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#EEEEEE', margin: '0 0 4px 0' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#EEEEEE', margin: '0 0 4px 0', letterSpacing: '-0.02em' }}>
               Daily <span className="text-gradient-teal">Emotion Tracker</span>
             </h1>
             <p style={{ fontSize: '13px', color: '#b0b8c1', margin: 0 }}>
               {mode === 'login'
-                ? 'Masuk menggunakan username dan password Anda'
-                : 'Buat akun baru untuk mulai melacak emosi harian'}
+                ? 'Sign in with your username and password'
+                : 'Create an account to start tracking your daily mood'}
             </p>
           </div>
 
@@ -112,7 +112,8 @@ export default function LoginPage() {
             background: 'rgba(0, 0, 0, 0.4)',
             padding: '4px',
             marginBottom: '20px',
-            border: '1px solid rgba(0, 173, 181, 0.25)'
+            border: '1px solid rgba(0, 173, 181, 0.25)',
+            borderRadius: '8px'
           }}>
             <button
               type="button"
@@ -124,15 +125,17 @@ export default function LoginPage() {
                 background: mode === 'login' ? 'linear-gradient(135deg, #00ADB5, #00888f)' : 'transparent',
                 color: mode === 'login' ? '#ffffff' : '#b0b8c1',
                 border: 'none',
+                borderRadius: '8px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px'
+                gap: '6px',
+                transition: 'all 0.2s ease'
               }}
             >
               <LogIn size={15} />
-              Masuk (Sign In)
+              Sign In
             </button>
             <button
               type="button"
@@ -144,15 +147,17 @@ export default function LoginPage() {
                 background: mode === 'register' ? 'linear-gradient(135deg, #00ADB5, #00888f)' : 'transparent',
                 color: mode === 'register' ? '#ffffff' : '#b0b8c1',
                 border: 'none',
+                borderRadius: '8px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px'
+                gap: '6px',
+                transition: 'all 0.2s ease'
               }}
             >
               <UserPlus size={15} />
-              Daftar (Register)
+              Create Account
             </button>
           </div>
 
@@ -164,6 +169,7 @@ export default function LoginPage() {
               gap: '8px',
               background: 'rgba(239, 68, 68, 0.15)',
               border: '1px solid rgba(239, 68, 68, 0.4)',
+              borderRadius: '8px',
               padding: '10px 12px',
               fontSize: '12px',
               color: '#f87171',
@@ -179,7 +185,7 @@ export default function LoginPage() {
             {mode === 'register' && (
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '6px' }}>
-                  Nama Lengkap
+                  Full Name (Optional)
                 </label>
                 <div style={{ position: 'relative' }}>
                   <User size={16} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -196,7 +202,7 @@ export default function LoginPage() {
                       color: '#EEEEEE',
                       fontSize: '13px',
                       outline: 'none',
-                      borderRadius: '0px'
+                      borderRadius: '8px'
                     }}
                   />
                 </div>
@@ -212,7 +218,7 @@ export default function LoginPage() {
                 <input
                   type="text"
                   required
-                  placeholder="Masukkan username Anda"
+                  placeholder="Enter your username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   style={{
@@ -223,7 +229,7 @@ export default function LoginPage() {
                     color: '#EEEEEE',
                     fontSize: '13px',
                     outline: 'none',
-                    borderRadius: '0px'
+                    borderRadius: '8px'
                   }}
                 />
               </div>
@@ -238,7 +244,7 @@ export default function LoginPage() {
                 <input
                   type="password"
                   required
-                  placeholder="Masukkan password"
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
@@ -249,7 +255,7 @@ export default function LoginPage() {
                     color: '#EEEEEE',
                     fontSize: '13px',
                     outline: 'none',
-                    borderRadius: '0px'
+                    borderRadius: '8px'
                   }}
                 />
               </div>
@@ -262,25 +268,26 @@ export default function LoginPage() {
               style={{
                 marginTop: '8px',
                 padding: '12px',
-                fontSize: '13px',
+                fontSize: '14px',
                 fontWeight: 700,
                 justifyContent: 'center',
-                borderRadius: '0px',
-                opacity: loading ? 0.7 : 1
+                borderRadius: '8px',
+                opacity: loading ? 0.7 : 1,
+                cursor: loading ? 'not-allowed' : 'pointer'
               }}
             >
-              {loading ? 'Memproses...' : mode === 'login' ? 'Masuk Sekarang' : 'Daftar Akun'}
+              {loading ? 'Processing...' : mode === 'login' ? 'Sign In Now' : 'Create Account'}
             </button>
           </form>
 
           <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(0, 173, 181, 0.2)', fontSize: '11px', color: '#b0b8c1', textAlign: 'center' }}>
-            🔒 100% Data Privat &bull; Tanpa Email/Gmail &bull; Disimpan di Supabase
+            🔒 100% Private Data &bull; No Email Required &bull; Stored Securely
           </div>
         </div>
 
-        {/* ================= SEBELAH KANAN: TULISAN & INFORMASI MENARIK ================= */}
+        {/* ================= RIGHT COLUMN: INFORMATIVE & INSPIRING CONTENT ================= */}
         <div style={{
-          padding: '40px 36px',
+          padding: '36px 30px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
@@ -294,7 +301,7 @@ export default function LoginPage() {
               alignItems: 'center',
               gap: '6px',
               padding: '4px 10px',
-              borderRadius: '0px',
+              borderRadius: '8px',
               background: 'rgba(0, 173, 181, 0.2)',
               border: '1px solid rgba(0, 173, 181, 0.4)',
               marginBottom: '16px'
@@ -306,13 +313,13 @@ export default function LoginPage() {
             </div>
 
             {/* Main Headline */}
-            <h2 style={{ fontSize: '26px', fontWeight: 800, color: '#EEEEEE', lineHeight: 1.3, marginBottom: '14px' }}>
-              Pahami Emosimu, <br />
-              <span className="text-gradient-teal">Kuasai Jadwal Akademikmu.</span>
+            <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#EEEEEE', lineHeight: 1.3, marginBottom: '12px' }}>
+              Understand Your Emotions, <br />
+              <span className="text-gradient-teal">Master Your Academic Journey.</span>
             </h2>
 
-            <p style={{ fontSize: '13px', color: '#b0b8c1', lineHeight: 1.6, marginBottom: '24px' }}>
-              Ruang pribadi untuk mahasiswa mencatat suasana hati harian, mengkorelasikannya dengan beban tugas dan ujian, serta menjaga ketenangan pikiran sepanjang semester.
+            <p style={{ fontSize: '13px', color: '#b0b8c1', lineHeight: 1.6, marginBottom: '22px' }}>
+              A dedicated private sanctuary for university students to log daily emotional states, correlate moods with assignments and exams, and preserve mental clarity.
             </p>
 
             {/* Feature Highlights Grid */}
@@ -322,18 +329,19 @@ export default function LoginPage() {
                 alignItems: 'flex-start',
                 gap: '12px',
                 padding: '12px 14px',
-                background: 'rgba(34, 40, 49, 0.6)',
-                border: '1px solid rgba(0, 173, 181, 0.2)'
+                background: 'rgba(34, 40, 49, 0.65)',
+                border: '1px solid rgba(0, 173, 181, 0.2)',
+                borderRadius: '8px'
               }}>
-                <div style={{ padding: '8px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)' }}>
+                <div style={{ padding: '8px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)', borderRadius: '8px' }}>
                   <Activity size={18} color="#00FFF5" />
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE', marginBottom: '2px' }}>
-                    Korelasi Jadwal & Emosi
+                    Schedule & Mood Correlation
                   </div>
                   <div style={{ fontSize: '11px', color: '#b0b8c1', lineHeight: 1.4 }}>
-                    Ketahui kapan stres tertinggi Anda terjadi berdasarkan kalender UTS, UAS, dan praktikum kuliah.
+                    Pinpoint when stress levels peak based on midterm, final exam, and course workload timelines.
                   </div>
                 </div>
               </div>
@@ -343,10 +351,11 @@ export default function LoginPage() {
                 alignItems: 'flex-start',
                 gap: '12px',
                 padding: '12px 14px',
-                background: 'rgba(34, 40, 49, 0.6)',
-                border: '1px solid rgba(0, 173, 181, 0.2)'
+                background: 'rgba(34, 40, 49, 0.65)',
+                border: '1px solid rgba(0, 173, 181, 0.2)',
+                borderRadius: '8px'
               }}>
-                <div style={{ padding: '8px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)' }}>
+                <div style={{ padding: '8px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)', borderRadius: '8px' }}>
                   <Brain size={18} color="#00FFF5" />
                 </div>
                 <div>
@@ -354,7 +363,7 @@ export default function LoginPage() {
                     Brain Dump & Coping Library
                   </div>
                   <div style={{ fontSize: '11px', color: '#b0b8c1', lineHeight: 1.4 }}>
-                    Tumpahkan beban pikiran tanpa filter dan akses teknik relaksasi 4-7-8 untuk menenangkan diri saat penat.
+                    Safely discharge overwhelming thoughts and practice 4-7-8 breathing techniques to reset your mind.
                   </div>
                 </div>
               </div>
@@ -364,18 +373,19 @@ export default function LoginPage() {
                 alignItems: 'flex-start',
                 gap: '12px',
                 padding: '12px 14px',
-                background: 'rgba(34, 40, 49, 0.6)',
-                border: '1px solid rgba(0, 173, 181, 0.2)'
+                background: 'rgba(34, 40, 49, 0.65)',
+                border: '1px solid rgba(0, 173, 181, 0.2)',
+                borderRadius: '8px'
               }}>
-                <div style={{ padding: '8px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)' }}>
+                <div style={{ padding: '8px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)', borderRadius: '8px' }}>
                   <ShieldCheck size={18} color="#00FFF5" />
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE', marginBottom: '2px' }}>
-                    100% Privat & Aman
+                    100% Private & Confidential
                   </div>
                   <div style={{ fontSize: '11px', color: '#b0b8c1', lineHeight: 1.4 }}>
-                    Hanya Anda yang memiliki akses. Tanpa pelaporan ke pihak kampus atau pihak ketiga mana pun.
+                    Accessible only by you. Strictly zero reporting to campus administrations or third-party entities.
                   </div>
                 </div>
               </div>
@@ -384,13 +394,14 @@ export default function LoginPage() {
 
           {/* Inspirational Quote at Bottom */}
           <div style={{
-            marginTop: '24px',
-            padding: '14px 16px',
+            marginTop: '22px',
+            padding: '12px 16px',
             background: 'rgba(0, 173, 181, 0.08)',
-            borderLeft: '3px solid #00ADB5'
+            borderLeft: '3px solid #00ADB5',
+            borderRadius: '8px'
           }}>
             <p style={{ fontSize: '12px', fontStyle: 'italic', color: '#EEEEEE', margin: 0, lineHeight: 1.5 }}>
-              "Mengenali emosi bukan tanda kelemahan, melainkan langkah paling cerdas untuk tetap fokus dan menyelesaikan setiap semester dengan bahagia."
+              "Recognizing emotions is not a sign of vulnerability, but the sharpest strategy to conquer every semester with clarity and resilience."
             </p>
           </div>
 

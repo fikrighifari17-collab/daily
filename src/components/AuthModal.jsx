@@ -26,27 +26,27 @@ export default function AuthModal({ isOpen, onClose }) {
       if (mode === 'login') {
         const res = await handleLogin(username, password);
         if (res?.user) {
-          toast.success(`Selamat datang kembali, ${res.user.nama || res.user.username}!`);
+          toast.success(`Welcome back, ${res.user.nama || res.user.username}!`);
           onClose();
         } else {
-          setErrorMsg('Username atau password salah');
+          setErrorMsg('Invalid username or password.');
         }
       } else {
         if (!username.trim() || !password.trim()) {
-          setErrorMsg('Username dan password wajib diisi');
+          setErrorMsg('Username and password are required.');
           setLoading(false);
           return;
         }
         const res = await handleRegister(username, password, nama || username);
         if (res?.user) {
-          toast.success(`Akun berhasil dibuat! Selamat datang, ${res.user.nama || res.user.username}!`);
+          toast.success(`Account created! Welcome, ${res.user.nama || res.user.username}!`);
           onClose();
         } else {
-          setErrorMsg('Pendaftaran gagal. Silakan gunakan username lain');
+          setErrorMsg('Registration failed. Please choose another username.');
         }
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Terjadi kesalahan autentikasi.');
+      setErrorMsg(err.message || 'Authentication error.');
     } finally {
       setLoading(false);
     }
@@ -74,7 +74,7 @@ export default function AuthModal({ isOpen, onClose }) {
         background: 'linear-gradient(135deg, rgba(34, 40, 49, 0.95), rgba(57, 62, 70, 0.95))',
         border: '1px solid rgba(0, 173, 181, 0.4)',
         boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 173, 181, 0.2)',
-        borderRadius: '0px',
+        borderRadius: '8px',
         padding: '24px',
         position: 'relative'
       }}>
@@ -103,7 +103,7 @@ export default function AuthModal({ isOpen, onClose }) {
             justifyContent: 'center',
             width: '48px',
             height: '48px',
-            borderRadius: '0px',
+            borderRadius: '8px',
             background: 'rgba(0, 173, 181, 0.2)',
             border: '1px solid rgba(0, 173, 181, 0.4)',
             marginBottom: '10px'
@@ -111,10 +111,10 @@ export default function AuthModal({ isOpen, onClose }) {
             <Sparkles size={24} color="#00FFF5" />
           </div>
           <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#EEEEEE', margin: '0 0 4px 0' }}>
-            {mode === 'login' ? 'Masuk ke Akun Anda' : 'Buat Akun Baru'}
+            {mode === 'login' ? 'Sign In to Your Account' : 'Create an Account'}
           </h3>
           <p style={{ fontSize: '12px', color: '#b0b8c1', margin: 0 }}>
-            {mode === 'login' ? 'Gunakan username dan password Anda' : 'Daftar dengan username & password untuk mulai melacak emosi'}
+            {mode === 'login' ? 'Enter your username and password' : 'Register to start tracking your daily mood privately'}
           </p>
         </div>
 
@@ -126,7 +126,8 @@ export default function AuthModal({ isOpen, onClose }) {
           background: 'rgba(0, 0, 0, 0.4)',
           padding: '4px',
           marginBottom: '20px',
-          border: '1px solid rgba(0, 173, 181, 0.2)'
+          border: '1px solid rgba(0, 173, 181, 0.2)',
+          borderRadius: '8px'
         }}>
           <button
             type="button"
@@ -138,6 +139,7 @@ export default function AuthModal({ isOpen, onClose }) {
               background: mode === 'login' ? 'linear-gradient(135deg, #00ADB5, #00888f)' : 'transparent',
               color: mode === 'login' ? '#ffffff' : '#b0b8c1',
               border: 'none',
+              borderRadius: '8px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -146,7 +148,7 @@ export default function AuthModal({ isOpen, onClose }) {
             }}
           >
             <LogIn size={14} />
-            Masuk
+            Sign In
           </button>
           <button
             type="button"
@@ -158,6 +160,7 @@ export default function AuthModal({ isOpen, onClose }) {
               background: mode === 'register' ? 'linear-gradient(135deg, #00ADB5, #00888f)' : 'transparent',
               color: mode === 'register' ? '#ffffff' : '#b0b8c1',
               border: 'none',
+              borderRadius: '8px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -166,7 +169,7 @@ export default function AuthModal({ isOpen, onClose }) {
             }}
           >
             <UserPlus size={14} />
-            Daftar
+            Register
           </button>
         </div>
 
@@ -178,6 +181,7 @@ export default function AuthModal({ isOpen, onClose }) {
             gap: '8px',
             background: 'rgba(239, 68, 68, 0.15)',
             border: '1px solid rgba(239, 68, 68, 0.4)',
+            borderRadius: '8px',
             padding: '10px 12px',
             fontSize: '12px',
             color: '#f87171',
@@ -193,7 +197,7 @@ export default function AuthModal({ isOpen, onClose }) {
           {mode === 'register' && (
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '6px' }}>
-                Nama Lengkap
+                Full Name (Optional)
               </label>
               <div style={{ position: 'relative' }}>
                 <User size={16} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -209,7 +213,8 @@ export default function AuthModal({ isOpen, onClose }) {
                     border: '1px solid rgba(0, 173, 181, 0.3)',
                     color: '#EEEEEE',
                     fontSize: '13px',
-                    outline: 'none'
+                    outline: 'none',
+                    borderRadius: '8px'
                   }}
                 />
               </div>
@@ -225,7 +230,7 @@ export default function AuthModal({ isOpen, onClose }) {
               <input
                 type="text"
                 required
-                placeholder="Masukkan username"
+                placeholder="Enter username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 style={{
@@ -235,7 +240,8 @@ export default function AuthModal({ isOpen, onClose }) {
                   border: '1px solid rgba(0, 173, 181, 0.3)',
                   color: '#EEEEEE',
                   fontSize: '13px',
-                  outline: 'none'
+                  outline: 'none',
+                  borderRadius: '8px'
                 }}
               />
             </div>
@@ -260,7 +266,8 @@ export default function AuthModal({ isOpen, onClose }) {
                   border: '1px solid rgba(0, 173, 181, 0.3)',
                   color: '#EEEEEE',
                   fontSize: '13px',
-                  outline: 'none'
+                  outline: 'none',
+                  borderRadius: '8px'
                 }}
               />
             </div>
@@ -276,16 +283,16 @@ export default function AuthModal({ isOpen, onClose }) {
               fontSize: '13px',
               fontWeight: 700,
               justifyContent: 'center',
-              borderRadius: '0px',
+              borderRadius: '8px',
               opacity: loading ? 0.7 : 1
             }}
           >
-            {loading ? 'Memproses...' : mode === 'login' ? 'Masuk Sekarang' : 'Daftar Akun'}
+            {loading ? 'Processing...' : mode === 'login' ? 'Sign In Now' : 'Create Account'}
           </button>
         </form>
 
         <p style={{ textAlign: 'center', fontSize: '11px', color: '#b0b8c1', marginTop: '16px', marginBottom: 0 }}>
-          🔒 100% Data Privat Mahasiswa &bull; Tanpa Email
+          🔒 100% Private Student Data &bull; No Email Required
         </p>
       </div>
     </div>,
