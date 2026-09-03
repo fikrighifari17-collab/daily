@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { loginUser, registerUser, logoutUser } from '../services/api';
+import { loginUser, registerUser, logoutUser, updateUserProfile } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -49,6 +49,14 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const handleUpdateProfile = async (data) => {
+    const res = await updateUserProfile(data);
+    if (res?.user) {
+      setUser(res.user);
+    }
+    return res;
+  };
+
   const setAppPin = (pin) => {
     if (pin && pin.length === 4) {
       setPinCode(pin);
@@ -86,6 +94,7 @@ export function AuthProvider({ children }) {
         handleLogin,
         handleRegister,
         handleLogout,
+        handleUpdateProfile,
         pinCode,
         isPinLocked,
         setAppPin,

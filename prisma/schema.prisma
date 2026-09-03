@@ -13,6 +13,7 @@ model User {
   nama             String?
   password         String
   pinLock          String?
+  avatar           String?
   createdAt        DateTime         @default(now())
   username         String           @unique
   brainDumps       BrainDump[]

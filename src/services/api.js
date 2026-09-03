@@ -424,3 +424,48 @@ export async function addBrainDump(isi) {
   setLocal(STORAGE_KEYS.DUMPS, list);
   return newDump;
 }
+
+export async function getUserProfile() {
+  try {
+    const res = await fetch(`${BASE_URL}/auth/profile`, { headers: authHeader() });
+    if (res.ok) {
+      const data = await res.json();
+      if (data) localStorage.setItem("daily_user_info", JSON.stringify(data));
+      return data;
+    }
+  } catch (e) {
+    console.warn("Using offline fallback for getUserProfile");
+  }
+  return getLocal("daily_user_info", null);
+}
+
+export async function updateUserProfile(data) {
+  try {
+    const res = await fetch(`${BASE_URL}/auth/profile`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeader() },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      const result = await res.json();
+      if (result.token) localStorage.setItem("token", result.token);
+      if (result.user) localStorage.setItem("daily_user_info", JSON.stringify(result.user));
+      return result;
+    } else {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "Failed to update profile");
+    }
+  } catch (e) {
+    if (e.message && e.message !== 'Failed to fetch') {
+      throw e;
+    }
+    // Offline local fallback
+    console.warn("Using offline fallback for updateUserProfile");
+    const stored = getLocal("daily_user_info", {});
+    const updated = { ...stored, ...data };
+    delete updated.currentPassword;
+    delete updated.newPassword;
+    localStorage.setItem("daily_user_info", JSON.stringify(updated));
+    return { user: updated };
+  }
+}

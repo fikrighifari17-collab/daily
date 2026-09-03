@@ -162,7 +162,15 @@ export default function Navbar() {
                     transition: 'all 0.2s ease'
                   })}
                 >
-                  <User size={13} />
+                  {user.avatar ? (
+                    user.avatar.startsWith('data:') || user.avatar.startsWith('http') ? (
+                      <img src={user.avatar} alt="Avatar" style={{ width: '18px', height: '18px', borderRadius: '4px', objectFit: 'cover' }} />
+                    ) : (
+                      <span style={{ fontSize: '14px', lineHeight: 1 }}>{user.avatar}</span>
+                    )
+                  ) : (
+                    <User size={13} />
+                  )}
                   <span>{user.nama || user.username}</span>
                   <ShieldCheck size={12} opacity={0.75} />
                 </NavLink>
@@ -241,7 +249,15 @@ export default function Navbar() {
                   boxShadow: isActive ? '0 4px 12px rgba(0, 173, 181, 0.4)' : 'none'
                 })}
               >
-                <User size={13} />
+                {user.avatar ? (
+                  user.avatar.startsWith('data:') || user.avatar.startsWith('http') ? (
+                    <img src={user.avatar} alt="Avatar" style={{ width: '18px', height: '18px', borderRadius: '4px', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ fontSize: '13px', lineHeight: 1 }}>{user.avatar}</span>
+                  )
+                ) : (
+                  <User size={13} />
+                )}
                 <span>{user.nama || user.username}</span>
                 <ShieldCheck size={11} opacity={0.7} />
               </NavLink>
@@ -302,17 +318,26 @@ export default function Navbar() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{
-                    width: '32px',
-                    height: '32px',
+                    width: '36px',
+                    height: '36px',
                     borderRadius: '8px',
                     background: 'rgba(0, 173, 181, 0.25)',
                     border: '1px solid rgba(0, 173, 181, 0.4)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#00FFF5'
+                    color: '#00FFF5',
+                    overflow: 'hidden'
                   }}>
-                    <User size={16} />
+                    {user.avatar ? (
+                      user.avatar.startsWith('data:') || user.avatar.startsWith('http') ? (
+                        <img src={user.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ fontSize: '20px' }}>{user.avatar}</span>
+                      )
+                    ) : (
+                      <User size={16} />
+                    )}
                   </div>
                   <div>
                     <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE' }}>
