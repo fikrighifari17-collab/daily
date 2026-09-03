@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  nama        String
+  email       String    @unique
+  password    String
+  pinLock     String?
+  createdAt   DateTime  @default(now())
+
+  moodEntries      MoodEntry[]
+  schedules        Schedule[]
+  tags             Tag[]
+  copingStrategies CopingStrategy[]
+  brainDumps       BrainDump[]
+}
+
+model MoodEntry {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  moodScore     Int       // skala 1-5
+  catatan       String?
+  voiceNotePath String?
+  photoUrl      String?
+  waktu         String    // "pagi" | "siang" | "malam"
+  tanggal       DateTime  @db.Date
+  createdAt     DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags MoodTag[]
+}
+
+model Tag {
+  id     Int    @id @default(autoincrement())
+  userId Int
+  nama   String
+
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moods MoodTag[]
+}
+
+model MoodTag {
+  moodId Int
+  tagId  Int
+
+  mood MoodEntry @relation(fields: [moodId], references: [id], onDelete: Cascade)
+  tag  Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([moodId, tagId])
+}
+
+model Schedule {
+  id      Int      @id @default(autoincrement())
+  userId  Int
+  judul   String
+  jenis   String   // "tugas" | "uts" | "uas" | "presentasi" | "lainnya"
+  tanggal DateTime @db.Date
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CopingStrategy {
+  id            Int     @id @default(autoincrement())
+  userId        Int
+  namaStrategi  String
+  deskripsi     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BrainDump {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  isi       String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
