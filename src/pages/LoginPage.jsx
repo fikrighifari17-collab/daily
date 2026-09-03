@@ -50,28 +50,28 @@ export default function LoginPage() {
   return (
     <div style={{
       minHeight: '100vh',
+      width: '100vw',
+      boxSizing: 'border-box',
       display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
       background: 'radial-gradient(circle at 20% 30%, rgba(0, 173, 181, 0.2), rgba(34, 40, 49, 1) 75%)',
-      padding: '8px' // 8px for top, right, bottom, left (kiri, kanan, atas, bawah)
+      padding: '8px' // Gap 8px mentok atas, bawah, kiri, kanan
     }}>
-      {/* Split Screen Container (with 8px border-radius on all corners) */}
+      {/* Split Screen Container (stretched mentok edge-to-edge with 8px margin and 8px border-radius) */}
       <div className="glass-panel animate-fade-in" style={{
         width: '100%',
-        maxWidth: '1040px',
+        minHeight: 'calc(100vh - 16px)',
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
         background: 'linear-gradient(135deg, rgba(34, 40, 49, 0.96), rgba(57, 62, 70, 0.92))',
         border: '1px solid rgba(0, 173, 181, 0.35)',
         boxShadow: '0 25px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(0, 173, 181, 0.2)',
         borderRadius: '8px',
-        overflow: 'hidden'
+        overflow: 'auto'
       }}>
         
         {/* ================= LEFT COLUMN: LOGIN / REGISTER FORM ================= */}
         <div style={{
-          padding: '36px 30px',
+          padding: '48px 40px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
@@ -287,7 +287,7 @@ export default function LoginPage() {
 
         {/* ================= RIGHT COLUMN: INFORMATIVE & INSPIRING CONTENT ================= */}
         <div style={{
-          padding: '36px 30px',
+          padding: '48px 40px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
