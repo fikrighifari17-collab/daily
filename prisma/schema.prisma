@@ -92,7 +92,7 @@ model AcademicCourse {
   sks        Int      @default(3)
   warna      String?  @default("#00ADB5")
   link       String?  @default("")
-  attendance Json?    @default("{\"present\":0,\"absent\":0,\"excused\":0,\"target\":16}")
+  attendance Json?
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
