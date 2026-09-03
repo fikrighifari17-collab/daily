@@ -21,6 +21,7 @@ model User {
   moodEntries      MoodEntry[]
   schedules        Schedule[]
   tags             Tag[]
+  academicCourses  AcademicCourse[]
 }
 
 model MoodEntry {
@@ -78,3 +79,21 @@ model BrainDump {
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+model AcademicCourse {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  mataKuliah String
+  dosen      String?  @default("Lecturer")
+  hari       String   @default("Monday")
+  jamMulai   String   @default("08:00")
+  jamSelesai String   @default("10:00")
+  ruangan    String?  @default("Room 101")
+  sks        Int      @default(3)
+  warna      String?  @default("#00ADB5")
+  link       String?  @default("")
+  attendance Json?    @default("{\"present\":0,\"absent\":0,\"excused\":0,\"target\":16}")
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+

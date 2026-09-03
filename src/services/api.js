@@ -257,9 +257,47 @@ export async function deleteSchedule(id) {
 export async function getAcademicCourses() {
   try {
     const res = await fetch(`${BASE_URL}/academic-courses`, { headers: authHeader() });
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      let serverCourses = await res.json();
+      if (!Array.isArray(serverCourses)) serverCourses = [];
+
+      // Auto-sync mechanism:
+      // If user has existing courses in device localStorage not yet stored on server (e.g., entered on HP before backend table was created),
+      // automatically upload them to the cloud database so both devices stay synchronized.
+      const localCourses = getLocal(STORAGE_KEYS.COURSES, []);
+      if (Array.isArray(localCourses) && localCourses.length > 0) {
+        const unsynced = localCourses.filter(localItem => {
+          if (!localItem || !localItem.mataKuliah) return false;
+          return !serverCourses.some(sc =>
+            sc.mataKuliah?.trim().toLowerCase() === localItem.mataKuliah?.trim().toLowerCase() &&
+            sc.hari === localItem.hari
+          );
+        });
+
+        if (unsynced.length > 0) {
+          try {
+            const syncRes = await fetch(`${BASE_URL}/academic-courses`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", ...authHeader() },
+              body: JSON.stringify({ bulkCourses: unsynced })
+            });
+            if (syncRes.ok) {
+              const uploaded = await syncRes.json();
+              if (Array.isArray(uploaded)) {
+                serverCourses.push(...uploaded);
+              }
+            }
+          } catch (syncErr) {
+            console.warn("Auto-syncing local courses to server failed:", syncErr);
+          }
+        }
+      }
+
+      setLocal(STORAGE_KEYS.COURSES, serverCourses);
+      return serverCourses;
+    }
   } catch (e) {
-    console.warn("Using offline fallback for getAcademicCourses");
+    console.warn("Using offline fallback for getAcademicCourses", e);
   }
   return getLocal(STORAGE_KEYS.COURSES, []);
 }
@@ -271,9 +309,15 @@ export async function submitAcademicCourse(data) {
       headers: { "Content-Type": "application/json", ...authHeader() },
       body: JSON.stringify(data)
     });
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const created = await res.json();
+      const list = getLocal(STORAGE_KEYS.COURSES, []);
+      list.push(created);
+      setLocal(STORAGE_KEYS.COURSES, list);
+      return created;
+    }
   } catch (e) {
-    console.warn("Using offline fallback for submitAcademicCourse");
+    console.warn("Using offline fallback for submitAcademicCourse", e);
   }
 
   const newCourse = {
@@ -302,9 +346,18 @@ export async function updateAcademicCourse(id, data) {
       headers: { "Content-Type": "application/json", ...authHeader() },
       body: JSON.stringify(data)
     });
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const updated = await res.json();
+      const list = getLocal(STORAGE_KEYS.COURSES, []);
+      const index = list.findIndex(c => c.id === id);
+      if (index !== -1) {
+        list[index] = updated;
+        setLocal(STORAGE_KEYS.COURSES, list);
+      }
+      return updated;
+    }
   } catch (e) {
-    console.warn("Using offline fallback for updateAcademicCourse");
+    console.warn("Using offline fallback for updateAcademicCourse", e);
   }
 
   const list = getLocal(STORAGE_KEYS.COURSES, []);
@@ -328,9 +381,13 @@ export async function deleteAcademicCourse(id) {
       method: "DELETE",
       headers: authHeader()
     });
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const list = getLocal(STORAGE_KEYS.COURSES, []).filter(c => c.id !== id);
+      setLocal(STORAGE_KEYS.COURSES, list);
+      return { success: true };
+    }
   } catch (e) {
-    console.warn("Using offline fallback for deleteAcademicCourse");
+    console.warn("Using offline fallback for deleteAcademicCourse", e);
   }
 
   const list = getLocal(STORAGE_KEYS.COURSES, []).filter(c => c.id !== id);

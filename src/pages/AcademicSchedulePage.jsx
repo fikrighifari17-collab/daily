@@ -20,7 +20,8 @@ import {
   Sparkles,
   Layers,
   Check,
-  Link as LinkIcon
+  Link as LinkIcon,
+  RefreshCw
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
@@ -38,9 +39,10 @@ const COLOR_OPTIONS = [
 ];
 
 export default function AcademicSchedulePage() {
-  const { courses, schedules, addAcademicCourse, updateAcademicCourse, removeAcademicCourse } = useData();
+  const { courses, schedules, addAcademicCourse, updateAcademicCourse, removeAcademicCourse, reloadData } = useData();
   const { toast } = useToast();
 
+  const [isSyncing, setIsSyncing] = useState(false);
   // Pop-up Modal State (used for both Add and Edit)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourseId, setEditingCourseId] = useState(null);
@@ -199,6 +201,19 @@ export default function AcademicSchedulePage() {
     toast.success(`Membuka ${courses.length} jadwal kuliah di Google Calendar...`);
   };
 
+  // Manual sync database handler
+  const handleSyncDatabase = async () => {
+    setIsSyncing(true);
+    try {
+      await reloadData();
+      toast.success('Database berhasil disinkronkan!');
+    } catch (err) {
+      toast.error('Gagal menyinkronkan data.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // Filtered courses
   const filteredCourses = selectedDayFilter === 'ALL'
     ? courses
@@ -288,6 +303,19 @@ export default function AcademicSchedulePage() {
                 <div style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Credits (SKS)</div>
               </div>
             </div>
+
+            {/* Sync Cloud Database Button */}
+            <button
+              type="button"
+              onClick={handleSyncDatabase}
+              disabled={isSyncing}
+              className="glass-button"
+              style={{ fontSize: '12px', padding: '8px 14px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', borderColor: '#00FFF5', color: '#00FFF5', background: 'rgba(0, 255, 245, 0.08)' }}
+              title="Sync with cloud database to keep HP and Laptop synchronized"
+            >
+              <RefreshCw size={14} color="#00FFF5" style={{ animation: isSyncing ? 'spin 1s linear infinite' : 'none' }} />
+              <span>{isSyncing ? 'Syncing...' : 'Sync Cloud'}</span>
+            </button>
 
             {/* Sync Google Calendar HP Button (Cara 1) */}
             <button
