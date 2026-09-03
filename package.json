@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "postinstall": "prisma generate",
     "build": "npx prisma generate && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
