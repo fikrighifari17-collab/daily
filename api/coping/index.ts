@@ -1,8 +1,35 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { prisma } from '../_lib/prisma';
-import { verifyToken } from '../_lib/auth-middleware';
+import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+const SUPABASE_URL = "postgresql://postgres.nkfyyhsihmwpwmahyyqd:Jrfikrizero123@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres";
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = SUPABASE_URL;
+}
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = "Jrfikrizero123SuperSecretDailyAuthKey2026";
+}
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL
+    }
+  }
+});
+
+function verifyToken(req: any): number | null {
+  const authHeader = req.headers?.authorization;
+  if (!authHeader) return null;
+  try {
+    const token = authHeader.replace('Bearer ', '').trim();
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "Jrfikrizero123SuperSecretDailyAuthKey2026") as { userId: number };
+    return decoded.userId;
+  } catch {
+    return null;
+  }
+}
+
+export default async function handler(req: any, res: any) {
   const userId = verifyToken(req);
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -20,11 +47,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'POST') {
     try {
-      const { namaStrategi, deskripsi } = req.body;
+      let body = req.body;
+      if (typeof body === 'string') {
+        try { body = JSON.parse(body); } catch {}
+      }
+
+      const { namaStrategi, deskripsi } = body || {};
       if (!namaStrategi) return res.status(400).json({ error: 'Strategy name is required' });
 
       const strategy = await prisma.copingStrategy.create({
-        data: { userId, namaStrategi, deskripsi }
+        data: { userId, namaStrategi: String(namaStrategi).trim(), deskripsi: deskripsi ? String(deskripsi).trim() : null }
       });
       return res.status(201).json(strategy);
     } catch (err: any) {
