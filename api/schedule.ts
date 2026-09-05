@@ -17,6 +17,14 @@ const prisma = new PrismaClient({
   }
 });
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb'
+    }
+  }
+};
+
 function verifyToken(req: any): number | null {
   const authHeader = req.headers?.authorization;
   if (!authHeader) return null;
@@ -80,6 +88,36 @@ export default async function handler(req: any, res: any) {
       return res.status(201).json(schedule);
     } catch (err: any) {
       console.error('Create schedule error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  if (req.method === 'PUT' || req.method === 'PATCH') {
+    try {
+      let body = req.body;
+      if (typeof body === 'string') {
+        try { body = JSON.parse(body); } catch {}
+      }
+
+      const rawId = req.query?.id || (typeof body === 'object' ? body?.id : null);
+      const scheduleId = Number(rawId);
+      if (isNaN(scheduleId)) {
+        return res.status(400).json({ error: 'Invalid ID' });
+      }
+
+      const { judul, jenis, tanggal } = body || {};
+      const updateData: any = {};
+      if (judul !== undefined) updateData.judul = String(judul).trim();
+      if (jenis !== undefined) updateData.jenis = String(jenis).trim();
+      if (tanggal !== undefined) updateData.tanggal = new Date(tanggal);
+
+      const schedule = await prisma.schedule.update({
+        where: { id: scheduleId },
+        data: updateData
+      });
+      return res.status(200).json(schedule);
+    } catch (err: any) {
+      console.error('Update schedule error:', err);
       return res.status(500).json({ error: err.message });
     }
   }

@@ -10,17 +10,17 @@ export default function NewCheckinPage() {
     <div className="animate-fade-in" style={{ width: '100%', margin: '0 auto', padding: '0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       
       {/* Navigation & Header Banner */}
-      <div className="glass-panel" style={{ padding: '18px 20px', background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.22), rgba(57, 62, 70, 0.85))', border: '1px solid rgba(0, 173, 181, 0.35)', borderRadius: '0px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="glass-panel mood-header-banner" style={{ background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.22), rgba(57, 62, 70, 0.85))', border: '1px solid rgba(0, 173, 181, 0.35)', borderRadius: '0px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ padding: '10px', borderRadius: '0px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)' }}>
-              <PlusCircle size={22} color="#00FFF5" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ padding: '8px', borderRadius: '0px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)', flexShrink: 0 }}>
+              <PlusCircle size={20} color="#00FFF5" />
             </div>
             <div>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#EEEEEE', margin: 0 }}>Today's Mood Check-in Form</h2>
-              <p style={{ fontSize: '12px', color: '#b0b8c1', marginTop: '2px' }}>
-                Express your feelings right now, attach photos/atmosphere, or record a private voice note.
+              <h2 style={{ fontSize: '17px', fontWeight: 800, color: '#EEEEEE', margin: 0 }}>Today's Mood Check-in</h2>
+              <p style={{ fontSize: '11px', color: '#b0b8c1', marginTop: '2px' }}>
+                Express feelings, attach photos/videos, or record voice reflection.
               </p>
             </div>
           </div>
@@ -28,11 +28,11 @@ export default function NewCheckinPage() {
           <NavLink
             to="/checkin"
             className="glass-button"
-            style={{ fontSize: '12px', padding: '8px 16px', borderRadius: '0px', gap: '6px' }}
+            style={{ fontSize: '12px', padding: '7px 14px', borderRadius: '0px', gap: '6px' }}
           >
-            <ArrowLeft size={15} color="#00FFF5" />
-            <History size={15} />
-            <span>View Check-in History</span>
+            <ArrowLeft size={14} color="#00FFF5" />
+            <History size={14} />
+            <span>Check-in History</span>
           </NavLink>
 
         </div>

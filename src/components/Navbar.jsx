@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -15,24 +16,42 @@ import {
   Menu, 
   X, 
   HeartPulse,
-  ChevronRight
+  ChevronRight,
+  ChevronUp
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AuthModal from './AuthModal';
 
 export default function Navbar() {
-  const { user, handleLogout, pinCode, lockAppNow } = useAuth();
+  const { user, handleLogout } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
+
+  // Close menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Lock body scroll when mobile drawer is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }
+  }, [isMobileMenuOpen]);
 
   // Main navigation items (Privacy & PIN is now accessible by clicking the user profile chip)
   const navItems = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-    { to: '/checkin/new', label: 'Mood Check-in', icon: PlusCircle },
-    { to: '/checkin', label: 'Mood History', icon: History, end: true },
-    { to: '/insight', label: 'Insights & Analytics', icon: BarChart3 },
-    { to: '/academic-schedule', label: 'Academic Schedule', icon: BookOpen },
-    { to: '/schedule', label: 'Tasks & Deadlines', icon: Calendar }
+    { to: '/checkin/new', label: 'Catat Mood', icon: PlusCircle },
+    { to: '/checkin', label: 'Riwayat Mood', icon: History, end: true },
+    { to: '/insight', label: 'Analisis Mood', icon: BarChart3 },
+    { to: '/academic-schedule', label: 'Jadwal Kuliah', icon: BookOpen },
+    { to: '/schedule', label: 'Tugas & Deadline', icon: Calendar }
   ];
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
@@ -144,7 +163,7 @@ export default function Navbar() {
                 {/* Clicking user chip navigates to Privacy & PIN settings */}
                 <NavLink
                   to="/settings"
-                  title="Click to open Privacy & PIN Settings"
+                  title="Klik untuk buka Pengaturan PIN & Privasi"
                   style={({ isActive }) => ({
                     display: 'flex',
                     alignItems: 'center',
@@ -175,25 +194,6 @@ export default function Navbar() {
                   <ShieldCheck size={12} opacity={0.75} />
                 </NavLink>
 
-                {pinCode && (
-                  <button
-                    onClick={lockAppNow}
-                    className="glass-button"
-                    style={{
-                      borderColor: 'rgba(239, 68, 68, 0.35)',
-                      color: '#f87171',
-                      fontSize: '12px',
-                      padding: '6px 10px',
-                      borderRadius: '8px',
-                      background: 'rgba(239, 68, 68, 0.1)'
-                    }}
-                    title="Lock application now"
-                  >
-                    <Lock size={13} />
-                    <span>Lock</span>
-                  </button>
-                )}
-
                 <button
                   onClick={handleLogout}
                   className="glass-button"
@@ -205,10 +205,10 @@ export default function Navbar() {
                     borderRadius: '8px',
                     background: 'rgba(239, 68, 68, 0.08)'
                   }}
-                  title="Log out from this account"
+                  title="Keluar dari akun ini"
                 >
                   <LogOut size={13} />
-                  <span>Logout</span>
+                  <span>Keluar</span>
                 </button>
               </div>
             ) : (
@@ -218,7 +218,7 @@ export default function Navbar() {
                 style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '8px' }}
               >
                 <LogIn size={14} />
-                <span>Sign In</span>
+                <span>Masuk</span>
               </button>
             )}
           </div>
@@ -229,7 +229,7 @@ export default function Navbar() {
               <NavLink
                 to="/settings"
                 onClick={closeMobileMenu}
-                title="Privacy & PIN Settings"
+                title="Pengaturan PIN & Privasi"
                 style={({ isActive }) => ({
                   display: 'flex',
                   alignItems: 'center',
@@ -287,16 +287,25 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* ================= MOBILE EXPANDABLE MENU DRAWER ================= */}
+        {/* ================= MOBILE EXPANDABLE MENU DRAWER (FLOATING OVERLAY) ================= */}
         {isMobileMenuOpen && (
           <div 
-            className="animate-fade-in"
+            className="animate-fade-in nav-mobile-drawer"
             style={{
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              left: 0,
+              right: 0,
               padding: '12px 14px 16px 14px',
-              borderTop: '1px solid rgba(0, 173, 181, 0.25)',
+              border: '1px solid rgba(0, 173, 181, 0.4)',
               background: 'rgba(34, 40, 49, 0.98)',
-              borderBottomLeftRadius: '8px',
-              borderBottomRightRadius: '8px'
+              backdropFilter: 'blur(25px)',
+              WebkitBackdropFilter: 'blur(25px)',
+              borderRadius: '8px',
+              boxShadow: '0 16px 45px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 173, 181, 0.25)',
+              zIndex: 100,
+              maxHeight: 'calc(100vh - 85px)',
+              overflowY: 'auto'
             }}
           >
             {/* User Greeting & Status Card (Links to Privacy & PIN) */}
@@ -345,32 +354,12 @@ export default function Navbar() {
                     </div>
                     <div style={{ fontSize: '11px', color: '#00FFF5', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <ShieldCheck size={11} />
-                      Privacy & PIN Settings
+                      Profil & Pengaturan Akun
                     </div>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {pinCode && (
-                    <button
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); closeMobileMenu(); lockAppNow(); }}
-                      style={{
-                        padding: '5px 8px',
-                        borderRadius: '8px',
-                        background: 'rgba(239, 68, 68, 0.15)',
-                        border: '1px solid rgba(239, 68, 68, 0.35)',
-                        color: '#f87171',
-                        fontSize: '11px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                    >
-                      <Lock size={12} />
-                      Lock
-                    </button>
-                  )}
                   <ChevronRight size={16} color="#00ADB5" />
                 </div>
               </Link>
@@ -439,7 +428,7 @@ export default function Navbar() {
                   }}
                 >
                   <LogOut size={15} />
-                  <span>Log Out</span>
+                  <span>Keluar</span>
                 </button>
               ) : (
                 <button
@@ -448,13 +437,62 @@ export default function Navbar() {
                   style={{ width: '100%', padding: '10px', fontSize: '13px', borderRadius: '8px', justifyContent: 'center' }}
                 >
                   <LogIn size={15} />
-                  <span>Sign In / Register</span>
+                  <span>Masuk / Daftar</span>
                 </button>
               )}
+
+              {/* Tombol Tutup Menu / Kembali ke Atas */}
+              <button
+                type="button"
+                onClick={closeMobileMenu}
+                style={{
+                  width: '100%',
+                  marginTop: '10px',
+                  padding: '10px',
+                  borderRadius: '8px',
+                  background: 'rgba(0, 173, 181, 0.15)',
+                  border: '1px solid rgba(0, 173, 181, 0.4)',
+                  color: '#00FFF5',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 14px rgba(0, 173, 181, 0.2)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <ChevronUp size={16} />
+                <span>Tutup Menu / Kembali ke Atas</span>
+              </button>
             </div>
           </div>
         )}
       </header>
+
+      {/* Full-screen Backdrop rendered at document.body level so clicking anywhere outside closes the menu */}
+      {isMobileMenuOpen && typeof document !== 'undefined' && createPortal(
+        <div 
+          onClick={closeMobileMenu}
+          aria-label="Tutup menu"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(3px)',
+            WebkitBackdropFilter: 'blur(3px)',
+            zIndex: 99
+          }}
+        />,
+        document.body
+      )}
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </>

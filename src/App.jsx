@@ -5,7 +5,6 @@ import { DataProvider } from './context/DataContext';
 import { ToastProvider } from './context/ToastContext';
 
 import Navbar from './components/Navbar';
-import PinLock from './components/PinLock';
 
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
@@ -27,7 +26,6 @@ function MainLayout() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', padding: '8px' }}>
       <Navbar />
-      <PinLock />
 
       <main style={{ flex: 1 }}>
         <Routes>

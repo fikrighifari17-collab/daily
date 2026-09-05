@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Activity, Calendar, Clock, BookOpen, Layers } from 'lucide-react';
+import { parseScheduleItem } from '../utils/scheduleUtils';
 
 const MOOD_COLORS = {
   1: '#ef4444',
@@ -151,11 +152,14 @@ export default function MoodChart({ moods = [], schedules = [] }) {
                 {/* Schedules Tags */}
                 {item.schedules.length > 0 && (
                   <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                    {item.schedules.map((s) => (
-                      <span key={s.id} className={`badge badge-${s.jenis}`} style={{ fontSize: '9px', padding: '2px 6px', borderRadius: '0px' }}>
-                        {s.judul}
-                      </span>
-                    ))}
+                    {item.schedules.map((s) => {
+                      const parsed = parseScheduleItem(s);
+                      return (
+                        <span key={s.id} className={`badge badge-${(s.jenis || 'tugas').toLowerCase()}`} style={{ fontSize: '9px', padding: '2px 6px', borderRadius: '0px' }}>
+                          {parsed.cleanTitle}
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
               </div>

@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 
 import CalendarOverlay from '../components/CalendarOverlay';
 import MentalHealthSummaryWidget from '../components/MentalHealthSummaryWidget';
+import { isVideoUrl } from '../utils/mediaUtils';
+import { parseScheduleItem } from '../utils/scheduleUtils';
 
 const MOOD_PERCENT = { 1: '20%', 2: '40%', 3: '60%', 4: '80%', 5: '100%' };
 const MOOD_LABELS = { 1: 'Very Bad', 2: 'Bad / Stressed', 3: 'Neutral', 4: 'Good / Calm', 5: 'Very Good' };
@@ -26,11 +28,21 @@ export default function Dashboard() {
   // Today's course classes
   const todayClasses = (courses || []).filter(c => c.hari === todayDayName);
 
-  // Upcoming task/exam deadlines (next 7 days)
-  const upcomingSchedules = schedules.filter((s) => {
-    const dStr = typeof s.tanggal === 'string' ? s.tanggal.split('T')[0] : new Date(s.tanggal).toISOString().split('T')[0];
-    return dStr >= todayStr;
-  }).slice(0, 4);
+  // Upcoming active task/exam deadlines (exclude completed tasks & parse titles)
+  const upcomingSchedules = schedules
+    .map((s) => ({ ...s, parsed: parseScheduleItem(s) }))
+    .filter((s) => {
+      // Exclude 100% completed tasks
+      if (s.parsed.progress === 100) return false;
+      const dStr = typeof s.tanggal === 'string' ? s.tanggal.split('T')[0] : new Date(s.tanggal).toISOString().split('T')[0];
+      return dStr >= todayStr;
+    })
+    .sort((a, b) => {
+      const dateA = typeof a.tanggal === 'string' ? a.tanggal.split('T')[0] : new Date(a.tanggal).toISOString().split('T')[0];
+      const dateB = typeof b.tanggal === 'string' ? b.tanggal.split('T')[0] : new Date(b.tanggal).toISOString().split('T')[0];
+      return dateA.localeCompare(dateB);
+    })
+    .slice(0, 4);
 
   // Random coping tip
   const randomTip = copingList.length ? copingList[Math.floor(Math.random() * copingList.length)] : null;
@@ -118,8 +130,17 @@ export default function Dashboard() {
                   "{todayMood.catatan || 'No written notes.'}"
                 </p>
                 {todayMood.photoUrl && (
-                  <div style={{ marginBottom: '14px', border: '1px solid rgba(0, 173, 181, 0.3)', overflow: 'hidden', maxHeight: '120px' }}>
-                    <img src={todayMood.photoUrl} alt="Today's Photo" style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }} />
+                  <div style={{ marginBottom: '14px', border: '1px solid rgba(0, 173, 181, 0.3)', overflow: 'hidden', maxHeight: '140px', background: '#000' }}>
+                    {isVideoUrl(todayMood.photoUrl) ? (
+                      <video
+                        src={todayMood.photoUrl}
+                        controls
+                        playsInline
+                        style={{ width: '100%', maxHeight: '140px', objectFit: 'contain', display: 'block' }}
+                      />
+                    ) : (
+                      <img src={todayMood.photoUrl} alt="Today's Photo" style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }} />
+                    )}
                   </div>
                 )}
               </>
@@ -197,17 +218,64 @@ export default function Dashboard() {
             </div>
 
             {upcomingSchedules.length === 0 ? (
-              <div style={{ padding: '16px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
-                No upcoming exams or assignments.
+              <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
+                Tidak ada tugas atau deadline mendatang yang belum selesai.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {upcomingSchedules.map((s) => (
-                  <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', padding: '8px 10px', borderRadius: '0px', background: 'rgba(34, 40, 49, 0.6)', border: '1px solid rgba(0, 173, 181, 0.15)' }}>
-                    <span style={{ color: '#EEEEEE', fontWeight: 600 }}>{s.judul}</span>
-                    <span className={`badge badge-${s.jenis}`}>{s.jenis.toUpperCase()}</span>
-                  </div>
-                ))}
+                {upcomingSchedules.map((s) => {
+                  const { parsed } = s;
+                  const dStr = typeof s.tanggal === 'string' ? s.tanggal.split('T')[0] : new Date(s.tanggal).toISOString().split('T')[0];
+                  return (
+                    <div
+                      key={s.id}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        fontSize: '12px',
+                        padding: '9px 12px',
+                        borderRadius: '0px',
+                        background: 'rgba(34, 40, 49, 0.65)',
+                        border: '1px solid rgba(0, 173, 181, 0.2)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ color: '#EEEEEE', fontWeight: 700, fontSize: '13px', wordBreak: 'break-word' }}>
+                          {parsed.cleanTitle}
+                        </span>
+                        <span className={`badge badge-${(s.jenis || 'tugas').toLowerCase()}`} style={{ flexShrink: 0 }}>
+                          {(s.jenis || 'tugas').toUpperCase()}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--text-muted)', flexWrap: 'wrap', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ color: '#00FFF5', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Clock size={11} />
+                            {parsed.deadlineTime ? `Deadline: ${parsed.deadlineTime}` : dStr}
+                          </span>
+                          {parsed.attachments && parsed.attachments.length > 0 && (
+                            <span style={{ color: 'var(--text-muted)' }}>
+                              📎 {parsed.attachments.length} berkas
+                            </span>
+                          )}
+                        </div>
+
+                        <span style={{
+                          fontSize: '10px',
+                          color: '#00FFF5',
+                          background: 'rgba(0, 173, 181, 0.15)',
+                          border: '1px solid rgba(0, 173, 181, 0.35)',
+                          padding: '1px 6px',
+                          fontWeight: 700
+                        }}>
+                          {parsed.progress}% SELESAI
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

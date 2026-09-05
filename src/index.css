@@ -206,6 +206,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-family);
   font-size: 14px;
   outline: none;
+  color-scheme: dark;
   transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
 }
 
@@ -302,6 +303,7 @@ input[type=range]::-moz-range-thumb {
 .badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 4px 12px;
   border-radius: 0px;
@@ -309,13 +311,28 @@ input[type=range]::-moz-range-thumb {
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
+  background: rgba(0, 173, 181, 0.2);
+  color: #00fff5;
+  border: 1px solid rgba(0, 173, 181, 0.4);
 }
 
-.badge-tugas { background: rgba(0, 173, 181, 0.2); color: #00fff5; border: 1px solid rgba(0, 173, 181, 0.4); }
-.badge-uts { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
-.badge-uas { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
-.badge-presentasi { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
-.badge-lainnya { background: rgba(176, 184, 193, 0.2); color: #b0b8c1; border: 1px solid rgba(176, 184, 193, 0.4); }
+.badge-tugas,
+.badge-TUGAS,
+.badge-uts,
+.badge-UTS,
+.badge-uas,
+.badge-UAS,
+.badge-presentasi,
+.badge-lainnya {
+  background: rgba(0, 173, 181, 0.2);
+  color: #00fff5;
+  border: 1px solid rgba(0, 173, 181, 0.4);
+}
+
+/* Discord Avatar Card Hover Overlay */
+.discord-avatar-container:hover .discord-avatar-overlay {
+  opacity: 1 !important;
+}
 
 /* Floating Toast Keyframes */
 @keyframes toastSlideIn {
@@ -340,6 +357,487 @@ input[type=range]::-moz-range-thumb {
 
 .toast-floating {
   animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Responsive Academic Header (Minimalis di HP, Lengkap di Laptop) */
+.academic-header-panel {
+  padding: 8px 12px;
+}
+.academic-header-desc {
+  display: none;
+}
+.academic-header-metrics-large {
+  display: none;
+}
+.academic-header-metrics-mobile {
+  display: flex;
+}
+.academic-header-title {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  .academic-header-panel {
+    padding: 16px 20px;
+  }
+  .academic-header-desc {
+    display: block;
+  }
+  .academic-header-metrics-large {
+    display: flex;
+  }
+  .academic-header-metrics-mobile {
+    display: none;
+  }
+  .academic-header-title {
+    font-size: 20px;
+  }
+}
+
+/* Responsive Calendar (Uniform Grid Dimensions) */
+.calendar-grid-container {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 44px;
+  gap: 4px;
+}
+
+.calendar-cell {
+  height: 44px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  justifyContent: space-between;
+  border-radius: 0px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.calendar-cell-empty {
+  height: 44px;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 0px;
+  box-sizing: border-box;
+}
+
+.calendar-cell-desktop-badges {
+  display: none !important;
+}
+
+.calendar-cell-mobile-dots {
+  display: flex !important;
+  align-items: center;
+  gap: 3px;
+}
+
+.calendar-header-title {
+  font-size: 13px;
+}
+
+@media (min-width: 768px) {
+  .calendar-grid-container {
+    grid-auto-rows: 72px;
+    gap: 6px;
+  }
+
+  .calendar-cell {
+    height: 72px;
+    padding: 6px 8px;
+    align-items: stretch;
+    justify-content: space-between;
+  }
+
+  .calendar-cell-empty {
+    height: 72px;
+  }
+
+  .calendar-cell-desktop-badges {
+    display: flex !important;
+  }
+
+  .calendar-cell-mobile-dots {
+    display: none !important;
+  }
+
+  .calendar-header-title {
+  font-size: 15px;
+  }
+}
+
+/* Emotion Journal Filter Bar (Minimalist on Laptop & Mobile) */
+.checkin-filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.checkin-filter-dropdowns {
+  display: none !important;
+  width: 100%;
+}
+
+.checkin-filter-dropdowns.is-open {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 6px;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@media (min-width: 768px) {
+  .checkin-filter-dropdowns.is-open {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 8px;
+  }
+}
+
+/* ==========================================================================
+   Mood Checkin Responsive Styles (Mobile & Desktop)
+   ========================================================================== */
+
+.mood-checkin-card {
+  padding: 14px 12px;
+  border-radius: 0px;
+}
+
+@media (min-width: 640px) {
+  .mood-checkin-card {
+    padding: 24px 28px;
+  }
+}
+
+.mood-header-banner {
+  padding: 12px 14px;
+}
+
+@media (min-width: 640px) {
+  .mood-header-banner {
+    padding: 18px 20px;
+  }
+}
+
+.mood-slider-panel {
+  margin-bottom: 20px;
+  background: rgba(34, 40, 49, 0.6);
+  padding: 14px 12px;
+  border: 1px solid rgba(0, 173, 181, 0.25);
+  border-radius: 0px;
+}
+
+@media (min-width: 640px) {
+  .mood-slider-panel {
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+}
+
+.mood-slider-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .mood-slider-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+}
+
+.mood-slider-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mood-name-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mood-datetime-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (min-width: 640px) {
+  .mood-datetime-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+}
+
+.mood-media-buttons-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+@media (min-width: 480px) {
+  .mood-media-buttons-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .mood-media-buttons-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.mood-voice-panel {
+  margin-bottom: 20px;
+  padding: 14px 12px;
+  border-radius: 0px;
+  background: rgba(0, 0, 0, 0.22);
+  transition: all 0.25s ease;
+}
+
+@media (min-width: 640px) {
+  .mood-voice-panel {
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+}
+
+.mood-voice-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (min-width: 640px) {
+  .mood-voice-content {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.mood-voice-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .mood-voice-actions {
+    width: auto;
+  }
+}
+
+.mood-camera-modal {
+  background: #1b2028;
+  padding: 14px 16px;
+  max-width: 520px;
+  width: 95%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 0px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95);
+  margin: auto;
+  overflow-y: auto;
+}
+
+@media (min-width: 640px) {
+  .mood-camera-modal {
+    padding: 18px 20px;
+    gap: 12px;
+  }
+}
+
+/* ==========================================================================
+   Responsive Modal Styles for Add Task & Calendar Detail (Mobile & Desktop)
+   ========================================================================== */
+
+.task-modal-container {
+  background: #1b2028;
+  border: 1.5px solid rgba(0, 173, 181, 0.45);
+  padding: 16px 14px;
+  max-width: 480px;
+  width: 100%;
+  border-radius: 0px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 30px rgba(0, 173, 181, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.task-modal-date-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .task-modal-container {
+    padding: 22px;
+    gap: 16px;
+  }
+  .task-modal-date-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+}
+
+.calendar-popup-container {
+  background: #1b2028;
+  border: 1.5px solid #00FFF5;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(0, 255, 245, 0.3);
+  border-radius: 0px;
+  max-width: 460px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (min-width: 640px) {
+  .calendar-popup-container {
+    padding: 20px;
+    gap: 16px;
+  }
+}
+
+/* Custom Task Progress Slider */
+.task-progress-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: rgba(34, 40, 49, 0.9);
+  border: 1px solid rgba(0, 173, 181, 0.4);
+  outline: none;
+  border-radius: 0px;
+}
+
+.task-progress-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #00FFF5;
+  border: 2px solid #222831;
+  cursor: pointer;
+  box-shadow: 0 0 8px #00FFF5;
+}
+
+.task-progress-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #00FFF5;
+  border: 2px solid #222831;
+  cursor: pointer;
+  box-shadow: 0 0 8px #00FFF5;
+}
+
+/* ==========================================================================
+   Minimalist Mobile Styles for Checkin & Emotion Journal Page
+   ========================================================================== */
+
+@media (max-width: 639px) {
+  .mobile-hide {
+    display: none !important;
+  }
+  .mobile-p-compact {
+    padding: 10px 12px !important;
+  }
+  .mobile-text-sm {
+    font-size: 15px !important;
+  }
+}
+
+.checkin-header-panel {
+  padding: 10px 12px;
+  background: linear-gradient(135deg, rgba(0, 173, 181, 0.22), rgba(57, 62, 70, 0.85));
+  border: 1px solid rgba(0, 173, 181, 0.35);
+  border-radius: 0px;
+}
+
+@media (min-width: 640px) {
+  .checkin-header-panel {
+    padding: 18px 20px;
+  }
+}
+
+.checkin-content-panel {
+  padding: 12px;
+  border-radius: 0px;
+}
+
+@media (min-width: 640px) {
+  .checkin-content-panel {
+    padding: 20px;
+  }
+}
+
+.checkin-filter-bar {
+  background: rgba(34, 40, 49, 0.8);
+  border: 1px solid rgba(0, 173, 181, 0.25);
+  padding: 8px 10px;
+  margin-bottom: 12px;
+  border-radius: 0px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (min-width: 640px) {
+  .checkin-filter-bar {
+    padding: 12px;
+    margin-bottom: 16px;
+    gap: 10px;
+  }
+}
+
+.checkin-filter-dropdowns {
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  width: 100%;
+}
+
+.checkin-filter-dropdowns.is-open {
+  display: grid;
+}
+
+@media (min-width: 640px) {
+  .checkin-filter-dropdowns {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.checkin-card-entry {
+  padding: 12px;
+  border-radius: 0px;
+  transition: all 0.25s ease;
+}
+
+@media (min-width: 640px) {
+  .checkin-card-entry {
+    padding: 16px;
+  }
 }
 
 

@@ -151,8 +151,13 @@ export default async function handler(req: any, res: any) {
       if (body.ruangan !== undefined) updateData.ruangan = String(body.ruangan).trim();
       if (body.sks !== undefined) updateData.sks = Number(body.sks);
       if (body.warna !== undefined) updateData.warna = body.warna;
-      if (body.link !== undefined) updateData.link = String(body.link).trim();
-      if (body.attendance !== undefined) updateData.attendance = body.attendance;
+      if (body.attendance !== undefined) {
+        updateData.attendance = body.attendance;
+      } else if (body.materials !== undefined) {
+        const prevCourse = await prisma.academicCourse.findUnique({ where: { id: courseId } });
+        const prevAtt = (prevCourse?.attendance as any) || { present: 0, absent: 0, excused: 0, target: 16 };
+        updateData.attendance = { ...prevAtt, materials: body.materials };
+      }
 
       const course = await prisma.academicCourse.updateMany({
         where: { id: courseId, userId },

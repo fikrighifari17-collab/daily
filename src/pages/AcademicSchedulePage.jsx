@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink } from 'react-router-dom';
 import {
@@ -21,13 +21,37 @@ import {
   Layers,
   Check,
   Link as LinkIcon,
-  RefreshCw
+  RefreshCw,
+  FileText,
+  FolderOpen,
+  Paperclip,
+  Presentation,
+  File,
+  Filter,
+  Upload,
+  Eye,
+  CheckCircle2,
+  ShieldCheck,
+  HelpCircle
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { exportCoursesToICS, getGoogleCalendarUrl } from '../utils/calendarExport';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+const DAY_LABELS = {
+  Monday: { short: 'Sen', full: 'Senin' },
+  Tuesday: { short: 'Sel', full: 'Selasa' },
+  Wednesday: { short: 'Rab', full: 'Rabu' },
+  Thursday: { short: 'Kam', full: 'Kamis' },
+  Friday: { short: 'Jum', full: 'Jumat' },
+  Saturday: { short: 'Sab', full: 'Sabtu' },
+  Sunday: { short: 'Min', full: 'Minggu' }
+};
+
+const getDayShort = (day) => DAY_LABELS[day]?.short || day?.slice(0, 3);
+const getDayFull = (day) => DAY_LABELS[day]?.full || day;
 
 const COLOR_OPTIONS = [
   { name: 'Cyan / Teal', value: '#00ADB5' },
@@ -39,10 +63,9 @@ const COLOR_OPTIONS = [
 ];
 
 export default function AcademicSchedulePage() {
-  const { courses, schedules, addAcademicCourse, updateAcademicCourse, removeAcademicCourse, reloadData } = useData();
+  const { courses, schedules, addAcademicCourse, updateAcademicCourse, removeAcademicCourse } = useData();
   const { toast } = useToast();
 
-  const [isSyncing, setIsSyncing] = useState(false);
   // Pop-up Modal State (used for both Add and Edit)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourseId, setEditingCourseId] = useState(null);
@@ -62,11 +85,36 @@ export default function AcademicSchedulePage() {
   const [link, setLink] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filter state
-  const [selectedDayFilter, setSelectedDayFilter] = useState('ALL');
+  // Filter state - initialized to today's realtime day
+  const [selectedDayFilter, setSelectedDayFilter] = useState(() => {
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    return DAYS_OF_WEEK.includes(today) ? today : 'Monday';
+  });
 
   // 2-Step Deletion Verification Modal State
   const [courseToDelete, setCourseToDelete] = useState(null);
+
+  // Course Materials & PPT Modal State
+  const [selectedCourseForMaterials, setSelectedCourseForMaterials] = useState(null);
+  const [materialPertemuanFilter, setMaterialPertemuanFilter] = useState('ALL'); // 'ALL' | '1'..'16'
+  const [materialTypeFilter, setMaterialTypeFilter] = useState('ALL'); // 'ALL' | 'pptx' | 'docx' | 'pdf' | 'link'
+  const [isAddMaterialOpen, setIsAddMaterialOpen] = useState(false);
+
+  // Attendance Detail Modal State (Pertemuan 1 s/d 16)
+  const [selectedCourseForAttendanceDetail, setSelectedCourseForAttendanceDetail] = useState(null);
+  const [attendanceDetailFilter, setAttendanceDetailFilter] = useState('ALL'); // 'ALL' | 'present' | 'excused' | 'absent' | 'pending'
+
+  // Quick Excused Modal State (optional reason)
+  const [excusedTargetCourse, setExcusedTargetCourse] = useState(null);
+  const [excusedReason, setExcusedReason] = useState('');
+
+  // Form states for uploading/adding material
+  const [newMatPertemuan, setNewMatPertemuan] = useState('1');
+  const [newMatJudul, setNewMatJudul] = useState('');
+  const [newMatCatatan, setNewMatCatatan] = useState('');
+  const [newMatLink, setNewMatLink] = useState('');
+  const [newMatFile, setNewMatFile] = useState(null);
+  const [isSavingMaterial, setIsSavingMaterial] = useState(false);
 
   // Live real-time clock for class status calculation (updates every 30 seconds)
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -75,16 +123,32 @@ export default function AcademicSchedulePage() {
     return () => clearInterval(timer);
   }, []);
 
+  // Keep selectedCourse modals synchronized when courses state updates
+  useEffect(() => {
+    if (selectedCourseForMaterials) {
+      const refreshed = courses.find(c => c.id === selectedCourseForMaterials.id);
+      if (refreshed) {
+        setSelectedCourseForMaterials(refreshed);
+      }
+    }
+    if (selectedCourseForAttendanceDetail) {
+      const refreshed = courses.find(c => c.id === selectedCourseForAttendanceDetail.id);
+      if (refreshed) {
+        setSelectedCourseForAttendanceDetail(refreshed);
+      }
+    }
+  }, [courses]);
+
   // Lock body scroll when any modal is open
   useEffect(() => {
-    if (courseToDelete || isModalOpen || isGCalModalOpen) {
+    if (courseToDelete || isModalOpen || isGCalModalOpen || selectedCourseForMaterials || selectedCourseForAttendanceDetail || excusedTargetCourse) {
       const orig = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       return () => {
         document.body.style.overflow = orig;
       };
     }
-  }, [courseToDelete, isModalOpen, isGCalModalOpen]);
+  }, [courseToDelete, isModalOpen, isGCalModalOpen, selectedCourseForMaterials, selectedCourseForAttendanceDetail, excusedTargetCourse]);
 
   // Today's day name in English
   const todayName = currentTime.toLocaleDateString('en-US', { weekday: 'long' });
@@ -123,18 +187,18 @@ export default function AcademicSchedulePage() {
   const handleSubmitCourse = async (e) => {
     e.preventDefault();
     if (!mataKuliah.trim()) {
-      toast.error('Course name is required.');
+      toast.error('Nama mata kuliah wajib diisi ya.');
       return;
     }
     setIsSubmitting(true);
     try {
       const payload = {
         mataKuliah: mataKuliah.trim(),
-        dosen: dosen.trim() || 'Staff Lecturer',
+        dosen: dosen.trim() || 'Dosen Pengampu',
         hari,
         jamMulai,
         jamSelesai,
-        ruangan: ruangan.trim() || 'Campus Room',
+        ruangan: ruangan.trim() || 'Ruang Kuliah',
         sks: Number(sks) || 3,
         warna,
         link: link.trim()
@@ -142,38 +206,364 @@ export default function AcademicSchedulePage() {
 
       if (editingCourseId) {
         await updateAcademicCourse(editingCourseId, payload);
-        toast.success(`Course '${payload.mataKuliah}' updated successfully!`);
+        toast.success(`Jadwal '${payload.mataKuliah}' berhasil diperbarui!`);
       } else {
         await addAcademicCourse({
           ...payload,
           attendance: { present: 0, absent: 0, excused: 0, target: 16 }
         });
-        toast.success(`Course '${payload.mataKuliah}' added to ${hari}!`);
+        toast.success(`Jadwal '${payload.mataKuliah}' berhasil ditambahkan ke hari ${getDayFull(hari)}!`);
       }
 
       setIsModalOpen(false);
       setEditingCourseId(null);
     } catch (err) {
-      toast.error('Failed to save academic course.');
+      toast.error('Gagal menyimpan jadwal kuliah.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Helper to extract or generate 16 attendance sessions
+  const getCourseAttendanceSessions = (course) => {
+    const att = course?.attendance || { present: 0, absent: 0, excused: 0, target: 16 };
+    const target = Number(att.target) || 16;
+    if (Array.isArray(att.sessions) && att.sessions.length === target) {
+      return att.sessions;
+    }
+
+    // Generate sessions matching existing counts
+    const sessions = [];
+    let pLeft = att.present || 0;
+    let eLeft = att.excused || 0;
+    let aLeft = att.absent || 0;
+
+    for (let i = 1; i <= target; i++) {
+      let status = 'pending';
+      if (pLeft > 0) {
+        status = 'present';
+        pLeft--;
+      } else if (eLeft > 0) {
+        status = 'excused';
+        eLeft--;
+      } else if (aLeft > 0) {
+        status = 'absent';
+        aLeft--;
+      }
+      sessions.push({
+        pertemuan: i,
+        status,
+        date: status !== 'pending' ? new Date().toISOString().split('T')[0] : '',
+        topic: i === 8 ? 'Ujian Tengah Semester (UTS)' : i === 16 ? 'Ujian Akhir Semester (UAS)' : ''
+      });
+    }
+    return sessions;
+  };
+
   // Quick Attendance increment handler (+ Present, + Absent, + Excused)
-  const handleUpdateAttendance = async (c, type) => {
+  const handleUpdateAttendance = async (c, type, reason = '') => {
     const currentAtt = c.attendance || { present: 0, absent: 0, excused: 0, target: 16 };
+    const target = Number(currentAtt.target) || 16;
+    const currentSessions = getCourseAttendanceSessions(c);
+
+    let sessionMarked = false;
+    const updatedSessions = currentSessions.map((s) => {
+      if (!sessionMarked && s.status === 'pending') {
+        sessionMarked = true;
+        return {
+          ...s,
+          status: type,
+          date: new Date().toISOString().split('T')[0],
+          reason: type === 'excused' ? (reason?.trim() || '') : ''
+        };
+      }
+      return s;
+    });
+
+    const newPresent = updatedSessions.filter(s => s.status === 'present').length;
+    const newAbsent = updatedSessions.filter(s => s.status === 'absent').length;
+    const newExcused = updatedSessions.filter(s => s.status === 'excused').length;
+
     const updatedAtt = {
       ...currentAtt,
-      [type]: (currentAtt[type] || 0) + 1
+      present: newPresent,
+      absent: newAbsent,
+      excused: newExcused,
+      sessions: updatedSessions
     };
 
     try {
       await updateAcademicCourse(c.id, { attendance: updatedAtt });
-      const label = type === 'present' ? 'Present (+1)' : type === 'absent' ? 'Absent (+1)' : 'Excused (+1)';
-      toast.success(`${c.mataKuliah}: ${label} recorded!`);
+      const label = type === 'present' ? 'Hadir (+1)' : type === 'absent' ? 'Alfa (+1)' : `Izin (+1)${reason?.trim() ? ` - ${reason.trim()}` : ''}`;
+      toast.success(`${c.mataKuliah}: ${label} berhasil dicatat!`);
     } catch (err) {
-      toast.error('Failed to update attendance.');
+      toast.error('Gagal mencatat kehadiran.');
+    }
+  };
+
+  // Reset attendance to 0
+  const handleResetAttendance = async (c) => {
+    if (!window.confirm(`Reset riwayat kehadiran untuk ${c.mataKuliah} kembali ke 0?`)) return;
+    const currentAtt = c.attendance || { present: 0, absent: 0, excused: 0, target: 16 };
+    const target = Number(currentAtt.target) || 16;
+    const resetSessions = Array.from({ length: target }, (_, i) => ({
+      pertemuan: i + 1,
+      status: 'pending',
+      date: '',
+      topic: i + 1 === 8 ? 'Ujian Tengah Semester (UTS)' : i + 1 === 16 ? 'Ujian Akhir Semester (UAS)' : '',
+      reason: ''
+    }));
+
+    const updatedAtt = {
+      ...currentAtt,
+      present: 0,
+      absent: 0,
+      excused: 0,
+      sessions: resetSessions
+    };
+    try {
+      await updateAcademicCourse(c.id, { attendance: updatedAtt });
+      setSelectedCourseForAttendanceDetail(prev => prev && prev.id === c.id ? { ...prev, attendance: updatedAtt } : prev);
+      toast.success(`Kehadiran ${c.mataKuliah} di-reset ke 0.`);
+    } catch (err) {
+      toast.error('Gagal mereset kehadiran.');
+    }
+  };
+
+  // Set individual session status in Detail Modal (Hadir, Izin, Alfa, Belum)
+  const handleSetSessionStatus = async (pertemuanNumber, newStatus, optionalReason = '') => {
+    if (!selectedCourseForAttendanceDetail) return;
+    const c = selectedCourseForAttendanceDetail;
+    const currentAtt = c.attendance || { present: 0, absent: 0, excused: 0, target: 16 };
+    const currentSessions = getCourseAttendanceSessions(c);
+
+    const updatedSessions = currentSessions.map(s => {
+      if (s.pertemuan === pertemuanNumber) {
+        return {
+          ...s,
+          status: newStatus,
+          date: newStatus !== 'pending' ? (s.date || new Date().toISOString().split('T')[0]) : '',
+          reason: newStatus === 'excused' ? (optionalReason || s.reason || '') : ''
+        };
+      }
+      return s;
+    });
+
+    const newPresent = updatedSessions.filter(s => s.status === 'present').length;
+    const newAbsent = updatedSessions.filter(s => s.status === 'absent').length;
+    const newExcused = updatedSessions.filter(s => s.status === 'excused').length;
+
+    const updatedAtt = {
+      ...currentAtt,
+      present: newPresent,
+      absent: newAbsent,
+      excused: newExcused,
+      sessions: updatedSessions
+    };
+
+    try {
+      await updateAcademicCourse(c.id, { attendance: updatedAtt });
+      setSelectedCourseForAttendanceDetail(prev => prev ? { ...prev, attendance: updatedAtt } : null);
+    } catch (err) {
+      toast.error('Gagal memperbarui status kehadiran.');
+    }
+  };
+
+  // Update optional reason for an individual session in Detail Modal
+  const handleUpdateSessionReason = async (pertemuanNumber, reason) => {
+    if (!selectedCourseForAttendanceDetail) return;
+    const c = selectedCourseForAttendanceDetail;
+    const currentAtt = c.attendance || { present: 0, absent: 0, excused: 0, target: 16 };
+    const currentSessions = getCourseAttendanceSessions(c);
+
+    const updatedSessions = currentSessions.map(s => {
+      if (s.pertemuan === pertemuanNumber) {
+        return {
+          ...s,
+          reason: (reason || '').trim()
+        };
+      }
+      return s;
+    });
+
+    const updatedAtt = {
+      ...currentAtt,
+      sessions: updatedSessions
+    };
+
+    try {
+      await updateAcademicCourse(c.id, { attendance: updatedAtt });
+      setSelectedCourseForAttendanceDetail(prev => prev ? { ...prev, attendance: updatedAtt } : null);
+    } catch (err) {
+      toast.error('Gagal menyimpan alasan.');
+    }
+  };
+
+  // Bulk mark all sessions as present
+  const handleMarkAllSessionsPresent = async () => {
+    if (!selectedCourseForAttendanceDetail) return;
+    const c = selectedCourseForAttendanceDetail;
+    const currentAtt = c.attendance || { present: 0, absent: 0, excused: 0, target: 16 };
+    const currentSessions = getCourseAttendanceSessions(c);
+
+    const updatedSessions = currentSessions.map(s => ({
+      ...s,
+      status: 'present',
+      date: s.date || new Date().toISOString().split('T')[0]
+    }));
+
+    const updatedAtt = {
+      ...currentAtt,
+      present: updatedSessions.length,
+      absent: 0,
+      excused: 0,
+      sessions: updatedSessions
+    };
+
+    try {
+      await updateAcademicCourse(c.id, { attendance: updatedAtt });
+      setSelectedCourseForAttendanceDetail(prev => prev ? { ...prev, attendance: updatedAtt } : null);
+      toast.success('Semua pertemuan ditandai Hadir!');
+    } catch (err) {
+      toast.error('Gagal memperbarui status kehadiran.');
+    }
+  };
+
+  // Course Materials Handlers (Word, PPT, PDF, etc.)
+  const handleMaterialFileUpload = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error('Ukuran file maksimal 25MB.');
+      return;
+    }
+
+    const formatSize = (bytes) => {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    };
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setNewMatFile({
+        name: file.name,
+        size: formatSize(file.size),
+        type: file.type,
+        data: reader.result
+      });
+      if (!newMatJudul.trim()) {
+        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+        setNewMatJudul(nameWithoutExt);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveMaterial = async (e) => {
+    e.preventDefault();
+    if (!selectedCourseForMaterials) return;
+    if (!newMatJudul.trim() && !newMatFile && !newMatLink.trim()) {
+      toast.error('Mohon masukkan judul materi, file (PPT/Word/PDF), atau link materi.');
+      return;
+    }
+
+    setIsSavingMaterial(true);
+    try {
+      const course = selectedCourseForMaterials;
+      const currentMaterials = course.materials || course.attendance?.materials || [];
+
+      let fileExt = 'other';
+      if (newMatFile?.name) {
+        const ext = newMatFile.name.split('.').pop().toLowerCase();
+        if (['ppt', 'pptx'].includes(ext)) fileExt = 'pptx';
+        else if (['doc', 'docx'].includes(ext)) fileExt = 'docx';
+        else if (ext === 'pdf') fileExt = 'pdf';
+        else if (['xls', 'xlsx'].includes(ext)) fileExt = 'xlsx';
+        else fileExt = ext;
+      } else if (newMatLink.trim()) {
+        fileExt = 'link';
+      }
+
+      const newMaterial = {
+        id: 'mat-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+        pertemuan: Number(newMatPertemuan) || 1,
+        judul: newMatJudul.trim() || newMatFile?.name || `Materi Pertemuan ${newMatPertemuan}`,
+        namaFile: newMatFile?.name || null,
+        tipeFile: fileExt,
+        ukuranFile: newMatFile?.size || null,
+        fileData: newMatFile?.data || null,
+        externalLink: newMatLink.trim() || null,
+        catatan: newMatCatatan.trim() || null,
+        createdAt: new Date().toISOString()
+      };
+
+      const updatedMaterials = [newMaterial, ...currentMaterials];
+      const updatedAttendance = {
+        ...(course.attendance || { present: 0, absent: 0, excused: 0, target: 16 }),
+        materials: updatedMaterials
+      };
+
+      await updateAcademicCourse(course.id, {
+        attendance: updatedAttendance,
+        materials: updatedMaterials
+      });
+
+      setSelectedCourseForMaterials(prev => prev ? { ...prev, attendance: updatedAttendance, materials: updatedMaterials } : null);
+      toast.success(`Materi Pertemuan ${newMatPertemuan} berhasil disimpan!`);
+
+      setNewMatJudul('');
+      setNewMatCatatan('');
+      setNewMatLink('');
+      setNewMatFile(null);
+      setIsAddMaterialOpen(false);
+    } catch (err) {
+      console.error("Save material error:", err);
+      toast.error('Gagal menyimpan materi kuliah.');
+    } finally {
+      setIsSavingMaterial(false);
+    }
+  };
+
+  const handleDeleteMaterial = async (materialId) => {
+    if (!selectedCourseForMaterials) return;
+    try {
+      const course = selectedCourseForMaterials;
+      const currentMaterials = course.materials || course.attendance?.materials || [];
+      const updatedMaterials = currentMaterials.filter(m => m.id !== materialId);
+
+      const updatedAttendance = {
+        ...(course.attendance || { present: 0, absent: 0, excused: 0, target: 16 }),
+        materials: updatedMaterials
+      };
+
+      await updateAcademicCourse(course.id, {
+        attendance: updatedAttendance,
+        materials: updatedMaterials
+      });
+
+      setSelectedCourseForMaterials(prev => prev ? { ...prev, attendance: updatedAttendance, materials: updatedMaterials } : null);
+      toast.info('Materi berhasil dihapus.');
+    } catch (err) {
+      console.error("Delete material error:", err);
+      toast.error('Gagal menghapus materi.');
+    }
+  };
+
+  const handleDownloadMaterial = (mat) => {
+    if (mat.fileData) {
+      const linkEl = document.createElement('a');
+      linkEl.href = mat.fileData;
+      linkEl.download = mat.namaFile || `${mat.judul || 'Materi'}.${mat.tipeFile || 'bin'}`;
+      document.body.appendChild(linkEl);
+      linkEl.click();
+      document.body.removeChild(linkEl);
+      toast.success(`Mengunduh file: ${mat.namaFile || mat.judul}`);
+    } else if (mat.externalLink) {
+      window.open(mat.externalLink, '_blank', 'noopener,noreferrer');
+    } else {
+      toast.error('File tidak memiliki data unduhan atau link.');
     }
   };
 
@@ -199,19 +589,6 @@ export default function AcademicSchedulePage() {
       }, idx * 300);
     });
     toast.success(`Membuka ${courses.length} jadwal kuliah di Google Calendar...`);
-  };
-
-  // Manual sync database handler
-  const handleSyncDatabase = async () => {
-    setIsSyncing(true);
-    try {
-      await reloadData();
-      toast.success('Database berhasil disinkronkan!');
-    } catch (err) {
-      toast.error('Gagal menyinkronkan data.');
-    } finally {
-      setIsSyncing(false);
-    }
   };
 
   // Filtered courses
@@ -240,7 +617,7 @@ export default function AcademicSchedulePage() {
       const remainingMins = endTotalMins - nowTotalMins;
       return {
         type: 'ongoing',
-        label: `ONGOING NOW • ${remainingMins}m left`,
+        label: `LAGI KULIAH • Sisa ${remainingMins} menit`,
         color: '#10b981',
         bg: 'rgba(16, 185, 129, 0.2)',
         border: 'rgba(16, 185, 129, 0.5)'
@@ -251,7 +628,7 @@ export default function AcademicSchedulePage() {
       const diffMins = startTotalMins - nowTotalMins;
       return {
         type: 'upcoming',
-        label: `Starts in ${diffMins} mins`,
+        label: `Mulai ${diffMins} menit lagi`,
         color: '#f59e0b',
         bg: 'rgba(245, 158, 11, 0.2)',
         border: 'rgba(245, 158, 11, 0.5)'
@@ -261,7 +638,7 @@ export default function AcademicSchedulePage() {
     if (nowTotalMins > endTotalMins) {
       return {
         type: 'finished',
-        label: 'Finished Today',
+        label: 'Kuliah Sudah Selesai',
         color: '#9ca3af',
         bg: 'rgba(156, 163, 175, 0.1)',
         border: 'rgba(156, 163, 175, 0.25)'
@@ -274,149 +651,176 @@ export default function AcademicSchedulePage() {
   return (
     <div className="animate-fade-in" style={{ width: '100%', margin: '0 auto', padding: '0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       
-      {/* Header Banner */}
-      <div className="glass-panel" style={{ padding: '16px 20px', background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.2), rgba(57, 62, 70, 0.8))', border: '1px solid rgba(0, 173, 181, 0.3)', borderRadius: '0px' }}>
+      {/* Header Banner - Responsive: Minimalist on Mobile, Full on Laptop */}
+      <div className="glass-panel academic-header-panel" style={{ 
+        background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.2), rgba(57, 62, 70, 0.8))', 
+        border: '1px solid rgba(0, 173, 181, 0.3)', 
+        borderRadius: '0px' 
+      }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+          {/* Left: Icon, Title, Subtitle (Laptop), and Compact Badges (Mobile) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ padding: '8px', borderRadius: '0px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <BookOpen size={20} color="#00FFF5" />
+            <div style={{ padding: '7px', borderRadius: '0px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <BookOpen size={18} color="#00FFF5" />
             </div>
             <div>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#EEEEEE', margin: 0 }}>
-                Academic Schedule (Jadwal Kuliah)
-              </h2>
-              <p style={{ fontSize: '12px', color: '#b0b8c1', margin: '4px 0 0 0' }}>
-                Track weekly course timetable, attendance limits, Zoom/LMS links, and exam requirements.
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <h2 className="academic-header-title" style={{ fontWeight: 800, color: '#EEEEEE', margin: 0, letterSpacing: '-0.01em' }}>
+                  Jadwal Kuliah
+                </h2>
+
+                {/* Mobile-only Stats Badges (Compact) */}
+                <div className="academic-header-metrics-mobile" style={{ alignItems: 'center', gap: '5px' }}>
+                  <span style={{ 
+                    fontSize: '10px', 
+                    fontWeight: 700, 
+                    color: '#00FFF5', 
+                    background: 'rgba(0, 173, 181, 0.15)', 
+                    border: '1px solid rgba(0, 173, 181, 0.35)', 
+                    padding: '2px 7px' 
+                  }}>
+                    {courses.length} Kelas
+                  </span>
+                  <span style={{ 
+                    fontSize: '10px', 
+                    fontWeight: 700, 
+                    color: '#10b981', 
+                    background: 'rgba(16, 185, 129, 0.15)', 
+                    border: '1px solid rgba(16, 185, 129, 0.35)', 
+                    padding: '2px 7px' 
+                  }}>
+                    {totalSks} SKS
+                  </span>
+                </div>
+              </div>
+
+              {/* Laptop-only Subtitle */}
+              <p className="academic-header-desc" style={{ fontSize: '12px', color: '#b0b8c1', margin: '4px 0 0 0' }}>
+                Pantau jadwal kuliah mingguan, presensi pertemuan, link Zoom/LMS, dan materi dosen kamu.
               </p>
             </div>
           </div>
 
+          {/* Right Action & Metrics Area */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            {/* Quick Metrics */}
-            <div style={{ display: 'flex', gap: '8px' }}>
+            {/* Laptop-only Large Metric Cards */}
+            <div className="academic-header-metrics-large" style={{ gap: '8px' }}>
               <div style={{ padding: '6px 14px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(0, 173, 181, 0.3)', textAlign: 'center', borderRadius: '0px' }}>
                 <div style={{ fontSize: '16px', fontWeight: 800, color: '#00FFF5', lineHeight: 1.1 }}>{courses.length}</div>
-                <div style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Classes</div>
+                <div style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Kelas</div>
               </div>
               <div style={{ padding: '6px 14px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(0, 173, 181, 0.3)', textAlign: 'center', borderRadius: '0px' }}>
                 <div style={{ fontSize: '16px', fontWeight: 800, color: '#10b981', lineHeight: 1.1 }}>{totalSks}</div>
-                <div style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Credits (SKS)</div>
+                <div style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total SKS</div>
               </div>
             </div>
 
-            {/* Sync Cloud Database Button */}
-            <button
-              type="button"
-              onClick={handleSyncDatabase}
-              disabled={isSyncing}
-              className="glass-button"
-              style={{ fontSize: '12px', padding: '8px 14px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', borderColor: '#00FFF5', color: '#00FFF5', background: 'rgba(0, 255, 245, 0.08)' }}
-              title="Sync with cloud database to keep HP and Laptop synchronized"
-            >
-              <RefreshCw size={14} color="#00FFF5" style={{ animation: isSyncing ? 'spin 1s linear infinite' : 'none' }} />
-              <span>{isSyncing ? 'Syncing...' : 'Sync Cloud'}</span>
-            </button>
-
-            {/* Sync Google Calendar HP Button (Cara 1) */}
-            <button
-              type="button"
-              onClick={() => setIsGCalModalOpen(true)}
-              className="glass-button"
-              style={{ fontSize: '12px', padding: '8px 14px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', borderColor: '#10b981', color: '#10b981', background: 'rgba(16, 185, 129, 0.08)' }}
-              title="Open course directly in Google Calendar app on phone"
-            >
-              <Calendar size={14} color="#10b981" />
-              <span>Sync Google Calendar HP</span>
-            </button>
-
-            {/* Export to Calendar Button */}
+            {/* Export Calendar Button */}
             <button
               type="button"
               onClick={handleExportCalendar}
               className="glass-button"
-              style={{ fontSize: '12px', padding: '8px 14px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
-              title="Download .ics file to import into Google Calendar or Apple Calendar"
+              style={{ 
+                fontSize: '11px', 
+                padding: '6px 12px', 
+                borderRadius: '0px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '5px', 
+                whiteSpace: 'nowrap' 
+              }}
+              title="Unduh file .ics untuk disinkronkan ke Google Calendar atau kalender HP"
             >
-              <Download size={14} color="#00FFF5" />
-              <span>Export Calendar (.ics)</span>
+              <Download size={13} color="#00FFF5" />
+              <span>Ekspor Kalender (.ics)</span>
             </button>
-
-            {/* Primary Button to Open Add Course Pop-up */}
-            <button
-              type="button"
-              onClick={handleOpenAddModal}
-              className="glass-button glass-button-primary"
-              style={{ fontSize: '12px', padding: '8px 16px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
-            >
-              <Plus size={15} />
-              <span>Add Course Class</span>
-            </button>
-
-            <NavLink
-              to="/schedule"
-              className="glass-button"
-              style={{ fontSize: '12px', padding: '8px 14px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
-            >
-              <CheckSquare size={14} color="#00FFF5" />
-              <span>Tasks & Deadlines &rarr;</span>
-            </NavLink>
           </div>
         </div>
       </div>
 
       {/* Filter and Action Bar */}
-      <div className="glass-panel" style={{ padding: '10px 14px', borderRadius: '0px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-        {/* Day Tabs Filter */}
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '2px', flex: 1 }}>
+      <div className="glass-panel" style={{ padding: '12px 14px', borderRadius: '0px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {/* Filter Toolbar: Title and New Course */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Calendar size={13} color="#00FFF5" />
+            <span style={{ fontSize: '11px', fontWeight: 700, color: '#EEEEEE' }}>
+              Filter Hari:
+            </span>
+            <span style={{ fontSize: '10px', color: '#00FFF5', fontWeight: 600 }}>
+              {selectedDayFilter === 'ALL' 
+                ? `Semua Hari (${courses.length})` 
+                : `${getDayFull(selectedDayFilter)} ${selectedDayFilter === todayName ? '(Hari Ini)' : ''}`}
+            </span>
+          </div>
+
+          {/* New Course Button */}
+          <button
+            type="button"
+            onClick={handleOpenAddModal}
+            className="glass-button"
+            style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '5px', borderColor: 'rgba(0, 173, 181, 0.4)', color: '#00FFF5' }}
+          >
+            <Plus size={13} />
+            <span>Tambah Matkul</span>
+          </button>
+        </div>
+
+        {/* Day Tabs: Permanent Grid Layout (All 7 Days + All Always Visible) */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(68px, 1fr))',
+          gap: '6px',
+          width: '100%'
+        }}>
           <button
             onClick={() => setSelectedDayFilter('ALL')}
             className={`glass-button ${selectedDayFilter === 'ALL' ? 'glass-button-primary' : ''}`}
-            style={{ fontSize: '11px', padding: '6px 12px', borderRadius: '0px', whiteSpace: 'nowrap' }}
+            style={{
+              fontSize: '11px',
+              padding: '7px 4px',
+              borderRadius: '0px',
+              textAlign: 'center',
+              whiteSpace: 'nowrap',
+              fontWeight: selectedDayFilter === 'ALL' ? 700 : 500
+            }}
           >
-            All Days ({courses.length})
+            Semua ({courses.length})
           </button>
           {DAYS_OF_WEEK.map(day => {
             const count = courses.filter(c => c.hari === day).length;
             const isToday = day === todayName;
+            const isSelected = selectedDayFilter === day;
             return (
               <button
                 key={day}
                 onClick={() => setSelectedDayFilter(day)}
-                className={`glass-button ${selectedDayFilter === day ? 'glass-button-primary' : ''}`}
+                className={`glass-button ${isSelected ? 'glass-button-primary' : ''}`}
                 style={{
                   fontSize: '11px',
-                  padding: '6px 12px',
+                  padding: '7px 4px',
                   borderRadius: '0px',
+                  textAlign: 'center',
                   whiteSpace: 'nowrap',
-                  borderColor: isToday ? '#00FFF5' : undefined
+                  fontWeight: isSelected ? 700 : 500,
+                  borderColor: isToday && !isSelected ? '#00FFF5' : undefined
                 }}
               >
-                <span>{day.slice(0, 3)}</span>
-                {count > 0 && <span style={{ opacity: 0.8 }}>({count})</span>}
-                {isToday && <span style={{ fontSize: '9px', color: '#00FFF5', marginLeft: '4px' }}>•</span>}
+                <span>{getDayShort(day)}</span>
+                {count > 0 && <span style={{ opacity: 0.85, marginLeft: '3px', fontSize: '10px' }}>({count})</span>}
+                {isToday && <span style={{ fontSize: '9px', color: isSelected ? '#ffffff' : '#00FFF5', marginLeft: '3px' }}>•</span>}
               </button>
             );
           })}
         </div>
-
-        {/* New Course Button */}
-        <button
-          type="button"
-          onClick={handleOpenAddModal}
-          className="glass-button"
-          style={{ fontSize: '11px', padding: '6px 12px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '6px', borderColor: 'rgba(0, 173, 181, 0.4)', color: '#00FFF5' }}
-        >
-          <Plus size={13} />
-          <span>New Course</span>
-        </button>
       </div>
 
       {/* Course Classes Cards Grid (8px gap) */}
       {filteredCourses.length === 0 ? (
         <div className="glass-panel" style={{ padding: '48px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', borderRadius: '0px' }}>
           <BookOpen size={32} style={{ opacity: 0.35, margin: '0 auto 10px auto' }} />
-          <div style={{ fontSize: '14px', fontWeight: 600, color: '#EEEEEE' }}>No course classes scheduled for {selectedDayFilter === 'ALL' ? 'this semester' : selectedDayFilter}.</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '16px' }}>Click the button below to add your lecture schedule.</div>
+          <div style={{ fontSize: '14px', fontWeight: 600, color: '#EEEEEE' }}>Belum ada jadwal kuliah untuk {selectedDayFilter === 'ALL' ? 'semester ini' : getDayFull(selectedDayFilter)}.</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '16px' }}>Klik tombol di bawah buat nambahin jadwal kuliah kamu ya.</div>
           <button
             type="button"
             onClick={handleOpenAddModal}
@@ -424,7 +828,7 @@ export default function AcademicSchedulePage() {
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 18px', fontSize: '12px', borderRadius: '0px' }}
           >
             <Plus size={14} />
-            <span>Add Course Class Now</span>
+            <span>+ Tambah Jadwal Kuliah</span>
           </button>
         </div>
       ) : (
@@ -435,9 +839,13 @@ export default function AcademicSchedulePage() {
 
             // Attendance calculations
             const att = c.attendance || { present: 0, absent: 0, excused: 0, target: 16 };
+            const targetMeetings = att.target || 16;
             const totalRecorded = (att.present || 0) + (att.absent || 0) + (att.excused || 0);
-            const attendancePct = totalRecorded > 0 ? Math.round(((att.present || 0) / totalRecorded) * 100) : 100;
-            const isAttendanceWarning = totalRecorded >= 3 && attendancePct < 75;
+            // Progress toward semester target meetings (0% if present is 0, so bar stays empty/not full green)
+            const attendanceProgressPct = targetMeetings > 0 ? Math.round(((att.present || 0) / targetMeetings) * 100) : 0;
+            // Attendance rate from recorded sessions
+            const attendanceRatePct = totalRecorded > 0 ? Math.round(((att.present || 0) / totalRecorded) * 100) : 0;
+            const isAttendanceWarning = totalRecorded >= 3 && attendanceRatePct < 75;
 
             // Linked tasks matching course name
             const linkedTasks = (schedules || []).filter(s =>
@@ -474,7 +882,7 @@ export default function AcademicSchedulePage() {
                           color: c.warna || '#00FFF5',
                           border: `1px solid ${c.warna || '#00ADB5'}55`
                         }}>
-                          {c.hari.toUpperCase()} {isToday ? '• TODAY' : ''}
+                          {getDayFull(c.hari).toUpperCase()} {isToday ? '• HARI INI' : ''}
                         </span>
                         <span style={{
                           fontSize: '9px',
@@ -502,7 +910,7 @@ export default function AcademicSchedulePage() {
                         onClick={() => handleOpenEditModal(c)}
                         className="glass-button"
                         style={{ padding: '4px 8px', color: '#00FFF5', borderColor: 'rgba(0, 173, 181, 0.3)', fontSize: '11px', background: 'rgba(0, 173, 181, 0.08)', borderRadius: '0px' }}
-                        title="Edit course class"
+                        title="Edit jadwal kuliah"
                       >
                         <Edit3 size={12} />
                         <span>Edit</span>
@@ -512,10 +920,10 @@ export default function AcademicSchedulePage() {
                         onClick={() => setCourseToDelete(c)}
                         className="glass-button"
                         style={{ padding: '4px 8px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)', fontSize: '11px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '0px' }}
-                        title="Delete this course class"
+                        title="Hapus jadwal mata kuliah ini"
                       >
                         <Trash2 size={12} />
-                        <span>Delete</span>
+                        <span>Hapus</span>
                       </button>
                     </div>
                   </div>
@@ -549,7 +957,7 @@ export default function AcademicSchedulePage() {
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                       <MapPin size={12} color="#f59e0b" />
-                      <span>{c.ruangan || 'Campus Room'}</span>
+                      <span>{c.ruangan || 'Ruang Kuliah'}</span>
                     </div>
                   </div>
 
@@ -562,10 +970,10 @@ export default function AcademicSchedulePage() {
                       rel="noopener noreferrer"
                       className="glass-button"
                       style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '0px', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)', background: 'rgba(16, 185, 129, 0.08)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
-                      title="Directly open and save this course in phone Google Calendar app"
+                      title="Buka langsung di aplikasi Google Calendar HP"
                     >
                       <Calendar size={11} />
-                      <span>Add to Google Calendar HP</span>
+                      <span>Simpan ke Google Calendar</span>
                     </a>
 
                     {c.link && (
@@ -578,7 +986,7 @@ export default function AcademicSchedulePage() {
                         title={c.link}
                       >
                         <ExternalLink size={11} />
-                        <span>Open LMS / Class Link</span>
+                        <span>Buka Link Kuliah / Zoom</span>
                       </a>
                     )}
 
@@ -587,10 +995,10 @@ export default function AcademicSchedulePage() {
                         to="/schedule"
                         className="glass-button"
                         style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '0px', color: '#f59e0b', borderColor: 'rgba(245, 158, 11, 0.4)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
-                        title="View linked assignments and exams in Tasks & Deadlines"
+                        title="Lihat tugas dan ujian terkait di menu Tugas & Deadline"
                       >
                         <CheckSquare size={11} />
-                        <span>{linkedTasks.length} Active Task{linkedTasks.length > 1 ? 's' : ''}</span>
+                        <span>{linkedTasks.length} Tugas Terkait</span>
                       </NavLink>
                     )}
                   </div>
@@ -607,29 +1015,68 @@ export default function AcademicSchedulePage() {
                   flexDirection: 'column',
                   gap: '6px'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Attendance:</span>
-                      <strong style={{ color: isAttendanceWarning ? '#ef4444' : '#10b981' }}>
-                        {att.present || 0} / {totalRecorded || att.target || 16} ({attendancePct}%)
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', flexWrap: 'wrap', gap: '4px' }}>
+                    <div
+                      onClick={() => {
+                        setSelectedCourseForAttendanceDetail(c);
+                        setAttendanceDetailFilter('ALL');
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                      title="Klik untuk melihat detail & checklist kehadiran pertemuan 1 s/d 16"
+                    >
+                      <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Presensi:</span>
+                      <strong style={{ color: isAttendanceWarning ? '#ef4444' : (att.present || 0) > 0 ? '#10b981' : 'var(--text-muted)' }}>
+                        {att.present || 0} / {targetMeetings} ({attendanceProgressPct}%)
                       </strong>
                     </div>
 
-                    {isAttendanceWarning && (
-                      <span style={{ fontSize: '9px', fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(239, 68, 68, 0.15)', padding: '1px 5px' }}>
-                        <AlertTriangle size={10} />
-                        <span>&lt; 75% Limit</span>
-                      </span>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {isAttendanceWarning && (
+                        <span style={{ fontSize: '9px', fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(239, 68, 68, 0.15)', padding: '1px 5px' }}>
+                          <AlertTriangle size={10} />
+                          <span>Batas &lt; 75%</span>
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCourseForAttendanceDetail(c);
+                          setAttendanceDetailFilter('ALL');
+                        }}
+                        className="glass-button"
+                        style={{
+                          fontSize: '10px',
+                          padding: '2px 8px',
+                          borderRadius: '0px',
+                          color: '#00FFF5',
+                          borderColor: 'rgba(0, 255, 245, 0.35)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        title="Buka rincian sesi pertemuan 1 s/d 16, kuota UAS, & tanggal absen"
+                      >
+                        <Eye size={11} />
+                        <span>Lihat Detail</span>
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Attendance Progress Bar */}
-                  <div style={{ width: '100%', height: '4px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '0px', overflow: 'hidden' }}>
+                  {/* Attendance Progress Bar (Clickable) */}
+                  <div
+                    onClick={() => {
+                      setSelectedCourseForAttendanceDetail(c);
+                      setAttendanceDetailFilter('ALL');
+                    }}
+                    style={{ width: '100%', height: '5px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '0px', overflow: 'hidden', cursor: 'pointer' }}
+                    title="Klik untuk melihat detail kehadiran"
+                  >
                     <div
                       style={{
-                        width: `${Math.min(100, attendancePct)}%`,
+                        width: `${Math.min(100, attendanceProgressPct)}%`,
                         height: '100%',
-                        background: isAttendanceWarning ? '#ef4444' : attendancePct >= 85 ? '#10b981' : '#f59e0b',
+                        background: isAttendanceWarning ? '#ef4444' : attendanceProgressPct >= 75 ? '#10b981' : '#00ADB5',
                         transition: 'width 0.3s ease'
                       }}
                     />
@@ -638,40 +1085,158 @@ export default function AcademicSchedulePage() {
                   {/* Quick Attendance Buttons */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
                     <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
-                      Absent: {att.absent || 0} &bull; Excused: {att.excused || 0}
+                      Alfa: {att.absent || 0} &bull; Izin: {att.excused || 0}
+                      {totalRecorded > 0 && (
+                        <span style={{ marginLeft: '4px', color: isAttendanceWarning ? '#ef4444' : 'var(--text-secondary)' }}>
+                          &bull; Hadir: {attendanceRatePct}%
+                        </span>
+                      )}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '4px' }}>
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                       <button
                         type="button"
                         onClick={() => handleUpdateAttendance(c, 'present')}
                         className="glass-button"
                         style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '0px', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)' }}
-                        title="Record attendance for today"
+                        title="Catat hadir untuk hari ini"
                       >
-                        + Present
+                        + Hadir
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleUpdateAttendance(c, 'excused')}
+                        onClick={() => {
+                          setExcusedTargetCourse(c);
+                          setExcusedReason('');
+                        }}
                         className="glass-button"
                         style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '0px', color: '#f59e0b', borderColor: 'rgba(245, 158, 11, 0.3)' }}
-                        title="Record excused absence (sakit/izin)"
+                        title="Catat izin / sakit (alasan opsional)"
                       >
-                        + Excused
+                        + Izin
                       </button>
                       <button
                         type="button"
                         onClick={() => handleUpdateAttendance(c, 'absent')}
                         className="glass-button"
                         style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '0px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
-                        title="Record unexcused absence (alfa)"
+                        title="Catat alfa / tidak hadir"
                       >
-                        + Absent
+                        + Alfa
                       </button>
+                      {totalRecorded > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleResetAttendance(c)}
+                          className="glass-button"
+                          style={{ fontSize: '10px', padding: '2px 5px', borderRadius: '0px', color: 'var(--text-muted)', opacity: 0.7 }}
+                          title="Reset presensi ke 0"
+                        >
+                          <RefreshCw size={10} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
+
+                {/* Course Materials & PPT Dosen Widget */}
+                {(() => {
+                  const courseMaterials = c.materials || c.attendance?.materials || [];
+                  const uniqueMeetings = [...new Set(courseMaterials.map(m => m.pertemuan))].sort((a, b) => a - b);
+
+                  return (
+                    <div style={{
+                      padding: '8px 10px',
+                      background: 'rgba(0, 0, 0, 0.42)',
+                      border: '1px solid rgba(0, 173, 181, 0.25)',
+                      borderRadius: '0px',
+                      marginTop: '6px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Presentation size={13} color="#f97316" />
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: '#EEEEEE' }}>
+                            Materi & PPT Dosen:
+                          </span>
+                          <span style={{
+                            fontSize: '9px',
+                            fontWeight: 700,
+                            padding: '1px 6px',
+                            background: courseMaterials.length > 0 ? 'rgba(0, 255, 245, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                            color: courseMaterials.length > 0 ? '#00FFF5' : 'var(--text-muted)',
+                            border: `1px solid ${courseMaterials.length > 0 ? 'rgba(0, 255, 245, 0.35)' : 'rgba(255, 255, 255, 0.1)'}`
+                          }}>
+                            {courseMaterials.length} File
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedCourseForMaterials(c);
+                            setMaterialPertemuanFilter('ALL');
+                            setMaterialTypeFilter('ALL');
+                            setIsAddMaterialOpen(false);
+                          }}
+                          className="glass-button"
+                          style={{
+                            fontSize: '10px',
+                            padding: '3px 8px',
+                            borderRadius: '0px',
+                            color: '#00FFF5',
+                            borderColor: 'rgba(0, 173, 181, 0.45)',
+                            background: 'rgba(0, 173, 181, 0.12)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                          title="Buka daftar file, PPT, dan filter per pertemuan"
+                        >
+                          <FolderOpen size={11} />
+                          <span>Kelola / Filter PPT</span>
+                        </button>
+                      </div>
+
+                      {uniqueMeetings.length > 0 ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Tersedia:</span>
+                          {uniqueMeetings.slice(0, 5).map(p => (
+                            <span
+                              key={p}
+                              onClick={() => {
+                                setSelectedCourseForMaterials(c);
+                                setMaterialPertemuanFilter(String(p));
+                                setMaterialTypeFilter('ALL');
+                                setIsAddMaterialOpen(false);
+                              }}
+                              style={{
+                                fontSize: '9px',
+                                padding: '1px 5px',
+                                background: 'rgba(0, 173, 181, 0.15)',
+                                border: '1px solid rgba(0, 173, 181, 0.3)',
+                                color: '#00FFF5',
+                                cursor: 'pointer'
+                              }}
+                              title={`Klik untuk lihat Pertemuan ${p}`}
+                            >
+                              P.{p}
+                            </span>
+                          ))}
+                          {uniqueMeetings.length > 5 && (
+                            <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>+{uniqueMeetings.length - 5} lainnya</span>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                          Belum ada PPT/Word. Klik untuk unggah materi per pertemuan.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
               </div>
             );
@@ -725,7 +1290,7 @@ export default function AcademicSchedulePage() {
                   {editingCourseId ? <Edit3 size={15} /> : <Plus size={16} />}
                 </div>
                 <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#EEEEEE', margin: 0 }}>
-                  {editingCourseId ? 'Edit Course Class (Jadwal Kuliah)' : 'Add Course Class (Jadwal Kuliah)'}
+                  {editingCourseId ? 'Edit Jadwal Kuliah' : 'Tambah Jadwal Kuliah'}
                 </h3>
               </div>
               <button
@@ -742,14 +1307,14 @@ export default function AcademicSchedulePage() {
             <form onSubmit={handleSubmitCourse} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                  Course Name (Mata Kuliah) *
+                  Nama Mata Kuliah *
                 </label>
                 <input
                   type="text"
                   required
                   autoFocus
                   className="glass-input"
-                  placeholder="e.g. Software Engineering"
+                  placeholder="Contoh: Rekayasa Perangkat Lunak"
                   value={mataKuliah}
                   onChange={(e) => setMataKuliah(e.target.value)}
                   style={{ borderRadius: '0px' }}
@@ -759,7 +1324,7 @@ export default function AcademicSchedulePage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    Day of Week *
+                    Hari Kuliah *
                   </label>
                   <select
                     value={hari}
@@ -769,7 +1334,7 @@ export default function AcademicSchedulePage() {
                   >
                     {DAYS_OF_WEEK.map(day => (
                       <option key={day} value={day} style={{ background: '#222831', color: '#EEEEEE' }}>
-                        {day} {day === todayName ? '(Today)' : ''}
+                        {getDayFull(day)} {day === todayName ? '(Hari Ini)' : ''}
                       </option>
                     ))}
                   </select>
@@ -777,7 +1342,7 @@ export default function AcademicSchedulePage() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    Credits (SKS)
+                    Bobot SKS
                   </label>
                   <select
                     value={sks}
@@ -789,7 +1354,7 @@ export default function AcademicSchedulePage() {
                     <option value="2" style={{ background: '#222831', color: '#EEEEEE' }}>2 SKS</option>
                     <option value="3" style={{ background: '#222831', color: '#EEEEEE' }}>3 SKS</option>
                     <option value="4" style={{ background: '#222831', color: '#EEEEEE' }}>4 SKS</option>
-                    <option value="6" style={{ background: '#222831', color: '#EEEEEE' }}>6 SKS (Thesis)</option>
+                    <option value="6" style={{ background: '#222831', color: '#EEEEEE' }}>6 SKS (Skripsi / Tugas Akhir)</option>
                   </select>
                 </div>
               </div>
@@ -797,7 +1362,7 @@ export default function AcademicSchedulePage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    Start Time
+                    Jam Mulai
                   </label>
                   <input
                     type="time"
@@ -810,7 +1375,7 @@ export default function AcademicSchedulePage() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    End Time
+                    Jam Selesai
                   </label>
                   <input
                     type="time"
@@ -824,12 +1389,12 @@ export default function AcademicSchedulePage() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                  Room / Lab / Location
+                  Ruangan / Lab / Gedung
                 </label>
                 <input
                   type="text"
                   className="glass-input"
-                  placeholder="e.g. Room 304, Lab AI, Online Zoom"
+                  placeholder="Contoh: Ruang 304, Lab AI, Online Zoom"
                   value={ruangan}
                   onChange={(e) => setRuangan(e.target.value)}
                   style={{ borderRadius: '0px' }}
@@ -838,12 +1403,12 @@ export default function AcademicSchedulePage() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                  Lecturer / Professor
+                  Dosen Pengampu
                 </label>
                 <input
                   type="text"
                   className="glass-input"
-                  placeholder="e.g. Prof. Alan Turing"
+                  placeholder="Contoh: Pak Budi, Bu Sri"
                   value={dosen}
                   onChange={(e) => setDosen(e.target.value)}
                   style={{ borderRadius: '0px' }}
@@ -853,7 +1418,7 @@ export default function AcademicSchedulePage() {
               {/* Online Class / LMS / Zoom Link */}
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                  Online Class / LMS / Google Classroom / Drive Link (Optional)
+                  Link Kelas Online / LMS / Zoom / Drive (Opsional)
                 </label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <input
@@ -870,7 +1435,7 @@ export default function AcademicSchedulePage() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                  Badge Accent Color
+                  Warna Label Kartu
                 </label>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {COLOR_OPTIONS.map(c => (
@@ -899,7 +1464,7 @@ export default function AcademicSchedulePage() {
                   className="glass-button"
                   style={{ fontSize: '13px', padding: '8px 16px', borderRadius: '0px' }}
                 >
-                  Cancel
+                  Batal
                 </button>
                 <button
                   type="submit"
@@ -908,7 +1473,7 @@ export default function AcademicSchedulePage() {
                   style={{ fontSize: '13px', padding: '8px 20px', borderRadius: '0px' }}
                 >
                   {editingCourseId ? <Edit3 size={15} /> : <Plus size={15} />}
-                  {isSubmitting ? 'Saving...' : editingCourseId ? 'Update Course Class' : 'Add Course Class'}
+                  {isSubmitting ? 'Menyimpan...' : editingCourseId ? 'Simpan Perubahan' : 'Tambah Mata Kuliah'}
                 </button>
               </div>
             </form>
@@ -971,10 +1536,10 @@ export default function AcademicSchedulePage() {
               </div>
               <div>
                 <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#EEEEEE', margin: 0 }}>
-                  Confirm Deletion (Step 2/2)
+                  Konfirmasi Hapus Mata Kuliah
                 </h4>
                 <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
-                  Are you sure you want to permanently delete this course class?
+                  Yakin mau menghapus jadwal mata kuliah ini?
                 </p>
               </div>
             </div>
@@ -989,16 +1554,16 @@ export default function AcademicSchedulePage() {
               flexDirection: 'column',
               gap: '4px'
             }}>
-              <div><strong style={{ color: 'var(--text-muted)' }}>Course:</strong> {courseToDelete.mataKuliah}</div>
-              <div><strong style={{ color: 'var(--text-muted)' }}>Schedule:</strong> {courseToDelete.hari}, {courseToDelete.jamMulai} - {courseToDelete.jamSelesai}</div>
-              <div><strong style={{ color: 'var(--text-muted)' }}>Room:</strong> {courseToDelete.ruangan}</div>
+              <div><strong style={{ color: 'var(--text-muted)' }}>Mata Kuliah:</strong> {courseToDelete.mataKuliah}</div>
+              <div><strong style={{ color: 'var(--text-muted)' }}>Jadwal:</strong> {getDayFull(courseToDelete.hari)}, {courseToDelete.jamMulai} - {courseToDelete.jamSelesai}</div>
+              <div><strong style={{ color: 'var(--text-muted)' }}>Ruangan:</strong> {courseToDelete.ruangan}</div>
               {courseToDelete.dosen && (
-                <div><strong style={{ color: 'var(--text-muted)' }}>Lecturer:</strong> {courseToDelete.dosen}</div>
+                <div><strong style={{ color: 'var(--text-muted)' }}>Dosen:</strong> {courseToDelete.dosen}</div>
               )}
             </div>
 
             <p style={{ fontSize: '11px', color: '#f87171', margin: 0 }}>
-              * This class schedule will be removed from your weekly timetable.
+              * Jadwal kuliah ini akan dihapus dari daftar jadwal mingguan kamu.
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '4px' }}>
@@ -1008,14 +1573,14 @@ export default function AcademicSchedulePage() {
                 className="glass-button"
                 style={{ fontSize: '13px', padding: '8px 16px' }}
               >
-                Cancel
+                Batal
               </button>
               <button
                 type="button"
                 onClick={() => {
                   removeAcademicCourse(courseToDelete.id);
                   setCourseToDelete(null);
-                  toast.info(`Class '${courseToDelete.mataKuliah}' deleted successfully.`);
+                  toast.info(`Jadwal '${courseToDelete.mataKuliah}' berhasil dihapus.`);
                 }}
                 className="glass-button"
                 style={{
@@ -1027,7 +1592,7 @@ export default function AcademicSchedulePage() {
                   fontWeight: 700
                 }}
               >
-                Yes, Delete Class
+                Ya, Hapus Matkul
               </button>
             </div>
           </div>
@@ -1212,6 +1777,1242 @@ export default function AcademicSchedulePage() {
                 style={{ fontSize: '12px', padding: '6px 16px', borderRadius: '0px' }}
               >
                 Tutup
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* POP-UP MODAL: Course Materials & PPT per Pertemuan */}
+      {selectedCourseForMaterials && typeof document !== 'undefined' && createPortal(
+        <div
+          onClick={() => setSelectedCourseForMaterials(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.88)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999999,
+            padding: '16px'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#1b2028',
+              border: `1px solid ${selectedCourseForMaterials.warna || 'rgba(0, 173, 181, 0.45)'}`,
+              padding: '22px',
+              maxWidth: '720px',
+              width: '100%',
+              borderRadius: '0px',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.95)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px',
+              maxHeight: '92vh',
+              overflowY: 'auto'
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '12px', gap: '10px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    background: 'rgba(249, 115, 22, 0.2)',
+                    border: '1px solid #f97316',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#f97316'
+                  }}>
+                    <Presentation size={18} />
+                  </div>
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#EEEEEE', margin: 0 }}>
+                    Materi & PPT Kuliah: {selectedCourseForMaterials.mataKuliah}
+                  </h3>
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    background: 'rgba(0, 173, 181, 0.15)',
+                    border: '1px solid rgba(0, 173, 181, 0.35)',
+                    color: '#00FFF5'
+                  }}>
+                    {selectedCourseForMaterials.sks || 3} SKS
+                  </span>
+                </div>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '4px 0 0 40px' }}>
+                  {selectedCourseForMaterials.dosen || 'Dosen'} &bull; {selectedCourseForMaterials.hari}, {selectedCourseForMaterials.jamMulai} - {selectedCourseForMaterials.jamSelesai} &bull; {selectedCourseForMaterials.ruangan}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedCourseForMaterials(null)}
+                className="glass-button"
+                style={{ padding: '6px', borderRadius: '0px', color: '#b0b8c1' }}
+                title="Tutup Modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Sub-header & Action Controls */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#EEEEEE' }}>
+                  Arsip Dokumen Kuliah
+                </span>
+                <span style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  padding: '1px 6px',
+                  background: 'rgba(0, 255, 245, 0.12)',
+                  color: '#00FFF5',
+                  border: '1px solid rgba(0, 255, 245, 0.3)'
+                }}>
+                  {(selectedCourseForMaterials.materials || selectedCourseForMaterials.attendance?.materials || []).length} File Tersimpan
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddMaterialOpen(!isAddMaterialOpen);
+                  if (materialPertemuanFilter !== 'ALL') {
+                    setNewMatPertemuan(materialPertemuanFilter);
+                  }
+                }}
+                className="glass-button glass-button-primary"
+                style={{
+                  fontSize: '12px',
+                  padding: '7px 14px',
+                  borderRadius: '0px',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <Plus size={14} />
+                <span>{isAddMaterialOpen ? 'Tutup Form Upload' : '+ Tambah File / PPT Dosen'}</span>
+              </button>
+            </div>
+
+            {/* Upload / Add Material Form */}
+            {isAddMaterialOpen && (
+              <form
+                onSubmit={handleSaveMaterial}
+                style={{
+                  padding: '16px',
+                  background: 'rgba(0, 173, 181, 0.06)',
+                  border: '1px dashed rgba(0, 173, 181, 0.45)',
+                  borderRadius: '0px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid rgba(0, 173, 181, 0.2)', paddingBottom: '8px' }}>
+                  <Upload size={16} color="#00FFF5" />
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#00FFF5' }}>
+                    Unggah File Materi Kuliah (Word / PPT / PDF)
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                  {/* Pertemuan Selector */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                      Untuk Pertemuan Ke- *
+                    </label>
+                    <select
+                      className="glass-input"
+                      value={newMatPertemuan}
+                      onChange={(e) => setNewMatPertemuan(e.target.value)}
+                      style={{ borderRadius: '0px', cursor: 'pointer' }}
+                    >
+                      {Array.from({ length: 16 }, (_, i) => i + 1).map(p => (
+                        <option key={p} value={p}>Pertemuan {p}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Judul Materi */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                      Judul / Topik Materi *
+                    </label>
+                    <input
+                      type="text"
+                      className="glass-input"
+                      placeholder="e.g. Slide Bab 2 - Tenses & Reading"
+                      value={newMatJudul}
+                      onChange={(e) => setNewMatJudul(e.target.value)}
+                      style={{ borderRadius: '0px' }}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
+                  {/* File Upload Picker */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                      Pilih File (PowerPoint, Word, PDF, dll):
+                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <label
+                        className="glass-button"
+                        style={{
+                          fontSize: '11px',
+                          padding: '7px 12px',
+                          borderRadius: '0px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          color: '#00FFF5',
+                          borderColor: 'rgba(0, 173, 181, 0.45)'
+                        }}
+                      >
+                        <Upload size={13} />
+                        <span>Pilih File Dari Perangkat</span>
+                        <input
+                          type="file"
+                          accept=".ppt,.pptx,.doc,.docx,.pdf,.xls,.xlsx,.txt,.zip"
+                          onChange={handleMaterialFileUpload}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                    </div>
+
+                    {newMatFile && (
+                      <div style={{
+                        marginTop: '6px',
+                        padding: '6px 10px',
+                        background: 'rgba(0, 0, 0, 0.4)',
+                        border: '1px solid rgba(16, 185, 129, 0.4)',
+                        fontSize: '11px',
+                        color: '#10b981',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '6px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                          <Check size={13} />
+                          <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                            {newMatFile.name} ({newMatFile.size})
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setNewMatFile(null)}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px' }}
+                          title="Batal pilih file"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* External Link */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                      Atau Link Google Drive / LMS Dosen (Opsional):
+                    </label>
+                    <input
+                      type="url"
+                      className="glass-input"
+                      placeholder="https://drive.google.com/..."
+                      value={newMatLink}
+                      onChange={(e) => setNewMatLink(e.target.value)}
+                      style={{ borderRadius: '0px' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Catatan Tambahan */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Catatan Materi (Opsional):
+                  </label>
+                  <input
+                    type="text"
+                    className="glass-input"
+                    placeholder="e.g. Baca sebelum pertemuan dimulai, ada tugas di slide 12"
+                    value={newMatCatatan}
+                    onChange={(e) => setNewMatCatatan(e.target.value)}
+                    style={{ borderRadius: '0px' }}
+                  />
+                </div>
+
+                {/* Submit & Cancel Buttons */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddMaterialOpen(false);
+                      setNewMatFile(null);
+                    }}
+                    className="glass-button"
+                    style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '0px' }}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingMaterial}
+                    className="glass-button glass-button-primary"
+                    style={{ fontSize: '12px', padding: '6px 18px', borderRadius: '0px', fontWeight: 700 }}
+                  >
+                    {isSavingMaterial ? 'Menyimpan...' : 'Simpan Materi Kuliah'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* FILTER PERTEMUAN & FORMAT BAR */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              padding: '10px 12px',
+              background: 'rgba(0, 0, 0, 0.35)',
+              border: '1px solid rgba(0, 173, 181, 0.25)',
+              borderRadius: '0px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#00FFF5', fontWeight: 700 }}>
+                  <Filter size={13} />
+                  <span>Filter Berdasarkan Pertemuan:</span>
+                </div>
+
+                {/* Format Filter */}
+                <select
+                  value={materialTypeFilter}
+                  onChange={(e) => setMaterialTypeFilter(e.target.value)}
+                  style={{
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    border: '1px solid rgba(0, 173, 181, 0.35)',
+                    color: '#EEEEEE',
+                    fontSize: '11px',
+                    padding: '3px 8px',
+                    borderRadius: '0px',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="ALL">Semua Format File</option>
+                  <option value="pptx">PowerPoint (.ppt / .pptx)</option>
+                  <option value="docx">Word (.doc / .docx)</option>
+                  <option value="pdf">PDF (.pdf)</option>
+                  <option value="link">Link Drive / LMS</option>
+                </select>
+              </div>
+
+              {/* Horizontal Scroll / Wrap Pertemuan Tabs */}
+              <div style={{
+                display: 'flex',
+                gap: '4px',
+                overflowX: 'auto',
+                paddingBottom: '4px',
+                alignItems: 'center'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setMaterialPertemuanFilter('ALL')}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    fontWeight: materialPertemuanFilter === 'ALL' ? 700 : 500,
+                    background: materialPertemuanFilter === 'ALL' ? 'rgba(0, 173, 181, 0.35)' : 'rgba(255, 255, 255, 0.04)',
+                    color: materialPertemuanFilter === 'ALL' ? '#00FFF5' : '#b0b8c1',
+                    border: materialPertemuanFilter === 'ALL' ? '1px solid #00ADB5' : '1px solid rgba(255, 255, 255, 0.08)',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  Semua ({(selectedCourseForMaterials.materials || selectedCourseForMaterials.attendance?.materials || []).length})
+                </button>
+
+                {Array.from({ length: 16 }, (_, i) => i + 1).map(p => {
+                  const courseMats = selectedCourseForMaterials.materials || selectedCourseForMaterials.attendance?.materials || [];
+                  const countForP = courseMats.filter(m => m.pertemuan === p).length;
+                  const isSelected = String(materialPertemuanFilter) === String(p);
+
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setMaterialPertemuanFilter(String(p))}
+                      style={{
+                        padding: '4px 9px',
+                        fontSize: '11px',
+                        fontWeight: isSelected ? 700 : 500,
+                        background: isSelected ? 'rgba(249, 115, 22, 0.35)' : countForP > 0 ? 'rgba(0, 173, 181, 0.12)' : 'transparent',
+                        color: isSelected ? '#fed7aa' : countForP > 0 ? '#00FFF5' : 'var(--text-muted)',
+                        border: isSelected ? '1px solid #f97316' : countForP > 0 ? '1px solid rgba(0, 173, 181, 0.3)' : '1px solid rgba(255, 255, 255, 0.05)',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <span>Pertemuan {p}</span>
+                      {countForP > 0 && (
+                        <span style={{
+                          fontSize: '9px',
+                          padding: '0 4px',
+                          borderRadius: '2px',
+                          background: isSelected ? '#f97316' : 'rgba(0, 173, 181, 0.3)',
+                          color: 'white',
+                          fontWeight: 700
+                        }}>
+                          {countForP}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* List of Materials */}
+            {(() => {
+              const allMats = selectedCourseForMaterials.materials || selectedCourseForMaterials.attendance?.materials || [];
+              const filteredMats = allMats.filter(m => {
+                if (materialPertemuanFilter !== 'ALL' && String(m.pertemuan) !== String(materialPertemuanFilter)) {
+                  return false;
+                }
+                if (materialTypeFilter !== 'ALL') {
+                  if (materialTypeFilter === 'pptx' && !['ppt', 'pptx'].includes(m.tipeFile)) return false;
+                  if (materialTypeFilter === 'docx' && !['doc', 'docx'].includes(m.tipeFile)) return false;
+                  if (materialTypeFilter === 'pdf' && m.tipeFile !== 'pdf') return false;
+                  if (materialTypeFilter === 'link' && m.tipeFile !== 'link' && !m.externalLink) return false;
+                }
+                return true;
+              }).sort((a, b) => a.pertemuan - b.pertemuan);
+
+              if (filteredMats.length === 0) {
+                return (
+                  <div style={{
+                    padding: '30px 20px',
+                    textAlign: 'center',
+                    background: 'rgba(0, 0, 0, 0.25)',
+                    border: '1px dashed rgba(255, 255, 255, 0.1)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}>
+                    <FolderOpen size={32} color="#b0b8c1" style={{ opacity: 0.6 }} />
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#EEEEEE' }}>
+                      {materialPertemuanFilter === 'ALL'
+                        ? 'Belum ada file materi atau PPT yang ditambahkan untuk mata kuliah ini.'
+                        : `Belum ada file materi untuk Pertemuan ${materialPertemuanFilter}.`}
+                    </div>
+                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, maxWidth: '420px' }}>
+                      Anda dapat menyimpan file presentasi (.ppt/.pptx), dokumen Word (.doc/.docx), modul PDF, atau link drive yang dibagikan dosen.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAddMaterialOpen(true);
+                        if (materialPertemuanFilter !== 'ALL') {
+                          setNewMatPertemuan(materialPertemuanFilter);
+                        }
+                      }}
+                      className="glass-button glass-button-primary"
+                      style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '0px', marginTop: '4px' }}
+                    >
+                      <Plus size={14} />
+                      <span>Upload File ke Pertemuan {materialPertemuanFilter === 'ALL' ? '1' : materialPertemuanFilter}</span>
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {filteredMats.map((m) => {
+                    const isPPT = ['ppt', 'pptx'].includes(m.tipeFile);
+                    const isDoc = ['doc', 'docx'].includes(m.tipeFile);
+                    const isPDF = m.tipeFile === 'pdf';
+
+                    return (
+                      <div
+                        key={m.id}
+                        style={{
+                          padding: '12px 14px',
+                          background: 'rgba(0, 0, 0, 0.45)',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          borderLeft: `4px solid ${isPPT ? '#f97316' : isDoc ? '#3b82f6' : isPDF ? '#ef4444' : '#00ADB5'}`,
+                          borderRadius: '0px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: '12px',
+                          flexWrap: 'wrap'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', minWidth: '220px', flex: 1 }}>
+                          {/* File Type Icon badge */}
+                          <div style={{
+                            width: '36px',
+                            height: '36px',
+                            background: isPPT
+                              ? 'rgba(249, 115, 22, 0.18)'
+                              : isDoc
+                              ? 'rgba(59, 130, 246, 0.18)'
+                              : isPDF
+                              ? 'rgba(239, 68, 68, 0.18)'
+                              : 'rgba(0, 173, 181, 0.18)',
+                            border: `1px solid ${isPPT ? '#f97316' : isDoc ? '#3b82f6' : isPDF ? '#ef4444' : '#00ADB5'}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: isPPT ? '#f97316' : isDoc ? '#3b82f6' : isPDF ? '#ef4444' : '#00ADB5',
+                            flexShrink: 0
+                          }}>
+                            {isPPT ? <Presentation size={18} /> : isDoc ? <FileText size={18} /> : isPDF ? <File size={18} /> : <ExternalLink size={18} />}
+                          </div>
+
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <span style={{
+                                fontSize: '10px',
+                                fontWeight: 800,
+                                padding: '1px 6px',
+                                background: 'rgba(249, 115, 22, 0.2)',
+                                color: '#f97316',
+                                border: '1px solid rgba(249, 115, 22, 0.4)'
+                              }}>
+                                Pertemuan {m.pertemuan}
+                              </span>
+
+                              <span style={{
+                                fontSize: '9px',
+                                fontWeight: 700,
+                                padding: '1px 5px',
+                                textTransform: 'uppercase',
+                                background: isPPT ? 'rgba(249, 115, 22, 0.15)' : isDoc ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.08)',
+                                color: isPPT ? '#fb923c' : isDoc ? '#60a5fa' : '#b0b8c1'
+                              }}>
+                                {isPPT ? 'PowerPoint (PPT)' : isDoc ? 'Word (Doc)' : isPDF ? 'PDF' : 'Link Drive'}
+                              </span>
+
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE' }}>
+                                {m.judul}
+                              </span>
+                            </div>
+
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                              {m.namaFile && <span>📄 {m.namaFile}</span>}
+                              {m.ukuranFile && <span>&bull; {m.ukuranFile}</span>}
+                              <span>&bull; Ditambahkan {new Date(m.createdAt || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                            </div>
+
+                            {m.catatan && (
+                              <div style={{ fontSize: '11px', color: '#00FFF5', marginTop: '4px', fontStyle: 'italic', background: 'rgba(0, 173, 181, 0.08)', padding: '2px 6px', borderLeft: '2px solid #00ADB5' }}>
+                                "{m.catatan}"
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {m.fileData && (
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadMaterial(m)}
+                              className="glass-button glass-button-primary"
+                              style={{
+                                fontSize: '11px',
+                                padding: '6px 12px',
+                                borderRadius: '0px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px'
+                              }}
+                              title="Unduh file ke perangkat"
+                            >
+                              <Download size={13} />
+                              <span>Unduh File</span>
+                            </button>
+                          )}
+
+                          {m.externalLink && (
+                            <a
+                              href={m.externalLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="glass-button"
+                              style={{
+                                fontSize: '11px',
+                                padding: '6px 12px',
+                                borderRadius: '0px',
+                                color: '#00FFF5',
+                                borderColor: 'rgba(0, 173, 181, 0.4)',
+                                textDecoration: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px'
+                              }}
+                            >
+                              <ExternalLink size={13} />
+                              <span>Buka Link Drive</span>
+                            </a>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteMaterial(m.id)}
+                            className="glass-button"
+                            style={{
+                              fontSize: '11px',
+                              padding: '6px 10px',
+                              borderRadius: '0px',
+                              color: '#ef4444',
+                              borderColor: 'rgba(239, 68, 68, 0.35)',
+                              background: 'rgba(239, 68, 68, 0.08)'
+                            }}
+                            title="Hapus materi ini"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* Modal Footer */}
+            <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                * File tersimpan aman dan terorganisir per pertemuan kuliah.
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedCourseForMaterials(null)}
+                className="glass-button"
+                style={{ fontSize: '12px', padding: '6px 18px', borderRadius: '0px' }}
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* POP-UP MODAL: Detail Kehadiran Pertemuan 1 s/d 16 */}
+      {selectedCourseForAttendanceDetail && typeof document !== 'undefined' && createPortal(
+        <div
+          onClick={() => setSelectedCourseForAttendanceDetail(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.88)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999999,
+            padding: '16px'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#161c24',
+              border: `1px solid ${selectedCourseForAttendanceDetail.warna || 'rgba(0, 173, 181, 0.45)'}`,
+              padding: '22px',
+              maxWidth: '820px',
+              width: '100%',
+              borderRadius: '0px',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.95)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+          >
+            {(() => {
+              const course = selectedCourseForAttendanceDetail;
+              const att = course.attendance || { present: 0, absent: 0, excused: 0, target: 16 };
+              const target = Number(att.target) || 16;
+              const sessions = getCourseAttendanceSessions(course);
+              const presentCount = sessions.filter(s => s.status === 'present').length;
+              const excusedCount = sessions.filter(s => s.status === 'excused').length;
+              const absentCount = sessions.filter(s => s.status === 'absent').length;
+              const pendingCount = sessions.filter(s => s.status === 'pending').length;
+              const totalRecorded = presentCount + excusedCount + absentCount;
+              const progressPct = target > 0 ? Math.round((presentCount / target) * 100) : 0;
+              const ratePct = totalRecorded > 0 ? Math.round((presentCount / totalRecorded) * 100) : 0;
+
+              // Academic regulations: minimum 75% attendance for UAS (max 25% absences, e.g. 4 meetings out of 16)
+              const maxAbsentAllowed = Math.floor(target * 0.25);
+              const remainingAbsentQuota = Math.max(0, maxAbsentAllowed - absentCount);
+              const isUasEligible = absentCount <= maxAbsentAllowed;
+              const isWarning = absentCount > maxAbsentAllowed || (totalRecorded >= 3 && ratePct < 75);
+
+              // Materials list for checking PPT/Word availability per meeting
+              const courseMaterials = course.materials || course.attendance?.materials || [];
+
+              // Filter sessions by selected tab
+              const filteredSessions = sessions.filter(s => {
+                if (attendanceDetailFilter === 'ALL') return true;
+                return s.status === attendanceDetailFilter;
+              });
+
+              return (
+                <>
+                  {/* Modal Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '12px', gap: '10px' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <div style={{
+                          width: '28px',
+                          height: '28px',
+                          background: `${course.warna || '#00ADB5'}22`,
+                          border: `1px solid ${course.warna || '#00ADB5'}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: course.warna || '#00FFF5'
+                        }}>
+                          <BookOpen size={15} />
+                        </div>
+                        <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#EEEEEE', margin: 0 }}>
+                          Detail Kehadiran: {course.mataKuliah}
+                        </h3>
+                        <span style={{
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          padding: '2px 7px',
+                          background: 'rgba(0, 255, 245, 0.12)',
+                          color: '#00FFF5',
+                          border: '1px solid rgba(0, 255, 245, 0.3)'
+                        }}>
+                          {course.sks || 3} SKS
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                        {course.dosen || 'Dosen Pengampu'} &bull; {course.hari}, {course.jamMulai} - {course.jamSelesai} &bull; {course.ruangan || 'Kampus'}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCourseForAttendanceDetail(null)}
+                      className="glass-button"
+                      style={{ padding: '4px 8px', borderRadius: '0px' }}
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+
+                  {/* Summary Stats Bar: 4 Metrics Cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '8px' }}>
+                    {/* Card 1: Progress Kehadiran Semester */}
+                    <div style={{ padding: '10px 12px', background: 'rgba(0, 0, 0, 0.35)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Progres Kehadiran</div>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: progressPct > 0 ? '#00FFF5' : 'var(--text-secondary)', marginTop: '2px' }}>
+                        {presentCount} / {target} <span style={{ fontSize: '12px', opacity: 0.85 }}>({progressPct}%)</span>
+                      </div>
+                      {/* Mini bar */}
+                      <div style={{ width: '100%', height: '4px', background: 'rgba(255, 255, 255, 0.1)', marginTop: '6px', overflow: 'hidden' }}>
+                        <div style={{ width: `${Math.min(100, progressPct)}%`, height: '100%', background: progressPct >= 75 ? '#10b981' : '#00ADB5' }} />
+                      </div>
+                      <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        {target - presentCount} pertemuan tersisa
+                      </div>
+                    </div>
+
+                    {/* Card 2: Attendance Rate Berjalan */}
+                    <div style={{ padding: '10px 12px', background: 'rgba(0, 0, 0, 0.35)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tingkat Kehadiran Aktif</div>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: isWarning ? '#ef4444' : totalRecorded > 0 ? '#10b981' : 'var(--text-secondary)', marginTop: '2px' }}>
+                        {totalRecorded > 0 ? `${ratePct}%` : 'Belum Mulai (0%)'}
+                      </div>
+                      <div style={{ fontSize: '9px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                        {presentCount} hadir dari {totalRecorded} sesi tercatat
+                      </div>
+                    </div>
+
+                    {/* Card 3: Status Syarat UAS */}
+                    <div style={{ padding: '10px 12px', background: isUasEligible ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.1)', border: `1px solid ${isUasEligible ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.35)'}` }}>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Syarat Ikut UAS (Min. 75%)</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
+                        {isUasEligible ? (
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <ShieldCheck size={14} /> Memenuhi Syarat
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <AlertTriangle size={14} /> Batas Terlampaui
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '9px', color: isUasEligible ? '#EEEEEE' : '#ef4444', marginTop: '4px' }}>
+                        Sisa kuota alfa: <strong>{remainingAbsentQuota}x</strong> (Maks {maxAbsentAllowed}x)
+                      </div>
+                    </div>
+
+                    {/* Card 4: Rincian Cepat */}
+                    <div style={{ padding: '10px 12px', background: 'rgba(0, 0, 0, 0.35)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Rincian Status Sesi</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px', fontSize: '10px' }}>
+                        <span style={{ color: '#10b981', fontWeight: 600 }}>✓ Hadir: {presentCount}</span>
+                        <span style={{ color: '#f59e0b', fontWeight: 600 }}>ℹ Izin: {excusedCount}</span>
+                        <span style={{ color: '#ef4444', fontWeight: 600 }}>✗ Alfa: {absentCount}</span>
+                        <span style={{ color: 'var(--text-muted)' }}>○ Belum: {pendingCount}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Filter Tabs & Quick Action Toolbar */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '8px' }}>
+                    {/* Status Filter Tabs */}
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => setAttendanceDetailFilter('ALL')}
+                        className={`glass-button ${attendanceDetailFilter === 'ALL' ? 'glass-button-primary' : ''}`}
+                        style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '0px' }}
+                      >
+                        Semua ({target})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAttendanceDetailFilter('present')}
+                        className={`glass-button ${attendanceDetailFilter === 'present' ? 'glass-button-primary' : ''}`}
+                        style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '0px', color: attendanceDetailFilter === 'present' ? undefined : '#10b981' }}
+                      >
+                        Hadir ({presentCount})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAttendanceDetailFilter('excused')}
+                        className={`glass-button ${attendanceDetailFilter === 'excused' ? 'glass-button-primary' : ''}`}
+                        style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '0px', color: attendanceDetailFilter === 'excused' ? undefined : '#f59e0b' }}
+                      >
+                        Izin ({excusedCount})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAttendanceDetailFilter('absent')}
+                        className={`glass-button ${attendanceDetailFilter === 'absent' ? 'glass-button-primary' : ''}`}
+                        style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '0px', color: attendanceDetailFilter === 'absent' ? undefined : '#ef4444' }}
+                      >
+                        Alfa ({absentCount})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAttendanceDetailFilter('pending')}
+                        className={`glass-button ${attendanceDetailFilter === 'pending' ? 'glass-button-primary' : ''}`}
+                        style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '0px', color: attendanceDetailFilter === 'pending' ? undefined : 'var(--text-muted)' }}
+                      >
+                        Belum ({pendingCount})
+                      </button>
+                    </div>
+
+                    {/* Quick Mass Actions */}
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={handleMarkAllSessionsPresent}
+                        className="glass-button"
+                        style={{ fontSize: '10px', padding: '4px 8px', borderRadius: '0px', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.35)' }}
+                        title="Tandai semua pertemuan (1-16) menjadi Hadir"
+                      >
+                        <Check size={11} style={{ marginRight: '3px' }} />
+                        Tandai Semua Hadir
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleResetAttendance(course)}
+                        className="glass-button"
+                        style={{ fontSize: '10px', padding: '4px 8px', borderRadius: '0px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                        title="Reset semua sesi kembali ke Belum (0)"
+                      >
+                        <RefreshCw size={11} style={{ marginRight: '3px' }} />
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 16 Pertemuan Grid List */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '8px', maxHeight: '52vh', overflowY: 'auto', paddingRight: '4px' }}>
+                    {filteredSessions.map((s) => {
+                      const isUTS = s.pertemuan === 8;
+                      const isUAS = s.pertemuan === target;
+                      const matsForSession = courseMaterials.filter(m => m.pertemuan === s.pertemuan);
+
+                      return (
+                        <div
+                          key={s.pertemuan}
+                          style={{
+                            padding: '10px 12px',
+                            background: s.status === 'present' ? 'rgba(16, 185, 129, 0.06)' : s.status === 'absent' ? 'rgba(239, 68, 68, 0.08)' : s.status === 'excused' ? 'rgba(245, 158, 11, 0.06)' : 'rgba(0, 0, 0, 0.35)',
+                            border: `1px solid ${s.status === 'present' ? 'rgba(16, 185, 129, 0.28)' : s.status === 'absent' ? 'rgba(239, 68, 68, 0.35)' : s.status === 'excused' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(255, 255, 255, 0.07)'}`,
+                            borderRadius: '0px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px'
+                          }}
+                        >
+                          {/* Card Header: Pertemuan Number, UTS/UAS badge, Status Badge */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '12px', fontWeight: 700, color: '#EEEEEE' }}>
+                                Pertemuan {s.pertemuan}
+                              </span>
+                              {isUTS && (
+                                <span style={{ fontSize: '9px', fontWeight: 700, padding: '1px 5px', background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.4)' }}>
+                                  UTS
+                                </span>
+                              )}
+                              {isUAS && (
+                                <span style={{ fontSize: '9px', fontWeight: 700, padding: '1px 5px', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' }}>
+                                  UAS
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Status Indicator Badge */}
+                            <div>
+                              {s.status === 'present' && (
+                                <span style={{ fontSize: '10px', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 7px' }}>
+                                  <CheckCircle2 size={11} /> Hadir
+                                </span>
+                              )}
+                              {s.status === 'excused' && (
+                                <span style={{ fontSize: '10px', fontWeight: 700, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(245, 158, 11, 0.15)', padding: '2px 7px' }}>
+                                  <AlertCircle size={11} /> {s.reason ? `Izin: ${s.reason}` : 'Izin / Sakit'}
+                                </span>
+                              )}
+                              {s.status === 'absent' && (
+                                <span style={{ fontSize: '10px', fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(239, 68, 68, 0.15)', padding: '2px 7px' }}>
+                                  <X size={11} /> Alfa
+                                </span>
+                              )}
+                              {s.status === 'pending' && (
+                                <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(255, 255, 255, 0.05)', padding: '2px 7px' }}>
+                                  <Clock size={11} /> Belum
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Extra info: Date & Linked Materials */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px', fontSize: '10px' }}>
+                            <span style={{ color: 'var(--text-muted)' }}>
+                              {s.date ? `Tanggal: ${s.date}` : s.topic || 'Sesi perkuliahan reguler'}
+                            </span>
+
+                            {matsForSession.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedCourseForMaterials(course);
+                                  setMaterialPertemuanFilter(String(s.pertemuan));
+                                  setSelectedCourseForAttendanceDetail(null);
+                                }}
+                                className="glass-button"
+                                style={{ fontSize: '9px', padding: '1px 6px', color: '#00FFF5', borderColor: 'rgba(0, 255, 245, 0.35)', display: 'flex', alignItems: 'center', gap: '3px' }}
+                                title="Buka file PPT / materi untuk pertemuan ini"
+                              >
+                                <Presentation size={10} />
+                                <span>{matsForSession.length} PPT/Materi</span>
+                              </button>
+                            )}
+                          </div>
+
+                          {/* 4-Button Status Switcher */}
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginTop: '2px' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleSetSessionStatus(s.pertemuan, 'present')}
+                              className="glass-button"
+                              style={{
+                                fontSize: '10px',
+                                padding: '4px 2px',
+                                borderRadius: '0px',
+                                textAlign: 'center',
+                                color: s.status === 'present' ? '#EEEEEE' : '#10b981',
+                                background: s.status === 'present' ? '#10b981' : 'rgba(16, 185, 129, 0.08)',
+                                borderColor: s.status === 'present' ? '#10b981' : 'rgba(16, 185, 129, 0.25)',
+                                fontWeight: s.status === 'present' ? 700 : 500
+                              }}
+                            >
+                              ✓ Hadir
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSetSessionStatus(s.pertemuan, 'excused')}
+                              className="glass-button"
+                              style={{
+                                fontSize: '10px',
+                                padding: '4px 2px',
+                                borderRadius: '0px',
+                                textAlign: 'center',
+                                color: s.status === 'excused' ? '#111111' : '#f59e0b',
+                                background: s.status === 'excused' ? '#f59e0b' : 'rgba(245, 158, 11, 0.08)',
+                                borderColor: s.status === 'excused' ? '#f59e0b' : 'rgba(245, 158, 11, 0.25)',
+                                fontWeight: s.status === 'excused' ? 700 : 500
+                              }}
+                            >
+                              ℹ Izin
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSetSessionStatus(s.pertemuan, 'absent')}
+                              className="glass-button"
+                              style={{
+                                fontSize: '10px',
+                                padding: '4px 2px',
+                                borderRadius: '0px',
+                                textAlign: 'center',
+                                color: s.status === 'absent' ? '#EEEEEE' : '#ef4444',
+                                background: s.status === 'absent' ? '#ef4444' : 'rgba(239, 68, 68, 0.08)',
+                                borderColor: s.status === 'absent' ? '#ef4444' : 'rgba(239, 68, 68, 0.25)',
+                                fontWeight: s.status === 'absent' ? 700 : 500
+                              }}
+                            >
+                              ✗ Alfa
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSetSessionStatus(s.pertemuan, 'pending')}
+                              className="glass-button"
+                              style={{
+                                fontSize: '10px',
+                                padding: '4px 2px',
+                                borderRadius: '0px',
+                                textAlign: 'center',
+                                color: s.status === 'pending' ? '#EEEEEE' : 'var(--text-muted)',
+                                background: s.status === 'pending' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.03)',
+                                borderColor: s.status === 'pending' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 255, 255, 0.1)',
+                                fontWeight: s.status === 'pending' ? 700 : 400
+                              }}
+                            >
+                              ○ Belum
+                            </button>
+                          </div>
+
+                          {/* Excused Reason Input (Opsional - Tidak Wajib) */}
+                          {s.status === 'excused' && (
+                            <div style={{
+                              marginTop: '2px',
+                              padding: '6px 8px',
+                              background: 'rgba(245, 158, 11, 0.07)',
+                              border: '1px solid rgba(245, 158, 11, 0.25)',
+                              borderRadius: '0px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '4px'
+                            }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px' }}>
+                                <span style={{ color: '#f59e0b', fontWeight: 600 }}>
+                                  Alasan Izin / Sakit (Opsional):
+                                </span>
+                                {s.reason && (
+                                  <span style={{ color: '#EEEEEE', opacity: 0.7 }}>
+                                    Tersimpan
+                                  </span>
+                                )}
+                              </div>
+                              <input
+                                type="text"
+                                defaultValue={s.reason || ''}
+                                key={`reason-${s.pertemuan}-${s.reason || ''}`}
+                                placeholder="Contoh: Sakit demam, Acara keluarga (tidak wajib)..."
+                                onBlur={(e) => handleUpdateSessionReason(s.pertemuan, e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleUpdateSessionReason(s.pertemuan, e.target.value);
+                                    e.target.blur();
+                                  }
+                                }}
+                                style={{
+                                  width: '100%',
+                                  fontSize: '11px',
+                                  padding: '4px 8px',
+                                  background: 'rgba(0, 0, 0, 0.5)',
+                                  border: '1px solid rgba(245, 158, 11, 0.35)',
+                                  color: '#EEEEEE',
+                                  borderRadius: '0px',
+                                  outline: 'none'
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Modal Footer */}
+                  <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      * Status per pertemuan otomatis memperbarui persentase dan progress bar di kartu jadwal.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCourseForAttendanceDetail(null)}
+                      className="glass-button glass-button-primary"
+                      style={{ fontSize: '12px', padding: '6px 20px', borderRadius: '0px' }}
+                    >
+                      Selesai
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* POP-UP MINI-MODAL: Catat Izin / Sakit (Alasan Opsional) */}
+      {excusedTargetCourse && typeof document !== 'undefined' && createPortal(
+        <div
+          onClick={() => setExcusedTargetCourse(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999999,
+            padding: '16px'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#1a1f26',
+              border: '1px solid rgba(245, 158, 11, 0.4)',
+              padding: '20px',
+              maxWidth: '440px',
+              width: '100%',
+              borderRadius: '0px',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.9)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '26px', height: '26px', background: 'rgba(245, 158, 11, 0.2)', border: '1px solid #f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+                  <AlertCircle size={15} />
+                </div>
+                <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#EEEEEE', margin: 0 }}>
+                  Catat Izin / Sakit
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setExcusedTargetCourse(null)}
+                className="glass-button"
+                style={{ padding: '3px 7px', borderRadius: '0px' }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              Mata Kuliah: <strong style={{ color: '#EEEEEE' }}>{excusedTargetCourse.mataKuliah}</strong>
+            </div>
+
+            {/* Reason Input */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '11px', fontWeight: 600, color: '#f59e0b' }}>
+                Alasan / Keterangan (Opsional):
+              </label>
+              <input
+                type="text"
+                value={excusedReason}
+                onChange={(e) => setExcusedReason(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleUpdateAttendance(excusedTargetCourse, 'excused', excusedReason);
+                    setExcusedTargetCourse(null);
+                  }
+                }}
+                autoFocus
+                placeholder="Contoh: Sakit demam, Acara keluarga (boleh dikosongkan)..."
+                style={{
+                  width: '100%',
+                  fontSize: '12px',
+                  padding: '7px 10px',
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  border: '1px solid rgba(245, 158, 11, 0.4)',
+                  color: '#EEEEEE',
+                  borderRadius: '0px',
+                  outline: 'none'
+                }}
+              />
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                * Boleh dikosongkan ya, kamu bisa langsung klik &ldquo;Simpan Izin&rdquo;.
+              </span>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '10px', marginTop: '4px' }}>
+              <button
+                type="button"
+                onClick={() => setExcusedTargetCourse(null)}
+                className="glass-button"
+                style={{ fontSize: '11px', padding: '5px 12px', borderRadius: '0px' }}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleUpdateAttendance(excusedTargetCourse, 'excused', excusedReason);
+                  setExcusedTargetCourse(null);
+                }}
+                className="glass-button"
+                style={{ fontSize: '11px', padding: '5px 14px', borderRadius: '0px', color: '#111111', background: '#f59e0b', borderColor: '#f59e0b', fontWeight: 700 }}
+              >
+                Simpan Izin
               </button>
             </div>
           </div>

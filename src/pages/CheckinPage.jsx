@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink } from 'react-router-dom';
-import { History, Trash2, Tag as TagIcon, Volume2, Calendar, PlusCircle, Image as ImageIcon, X, Sparkles, Clock, Search, Filter, SlidersHorizontal, RotateCcw, AlertTriangle } from 'lucide-react';
+import { History, Trash2, Tag as TagIcon, Volume2, Calendar, PlusCircle, Image as ImageIcon, X, Sparkles, Clock, Search, Filter, SlidersHorizontal, RotateCcw, AlertTriangle, Video, Play } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
+import { isVideoUrl } from '../utils/mediaUtils';
 
 const MOOD_PERCENT = { 1: '20%', 2: '40%', 3: '60%', 4: '80%', 5: '100%' };
 const MOOD_LABELS = { 1: 'Very Bad', 2: 'Bad / Stressed', 3: 'Neutral', 4: 'Good / Calm', 5: 'Very Good' };
@@ -41,8 +42,16 @@ export default function CheckinPage() {
   const [filterTagId, setFilterTagId] = useState('ALL');
   const [filterMedia, setFilterMedia] = useState('ALL');
   const [sortOrder, setSortOrder] = useState('DESC');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  const isFilterActive = searchQuery !== '' || filterScore !== 'ALL' || filterTagId !== 'ALL' || filterMedia !== 'ALL' || sortOrder !== 'DESC';
+  const activeFiltersCount = [
+    filterScore !== 'ALL',
+    filterTagId !== 'ALL',
+    filterMedia !== 'ALL',
+    sortOrder !== 'DESC'
+  ].filter(Boolean).length;
+
+  const isFilterActive = searchQuery !== '' || activeFiltersCount > 0;
 
   const resetFilters = () => {
     setSearchQuery('');
@@ -77,7 +86,8 @@ export default function CheckinPage() {
     }
 
     // Filter Media / Feature
-    if (filterMedia === 'PHOTO' && !m.photoUrl) return false;
+    if (filterMedia === 'PHOTO' && (!m.photoUrl || isVideoUrl(m.photoUrl))) return false;
+    if (filterMedia === 'VIDEO' && (!m.photoUrl || !isVideoUrl(m.photoUrl))) return false;
     if (filterMedia === 'VOICE' && !m.voiceNotePath) return false;
     if (filterMedia === 'NOTE' && (!m.catatan || !m.catatan.trim())) return false;
 
@@ -92,16 +102,18 @@ export default function CheckinPage() {
     <div className="animate-fade-in" style={{ width: '100%', margin: '0 auto', padding: '0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       
       {/* Header Banner & Action Button */}
-      <div className="glass-panel" style={{ padding: '18px 20px', background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.22), rgba(57, 62, 70, 0.85))', border: '1px solid rgba(0, 173, 181, 0.35)', borderRadius: '0px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="glass-panel checkin-header-panel">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ padding: '10px', borderRadius: '0px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)' }}>
-              <History size={22} color="#00FFF5" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ padding: '7px', borderRadius: '0px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)', flexShrink: 0 }}>
+              <History size={18} color="#00FFF5" />
             </div>
             <div>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#EEEEEE', margin: 0 }}>Check-in History & Emotion Journal</h2>
-              <p style={{ fontSize: '12px', color: '#b0b8c1', marginTop: '2px' }}>
+              <h2 className="mobile-text-sm" style={{ fontSize: '18px', fontWeight: 800, color: '#EEEEEE', margin: 0, lineHeight: 1.2 }}>
+                Emotion Journal
+              </h2>
+              <p className="mobile-hide" style={{ fontSize: '11px', color: '#b0b8c1', margin: '2px 0 0 0' }}>
                 Review mood chronology, trigger notes, and photo attachments over time.
               </p>
             </div>
@@ -110,48 +122,39 @@ export default function CheckinPage() {
           <NavLink
             to="/checkin/new"
             className="glass-button glass-button-primary"
-            style={{ fontSize: '13px', padding: '10px 18px', borderRadius: '0px', gap: '8px', fontWeight: 700 }}
+            style={{ fontSize: '12px', padding: '7px 14px', borderRadius: '0px', gap: '6px', fontWeight: 700 }}
           >
-            <PlusCircle size={18} color="#ffffff" />
-            <span>Today's Mood Check-in</span>
+            <PlusCircle size={15} color="#ffffff" />
+            <span>+ Check-in</span>
           </NavLink>
 
         </div>
       </div>
 
       {/* History Timeline Container */}
-      <div className="glass-panel" style={{ padding: '20px', borderRadius: '0px' }}>
-        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-          <div>
-            <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <History size={18} color="#00ADB5" />
-              <span>Saved Mood Entries List</span>
+      <div className="glass-panel checkin-content-panel">
+        <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <History size={15} color="#00ADB5" />
+            <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#EEEEEE', margin: 0 }}>
+              Saved Mood Entries
             </h3>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-              Chronological order of your recorded entries.
+            <p className="mobile-hide" style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 0 4px' }}>
+              • Chronological order
             </p>
           </div>
 
-          <div style={{ fontSize: '12px', color: '#00FFF5', background: 'rgba(0, 173, 181, 0.15)', padding: '4px 12px', border: '1px solid rgba(0, 173, 181, 0.3)' }}>
-            Showing {filteredMoods.length} of {moods.length} {moods.length === 1 ? 'entry' : 'entries'}
+          <div style={{ fontSize: '11px', color: '#00FFF5', background: 'rgba(0, 173, 181, 0.15)', padding: '2px 8px', border: '1px solid rgba(0, 173, 181, 0.3)' }}>
+            {filteredMoods.length} of {moods.length} entries
           </div>
         </div>
 
         {/* Filter & Search Bar */}
-        <div style={{
-          background: 'rgba(34, 40, 49, 0.8)',
-          border: '1px solid rgba(0, 173, 181, 0.25)',
-          padding: '12px',
-          marginBottom: '16px',
-          borderRadius: '0px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '10px'
-        }}>
+        <div className="checkin-filter-bar">
           {/* Top Search & Reset */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: '220px', position: 'relative' }}>
-              <Search size={15} color="#00FFF5" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <Search size={14} color="#00FFF5" style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="text"
                 value={searchQuery}
@@ -163,7 +166,7 @@ export default function CheckinPage() {
                   border: '1px solid rgba(0, 173, 181, 0.3)',
                   color: '#EEEEEE',
                   fontSize: '12px',
-                  padding: '7px 30px 7px 32px',
+                  padding: '6px 26px 6px 28px',
                   outline: 'none',
                   borderRadius: '0px'
                 }}
@@ -171,43 +174,95 @@ export default function CheckinPage() {
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#b0b8c1', cursor: 'pointer' }}
+                  style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#b0b8c1', cursor: 'pointer', padding: 0 }}
                 >
-                  <X size={14} />
+                  <X size={13} />
                 </button>
               )}
             </div>
+
+            {/* Filter Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className="glass-button"
+              style={{
+                fontSize: '11px',
+                padding: '6px 11px',
+                borderRadius: '0px',
+                color: isFilterActive ? '#00FFF5' : 'var(--text-secondary)',
+                borderColor: isFilterActive ? '#00FFF5' : 'rgba(0, 173, 181, 0.3)',
+                background: isFilterActive ? 'rgba(0, 255, 245, 0.12)' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                flexShrink: 0
+              }}
+              title={isFilterOpen ? 'Sembunyikan opsi filter' : 'Buka opsi filter'}
+            >
+              <SlidersHorizontal size={12} />
+              <span>Filter{activeFiltersCount > 0 ? ` (${activeFiltersCount})` : ''}</span>
+              {isFilterActive && (
+                <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#00FFF5' }} />
+              )}
+            </button>
 
             {isFilterActive && (
               <button
                 onClick={resetFilters}
                 className="glass-button"
-                style={{ fontSize: '11px', padding: '6px 12px', color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.3)', borderRadius: '0px' }}
+                style={{ fontSize: '11px', padding: '6px 9px', color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.3)', borderRadius: '0px', flexShrink: 0 }}
                 title="Reset all filters"
               >
-                <RotateCcw size={13} />
-                <span>Reset Filter</span>
+                <RotateCcw size={12} />
+                <span className="mobile-hide">Reset</span>
               </button>
             )}
           </div>
 
-          {/* Filter Dropdowns */}
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#00FFF5', fontWeight: 700, marginRight: '4px' }}>
-              <SlidersHorizontal size={13} />
-              <span>Filter:</span>
+          {/* Active Filter Badges when closed (Minimalist preview) */}
+          {isFilterActive && !isFilterOpen && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+              {filterScore !== 'ALL' && (
+                <span style={{ fontSize: '10px', color: '#00FFF5', background: 'rgba(0, 173, 181, 0.15)', border: '1px solid rgba(0, 173, 181, 0.35)', padding: '2px 7px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  Mood: {filterScore}/5
+                  <button type="button" onClick={() => setFilterScore('ALL')} style={{ background: 'none', border: 'none', color: '#00FFF5', cursor: 'pointer', padding: 0 }}>&times;</button>
+                </span>
+              )}
+              {filterTagId !== 'ALL' && (
+                <span style={{ fontSize: '10px', color: '#00FFF5', background: 'rgba(0, 173, 181, 0.15)', border: '1px solid rgba(0, 173, 181, 0.35)', padding: '2px 7px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  Tag: {tags.find(t => String(t.id) === String(filterTagId))?.nama || filterTagId}
+                  <button type="button" onClick={() => setFilterTagId('ALL')} style={{ background: 'none', border: 'none', color: '#00FFF5', cursor: 'pointer', padding: 0 }}>&times;</button>
+                </span>
+              )}
+              {filterMedia !== 'ALL' && (
+                <span style={{ fontSize: '10px', color: '#00FFF5', background: 'rgba(0, 173, 181, 0.15)', border: '1px solid rgba(0, 173, 181, 0.35)', padding: '2px 7px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  Berkas: {filterMedia}
+                  <button type="button" onClick={() => setFilterMedia('ALL')} style={{ background: 'none', border: 'none', color: '#00FFF5', cursor: 'pointer', padding: 0 }}>&times;</button>
+                </span>
+              )}
+              {sortOrder !== 'DESC' && (
+                <span style={{ fontSize: '10px', color: '#00FFF5', background: 'rgba(0, 173, 181, 0.15)', border: '1px solid rgba(0, 173, 181, 0.35)', padding: '2px 7px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  Urutan: Terlama
+                  <button type="button" onClick={() => setSortOrder('DESC')} style={{ background: 'none', border: 'none', color: '#00FFF5', cursor: 'pointer', padding: 0 }}>&times;</button>
+                </span>
+              )}
             </div>
+          )}
 
+          {/* Filter Dropdowns (Responsive: 1-row 4-columns on laptop, 2x2 grid on mobile) */}
+          <div className={`checkin-filter-dropdowns ${isFilterOpen ? 'is-open' : ''}`}>
             {/* Mood Score Filter */}
             <select
               value={filterScore}
               onChange={(e) => setFilterScore(e.target.value)}
               style={{
-                background: 'rgba(0, 0, 0, 0.4)',
+                width: '100%',
+                background: 'rgba(0, 0, 0, 0.5)',
                 border: filterScore !== 'ALL' ? '1px solid #00FFF5' : '1px solid rgba(0, 173, 181, 0.25)',
                 color: filterScore !== 'ALL' ? '#00FFF5' : '#EEEEEE',
                 fontSize: '11px',
-                padding: '5px 8px',
+                padding: '5px 6px',
                 borderRadius: '0px',
                 outline: 'none',
                 cursor: 'pointer'
@@ -226,11 +281,12 @@ export default function CheckinPage() {
               value={filterTagId}
               onChange={(e) => setFilterTagId(e.target.value)}
               style={{
-                background: 'rgba(0, 0, 0, 0.4)',
+                width: '100%',
+                background: 'rgba(0, 0, 0, 0.5)',
                 border: filterTagId !== 'ALL' ? '1px solid #00FFF5' : '1px solid rgba(0, 173, 181, 0.25)',
                 color: filterTagId !== 'ALL' ? '#00FFF5' : '#EEEEEE',
                 fontSize: '11px',
-                padding: '5px 8px',
+                padding: '5px 6px',
                 borderRadius: '0px',
                 outline: 'none',
                 cursor: 'pointer'
@@ -247,11 +303,12 @@ export default function CheckinPage() {
               value={filterMedia}
               onChange={(e) => setFilterMedia(e.target.value)}
               style={{
-                background: 'rgba(0, 0, 0, 0.4)',
+                width: '100%',
+                background: 'rgba(0, 0, 0, 0.5)',
                 border: filterMedia !== 'ALL' ? '1px solid #00FFF5' : '1px solid rgba(0, 173, 181, 0.25)',
                 color: filterMedia !== 'ALL' ? '#00FFF5' : '#EEEEEE',
                 fontSize: '11px',
-                padding: '5px 8px',
+                padding: '5px 6px',
                 borderRadius: '0px',
                 outline: 'none',
                 cursor: 'pointer'
@@ -259,6 +316,7 @@ export default function CheckinPage() {
             >
               <option value="ALL">All Attachments</option>
               <option value="PHOTO">Has Photo</option>
+              <option value="VIDEO">Has Video</option>
               <option value="VOICE">Has Voice Note</option>
               <option value="NOTE">Has Text Note</option>
             </select>
@@ -268,15 +326,15 @@ export default function CheckinPage() {
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
               style={{
-                background: 'rgba(0, 0, 0, 0.4)',
+                width: '100%',
+                background: 'rgba(0, 0, 0, 0.5)',
                 border: '1px solid rgba(0, 173, 181, 0.25)',
                 color: '#EEEEEE',
                 fontSize: '11px',
-                padding: '5px 8px',
+                padding: '5px 6px',
                 borderRadius: '0px',
                 outline: 'none',
-                cursor: 'pointer',
-                marginLeft: 'auto'
+                cursor: 'pointer'
               }}
             >
               <option value="DESC">Newest First</option>
@@ -286,16 +344,16 @@ export default function CheckinPage() {
         </div>
 
         {filteredMoods.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+          <div style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)', fontSize: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
             <span>{isFilterActive ? 'No mood entries match the selected filters.' : 'No mood check-in data recorded yet.'}</span>
             {isFilterActive ? (
-              <button onClick={resetFilters} className="glass-button" style={{ fontSize: '12px', padding: '8px 16px', color: '#00FFF5' }}>
-                <RotateCcw size={14} />
+              <button onClick={resetFilters} className="glass-button" style={{ fontSize: '11px', padding: '6px 14px', color: '#00FFF5' }}>
+                <RotateCcw size={13} />
                 Reset Filter
               </button>
             ) : (
-              <NavLink to="/checkin/new" className="glass-button glass-button-primary" style={{ fontSize: '12px', padding: '8px 16px' }}>
-                <PlusCircle size={15} />
+              <NavLink to="/checkin/new" className="glass-button glass-button-primary" style={{ fontSize: '12px', padding: '7px 16px' }}>
+                <PlusCircle size={14} />
                 Start Check-in Now
               </NavLink>
             )}
@@ -309,9 +367,8 @@ export default function CheckinPage() {
               return (
                 <div
                   key={m.id}
-                  className="glass-panel-hover"
+                  className="glass-panel-hover checkin-card-entry"
                   style={{
-                    padding: '16px',
                     borderRadius: '0px',
                     background: 'rgba(34, 40, 49, 0.6)',
                     border: `1px solid ${color}35`,
@@ -323,39 +380,39 @@ export default function CheckinPage() {
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <div style={{
-                        padding: '6px 12px',
+                        padding: '4px 8px',
                         background: `${color}22`,
                         border: `1px solid ${color}`,
                         color: color,
-                        fontSize: '18px',
+                        fontSize: '15px',
                         fontWeight: 800,
                         borderRadius: '0px'
                       }}>
                         {percentStr}
                       </div>
                       <div>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                           <span>{MOOD_LABELS[m.moodScore]}</span>
                           <span style={{
-                            fontSize: '11px',
-                            padding: '2px 8px',
+                            fontSize: '10px',
+                            padding: '1px 6px',
                             borderRadius: '0px',
                             background: 'rgba(0, 173, 181, 0.15)',
                             color: '#00FFF5',
                             fontWeight: 700,
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '4px',
+                            gap: '3px',
                             border: '1px solid rgba(0, 173, 181, 0.3)'
                           }}>
-                            <Clock size={11} color="#00FFF5" />
+                            <Clock size={10} color="#00FFF5" />
                             <span>{formatWaktuToJam(m.waktu)}</span>
                           </span>
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
-                          <Calendar size={12} />
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                          <Calendar size={11} />
                           <span>{dateStr}</span>
                         </div>
                       </div>
@@ -364,11 +421,11 @@ export default function CheckinPage() {
                     <button
                       onClick={() => setEntryToDelete(m)}
                       className="glass-button"
-                      style={{ padding: '4px 10px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)', fontSize: '11px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '0px' }}
+                      style={{ padding: '3px 8px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)', fontSize: '10px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '0px' }}
                       title="Delete this entry"
                     >
-                      <Trash2 size={13} />
-                      Delete
+                      <Trash2 size={12} />
+                      <span className="mobile-hide">Delete</span>
                     </button>
                   </div>
 
@@ -379,52 +436,118 @@ export default function CheckinPage() {
                     </p>
                   )}
 
-                  {/* Photo Attachment Preview */}
+                  {/* Photo / Video Attachment Preview */}
                   {m.photoUrl && (
                     <div style={{ marginTop: '4px' }}>
-                      <div
-                        onClick={() => setSelectedPhotoModal(m.photoUrl)}
-                        style={{
-                          display: 'inline-block',
-                          position: 'relative',
-                          cursor: 'pointer',
-                          border: '1px solid rgba(0, 173, 181, 0.35)',
-                          background: 'rgba(0, 0, 0, 0.4)',
-                          padding: '4px',
-                          maxWidth: '280px',
-                          overflow: 'hidden'
-                        }}
-                        title="Click to view full size photo"
-                      >
-                        <img
-                          src={m.photoUrl}
-                          alt="Check-in Photo"
+                      {isVideoUrl(m.photoUrl) ? (
+                        <div
+                          onClick={() => setSelectedPhotoModal(m.photoUrl)}
                           style={{
-                            width: '100%',
-                            maxHeight: '160px',
-                            objectFit: 'cover',
-                            display: 'block'
+                            display: 'inline-block',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            border: '1px solid rgba(0, 173, 181, 0.45)',
+                            background: '#000',
+                            padding: '4px',
+                            maxWidth: '280px',
+                            overflow: 'hidden'
                           }}
-                        />
-                        <div style={{
-                          position: 'absolute',
-                          bottom: '8px',
-                          right: '8px',
-                          background: 'rgba(0, 0, 0, 0.75)',
-                          color: '#00FFF5',
-                          fontSize: '10px',
-                          fontWeight: 700,
-                          padding: '3px 8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          backdropFilter: 'blur(4px)',
-                          border: '1px solid rgba(0, 173, 181, 0.4)'
-                        }}>
-                          <ImageIcon size={12} />
-                          View Photo
+                          title="Click to play video clip"
+                        >
+                          <video
+                            src={m.photoUrl}
+                            preload="metadata"
+                            muted
+                            playsInline
+                            style={{
+                              width: '100%',
+                              maxHeight: '160px',
+                              objectFit: 'cover',
+                              display: 'block'
+                            }}
+                          />
+                          <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            background: 'rgba(0, 0, 0, 0.65)',
+                            borderRadius: '50%',
+                            width: '38px',
+                            height: '38px',
+                            color: '#00FFF5',
+                            border: '1px solid rgba(0, 173, 181, 0.6)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 0 12px rgba(0, 173, 181, 0.4)'
+                          }}>
+                            <Play size={18} fill="#00FFF5" style={{ marginLeft: '2px' }} />
+                          </div>
+                          <div style={{
+                            position: 'absolute',
+                            bottom: '8px',
+                            right: '8px',
+                            background: 'rgba(0, 0, 0, 0.78)',
+                            color: '#00FFF5',
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            padding: '3px 8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            backdropFilter: 'blur(4px)',
+                            border: '1px solid rgba(0, 173, 181, 0.4)'
+                          }}>
+                            <Video size={12} color="#00FFF5" />
+                            Play Video
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div
+                          onClick={() => setSelectedPhotoModal(m.photoUrl)}
+                          style={{
+                            display: 'inline-block',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            border: '1px solid rgba(0, 173, 181, 0.35)',
+                            background: 'rgba(0, 0, 0, 0.4)',
+                            padding: '4px',
+                            maxWidth: '280px',
+                            overflow: 'hidden'
+                          }}
+                          title="Click to view full size photo"
+                        >
+                          <img
+                            src={m.photoUrl}
+                            alt="Check-in Photo"
+                            style={{
+                              width: '100%',
+                              maxHeight: '160px',
+                              objectFit: 'cover',
+                              display: 'block'
+                            }}
+                          />
+                          <div style={{
+                            position: 'absolute',
+                            bottom: '8px',
+                            right: '8px',
+                            background: 'rgba(0, 0, 0, 0.75)',
+                            color: '#00FFF5',
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            padding: '3px 8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            backdropFilter: 'blur(4px)',
+                            border: '1px solid rgba(0, 173, 181, 0.4)'
+                          }}>
+                            <ImageIcon size={12} />
+                            View Photo
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -524,11 +647,21 @@ export default function CheckinPage() {
             onClick={(e) => e.stopPropagation()}
             style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}
           >
-            <img
-              src={selectedPhotoModal}
-              alt="Check-in Photo Full"
-              style={{ maxWidth: '100%', maxHeight: '85vh', objectFit: 'contain', border: '1px solid rgba(0, 173, 181, 0.5)', background: '#000' }}
-            />
+            {isVideoUrl(selectedPhotoModal) ? (
+              <video
+                src={selectedPhotoModal}
+                controls
+                autoPlay
+                playsInline
+                style={{ maxWidth: '100%', maxHeight: '85vh', objectFit: 'contain', border: '1px solid rgba(0, 173, 181, 0.5)', background: '#000', display: 'block' }}
+              />
+            ) : (
+              <img
+                src={selectedPhotoModal}
+                alt="Check-in Photo Full"
+                style={{ maxWidth: '100%', maxHeight: '85vh', objectFit: 'contain', border: '1px solid rgba(0, 173, 181, 0.5)', background: '#000', display: 'block' }}
+              />
+            )}
             <button
               onClick={() => setSelectedPhotoModal(null)}
               className="glass-button"

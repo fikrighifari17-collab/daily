@@ -1,35 +1,62 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   ShieldCheck, 
-  Lock, 
-  Download, 
   KeyRound, 
-  Check, 
-  FileSpreadsheet, 
-  FileJson, 
   User, 
   Camera, 
   Eye, 
   EyeOff, 
-  Sparkles, 
   Save, 
   Trash2,
-  AlertCircle
+  Crop,
+  ChevronDown,
+  Edit3,
+  X,
+  Check,
+  Hash,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
+import AvatarCropModal from '../components/AvatarCropModal';
 
 export default function SettingsPage() {
-  const { user, handleUpdateProfile, pinCode, setAppPin } = useAuth();
-  const { moods, schedules, tags, copingList, brainDumps } = useData();
+  const { user, handleUpdateProfile } = useAuth();
   const { toast } = useToast();
 
   // Profile Edit State
   const [nama, setNama] = useState(user?.nama || '');
   const [username, setUsername] = useState(user?.username || '');
   const [avatar, setAvatar] = useState(user?.avatar || '');
-  const [savingProfile, setSavingProfile] = useState(false);
+  const [tag, setTag] = useState(user?.tag || '#');
+  const [describe, setDescribe] = useState(user?.describe || 'Best emoji to describe your day?');
+
+  // Sync state if user changes
+  useEffect(() => {
+    if (user) {
+      setNama(user.nama || '');
+      setUsername(user.username || '');
+      setAvatar(user.avatar || '');
+      if (user.tag !== undefined) setTag(user.tag || '#');
+      if (user.describe !== undefined) setDescribe(user.describe || 'Best emoji to describe your day?');
+    }
+  }, [user]);
+
+  // Discord Modals State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [rawCropImage, setRawCropImage] = useState(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [showEditMenu, setShowEditMenu] = useState(false);
+
+  const openEditProfileModal = () => {
+    setNama(user?.nama || '');
+    setUsername(user?.username || '');
+    setAvatar(user?.avatar || '');
+    setTag(user?.tag || '#');
+    setDescribe(user?.describe || 'Best emoji to describe your day?');
+    setIsEditModalOpen(true);
+  };
 
   // Password Change State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -39,84 +66,119 @@ export default function SettingsPage() {
   const [showNewPass, setShowNewPass] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
 
-  // PIN State
-  const [inputPin, setInputPin] = useState(pinCode || '');
-
   const fileInputRef = useRef(null);
+  const editMenuRef = useRef(null);
+
+  // Close edit menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (editMenuRef.current && !editMenuRef.current.contains(e.target)) {
+        setShowEditMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Handle Photo Upload
   const handlePhotoUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Image size must be under 2MB.');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Ukuran foto maksimal 10MB.');
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (uploadEvent) => {
-      const img = new Image();
-      img.onload = () => {
-        // Resize image to max 200x200 to keep it ultra lightweight
-        const canvas = document.createElement('canvas');
-        const maxSize = 200;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > maxSize) {
-            height *= maxSize / width;
-            width = maxSize;
-          }
-        } else {
-          if (height > maxSize) {
-            width *= maxSize / height;
-            height = maxSize;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        setAvatar(dataUrl);
-        toast.info('Photo loaded. Click "Save Profile" to apply!');
-      };
-      img.src = uploadEvent.target.result;
+      setRawCropImage(uploadEvent.target.result);
+      setIsCropModalOpen(true);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = async (croppedDataUrl) => {
+    setAvatar(croppedDataUrl);
+    setIsCropModalOpen(false);
+    setRawCropImage(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    // Otomatis tersimpan begitu selesai crop
+    try {
+      const res = await handleUpdateProfile({
+        nama: nama.trim(),
+        username: username.trim().toLowerCase(),
+        avatar: croppedDataUrl
+      });
+      if (res?.user) {
+        toast.success('Foto profil berhasil disimpan!');
+      } else {
+        toast.error('Gagal menyimpan foto profil.');
+      }
+    } catch (err) {
+      toast.error(err.message || 'Gagal menyimpan foto profil.');
+    }
+  };
+
+  const handleCropCancel = () => {
+    setIsCropModalOpen(false);
+    setRawCropImage(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleDeletePhoto = async () => {
+    setShowEditMenu(false);
+    setAvatar('');
+    try {
+      await handleUpdateProfile({
+        nama: nama.trim(),
+        username: username.trim().toLowerCase(),
+        avatar: null
+      });
+      toast.info('Foto profil berhasil dihapus.');
+    } catch (err) {
+      toast.error(err.message || 'Gagal menghapus foto.');
+    }
   };
 
   // Avatar Presets
   const avatarPresets = ['🌿', '🎓', '☕', '🐱', '🚀', '✨', '🧘', '🎧'];
 
-  // Save Profile (Name, Username, Avatar)
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
+  const handleSelectPreset = async (preset) => {
+    setAvatar(preset);
+    try {
+      await handleUpdateProfile({
+        nama: nama.trim(),
+        username: username.trim().toLowerCase(),
+        avatar: preset
+      });
+      toast.success('Avatar berhasil diperbarui!');
+    } catch (err) {
+      toast.error(err.message || 'Gagal memperbarui avatar.');
+    }
+  };
+
+  // Auto-save Nama & Username saat selesai mengetik (onBlur) atau tekan Enter
+  const handleAutoSaveField = async () => {
     if (!username.trim()) {
-      toast.error('Username cannot be empty.');
+      toast.error('Username tidak boleh kosong.');
       return;
     }
-
-    setSavingProfile(true);
+    if (nama.trim() === (user?.nama || '') && username.trim().toLowerCase() === (user?.username || '')) {
+      return;
+    }
     try {
       const res = await handleUpdateProfile({
         nama: nama.trim(),
         username: username.trim().toLowerCase(),
         avatar: avatar || null
       });
-
       if (res?.user) {
-        toast.success('Profile & username successfully updated!');
-      } else {
-        toast.error('Failed to update profile.');
+        toast.success('Profil berhasil diperbarui!');
       }
     } catch (err) {
-      toast.error(err.message || 'Error updating profile.');
-    } finally {
-      setSavingProfile(false);
+      toast.error(err.message || 'Gagal memperbarui profil.');
     }
   };
 
@@ -158,64 +220,6 @@ export default function SettingsPage() {
     }
   };
 
-  // Save PIN
-  const handleSavePin = (e) => {
-    e.preventDefault();
-    if (inputPin.length === 4) {
-      setAppPin(inputPin);
-      toast.success('Security PIN successfully enabled!');
-    } else if (inputPin.length === 0) {
-      setAppPin('');
-      toast.info('Security PIN disabled.');
-    } else {
-      toast.error('PIN must be exactly 4 digits.');
-    }
-  };
-
-  // Export JSON
-  const exportJSON = () => {
-    const exportData = {
-      exportDate: new Date().toISOString(),
-      user,
-      moods,
-      schedules,
-      tags,
-      copingList,
-      brainDumps
-    };
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `semestara_backup_${new Date().toISOString().split('T')[0]}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-    toast.success('JSON backup file downloaded successfully!');
-  };
-
-  // Export CSV
-  const exportCSV = () => {
-    let csvContent = "data:text/csv;charset=utf-8,ID,Date,Time,MoodScore,Notes\n";
-    moods.forEach((m) => {
-      const row = [
-        m.id,
-        m.tanggal,
-        m.waktu,
-        m.moodScore,
-        `"${(m.catatan || '').replace(/"/g, '""')}"`
-      ].join(",");
-      csvContent += row + "\n";
-    });
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `semestara_moods_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    toast.success('CSV mood history file downloaded successfully!');
-  };
-
   return (
     <div className="animate-fade-in" style={{ width: '100%', margin: '0 auto', padding: '0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
       
@@ -238,7 +242,7 @@ export default function SettingsPage() {
           <div>
             <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#EEEEEE', margin: 0 }}>Account & Profile Settings</h2>
             <p style={{ fontSize: '12px', color: '#b0b8c1', margin: '3px 0 0 0' }}>
-              Update your username, profile photo, change password, and configure PIN privacy lock.
+              Perbarui nama, username, foto profil, dan kata sandi akun Anda.
             </p>
           </div>
         </div>
@@ -251,176 +255,228 @@ export default function SettingsPage() {
         gap: '12px'
       }}>
         
-        {/* ================= CARD 1: PROFILE & AVATAR PHOTO ================= */}
-        <div className="glass-panel" style={{ padding: '22px', borderRadius: '8px', border: '1px solid rgba(0, 173, 181, 0.25)' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-            <User size={18} color="#00ADB5" />
-            <span>Profile & Photo</span>
-          </h3>
+        {/* ================= CARD 1: DISCORD-STYLE USER PROFILE CARD ================= */}
+        <div style={{
+          background: '#181a20',
+          borderRadius: '16px',
+          overflow: 'hidden',
+          border: '1px solid rgba(0, 173, 181, 0.25)',
+          boxShadow: '0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 173, 181, 0.1)',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          {/* Top Banner (Discord style) */}
+          <div style={{
+            height: '75px',
+            background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.45), rgba(34, 40, 49, 0.95))',
+            position: 'relative',
+            borderBottom: '1px solid rgba(0, 173, 181, 0.2)'
+          }} />
 
-          <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* Avatar Photo Preview & Upload Controls */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px', background: 'rgba(34, 40, 49, 0.6)', borderRadius: '8px', border: '1px solid rgba(0, 173, 181, 0.2)' }}>
-              {/* Photo Display */}
-              <div style={{
-                width: '72px',
-                height: '72px',
-                borderRadius: '8px',
-                background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.3), rgba(57, 62, 70, 0.8))',
-                border: '2px solid #00ADB5',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden',
-                flexShrink: 0,
-                boxShadow: '0 0 15px rgba(0, 173, 181, 0.3)'
-              }}>
+          {/* Profile Card Body */}
+          <div style={{ padding: '0 18px 20px 18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Avatar & Speech Bubble Row */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: '-42px' }}>
+              {/* Circular Avatar */}
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                title="Klik untuk mengganti foto profil"
+                style={{
+                  width: '84px',
+                  height: '84px',
+                  borderRadius: '50%',
+                  border: '6px solid #181a20',
+                  background: '#222831',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  flexShrink: 0,
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
+                }}
+                className="discord-avatar-container"
+              >
                 {avatar ? (
                   avatar.startsWith('data:') || avatar.startsWith('http') ? (
                     <img src={avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <span style={{ fontSize: '32px' }}>{avatar}</span>
+                    <span style={{ fontSize: '38px' }}>{avatar}</span>
                   )
                 ) : (
-                  <User size={36} color="#00FFF5" />
+                  <User size={40} color="#00FFF5" />
                 )}
-              </div>
 
-              {/* Upload Actions */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  accept="image/*" 
-                  onChange={handlePhotoUpload} 
-                  style={{ display: 'none' }} 
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="glass-button glass-button-primary"
-                  style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '8px', gap: '6px', justifyContent: 'center' }}
+                {/* Hover Camera Overlay */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'rgba(0, 0, 0, 0.55)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: 0,
+                  transition: 'opacity 0.2s'
+                }}
+                className="discord-avatar-overlay"
                 >
-                  <Camera size={14} />
-                  <span>Upload Foto</span>
-                </button>
-                {avatar && (
-                  <button
-                    type="button"
-                    onClick={() => setAvatar('')}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#f87171',
-                      fontSize: '11px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '2px 4px'
-                    }}
-                  >
-                    <Trash2 size={12} />
-                    <span>Hapus Foto</span>
-                  </button>
-                )}
+                  <Camera size={20} color="#FFFFFF" />
+                </div>
+
+                {/* Status Indicator Dot (Online Green) */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: '2px',
+                  right: '2px',
+                  width: '18px',
+                  height: '18px',
+                  borderRadius: '50%',
+                  background: '#10b981',
+                  border: '3px solid #181a20'
+                }} />
+              </div>
+
+              {/* Status Speech Bubble (Discord style) */}
+              <div 
+                onClick={openEditProfileModal}
+                title="Klik untuk ubah status describe"
+                style={{
+                  position: 'relative',
+                  background: '#2b2d31',
+                  borderRadius: '12px',
+                  padding: '8px 14px',
+                  fontSize: '12px',
+                  color: '#b0b8c1',
+                  maxWidth: '220px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  marginBottom: '8px',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#32353b'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#2b2d31'}
+              >
+                {/* Speech Bubble Arrow */}
+                <div style={{
+                  position: 'absolute',
+                  left: '-6px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: 0,
+                  height: 0,
+                  borderTop: '6px solid transparent',
+                  borderBottom: '6px solid transparent',
+                  borderRight: '6px solid #2b2d31'
+                }} />
+                <span style={{ color: '#00FFF5', fontSize: '13px' }}>+</span>
+                <span style={{ fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user?.describe || 'Best emoji to describe your day?'}
+                </span>
               </div>
             </div>
 
-            {/* Quick Avatar Emojis */}
+            {/* User Identity: Bold Name & Handle */}
             <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '6px' }}>
-                Atau pilih avatar cepat:
-              </label>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {avatarPresets.map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => setAvatar(preset)}
-                    style={{
-                      width: '34px',
-                      height: '34px',
-                      borderRadius: '8px',
-                      fontSize: '16px',
-                      background: avatar === preset ? 'rgba(0, 173, 181, 0.4)' : 'rgba(57, 62, 70, 0.6)',
-                      border: avatar === preset ? '2px solid #00FFF5' : '1px solid rgba(0, 173, 181, 0.2)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    {preset}
-                  </button>
-                ))}
+              <h3 style={{
+                margin: 0,
+                fontSize: '22px',
+                fontWeight: 800,
+                color: '#EEEEEE',
+                letterSpacing: '0.02em',
+                lineHeight: 1.2
+              }}>
+                {user?.nama || 'SAXTON'}
+              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 600 }}>
+                  .{user?.username || 'pikrii'}
+                </span>
+                <span style={{
+                  background: 'rgba(0, 173, 181, 0.25)',
+                  color: '#00FFF5',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  padding: '1px 6px',
+                  borderRadius: '4px',
+                  border: '1px solid rgba(0, 173, 181, 0.4)'
+                }}>
+                  {user?.tag ? (user.tag.startsWith('#') ? user.tag : `#${user.tag}`) : '#'}
+                </span>
               </div>
             </div>
 
-            {/* Name Input */}
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '6px' }}>
-                Nama Lengkap (Full Name)
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Haerin"
-                value={nama}
-                onChange={(e) => setNama(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  background: 'rgba(34, 40, 49, 0.9)',
-                  border: '1px solid rgba(0, 173, 181, 0.3)',
-                  color: '#EEEEEE',
-                  fontSize: '13px',
-                  outline: 'none',
-                  borderRadius: '8px'
-                }}
-              />
-            </div>
-
-            {/* Username Input */}
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '6px' }}>
-                Username
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. haerin123"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  background: 'rgba(34, 40, 49, 0.9)',
-                  border: '1px solid rgba(0, 173, 181, 0.3)',
-                  color: '#EEEEEE',
-                  fontSize: '13px',
-                  outline: 'none',
-                  borderRadius: '8px'
-                }}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={savingProfile}
-              className="glass-button glass-button-primary"
-              style={{
-                marginTop: '4px',
-                padding: '10px',
-                fontSize: '13px',
+            {/* Category / Collection Pill (Game Collection style) */}
+            <div style={{
+              background: '#232428',
+              borderRadius: '8px',
+              padding: '12px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              border: '1px solid rgba(255, 255, 255, 0.06)'
+            }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE' }}>
+                Akun Mahasiswa
+              </span>
+              <span style={{
+                fontSize: '11px',
+                color: '#00FFF5',
+                background: 'rgba(0, 173, 181, 0.2)',
+                padding: '2px 8px',
+                borderRadius: '6px',
                 fontWeight: 700,
-                justifyContent: 'center',
-                borderRadius: '8px'
-              }}
-            >
-              <Save size={15} />
-              <span>{savingProfile ? 'Saving...' : 'Simpan Profil & Username'}</span>
-            </button>
-          </form>
+                border: '1px solid rgba(0, 173, 181, 0.35)'
+              }}>
+                Aktif
+              </span>
+            </div>
+
+            {/* Action Card: Edit Profile only (Tanpa Do Not Disturb & Switch Accounts) */}
+            <div style={{
+              background: '#232428',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              border: '1px solid rgba(255, 255, 255, 0.06)'
+            }}>
+              <button
+                type="button"
+                onClick={openEditProfileModal}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '14px 16px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#EEEEEE',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.07)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                <Edit3 size={16} color="#94a3b8" />
+                <span>Edit Profile</span>
+              </button>
+            </div>
+
+            {/* Hidden File Input */}
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              accept="image/*" 
+              onChange={handlePhotoUpload} 
+              style={{ display: 'none' }} 
+            />
+          </div>
         </div>
 
         {/* ================= CARD 2: CHANGE PASSWORD ("BENARKAN PASSWORD") ================= */}
@@ -560,84 +616,352 @@ export default function SettingsPage() {
 
       </div>
 
-      {/* ================= CARD 3: PIN ACCESS LOCK & DATA EXPORT ================= */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-        gap: '12px'
-      }}>
-        
-        {/* PIN Security */}
-        <div className="glass-panel" style={{ padding: '22px', borderRadius: '8px', border: '1px solid rgba(0, 173, 181, 0.25)' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <Lock size={18} color="#00ADB5" />
-            <span>PIN Access Lock (Optional)</span>
-          </h3>
-          <p style={{ fontSize: '12px', color: '#b0b8c1', marginBottom: '14px' }}>
-            Kunci antarmuka aplikasi dengan 4-digit PIN setiap kali dibuka.
-          </p>
+      {/* Discord-style Avatar Crop Modal */}
+      {isCropModalOpen && rawCropImage && (
+        <AvatarCropModal
+          imageSrc={rawCropImage}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
+      )}
 
-          <form onSubmit={handleSavePin} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-            <input
-              type="password"
-              maxLength={4}
-              placeholder="e.g. 1234 (Kosongkan jika nonaktif)"
-              value={inputPin}
-              onChange={(e) => setInputPin(e.target.value.replace(/\D/g, ''))}
-              style={{
-                flex: 1,
-                padding: '9px 12px',
-                background: 'rgba(34, 40, 49, 0.9)',
-                border: '1px solid rgba(0, 173, 181, 0.3)',
-                color: '#EEEEEE',
-                fontSize: '13px',
-                outline: 'none',
-                borderRadius: '8px',
-                letterSpacing: '0.1em'
-              }}
-            />
-            <button
-              type="submit"
-              className="glass-button glass-button-primary"
-              style={{ padding: '9px 16px', fontSize: '13px', borderRadius: '8px' }}
-            >
-              <Check size={15} />
-              <span>Simpan PIN</span>
-            </button>
-          </form>
-        </div>
+      {/* Discord-style Edit Profile Modal (Mounted to document.body for true viewport centering) */}
+      {isEditModalOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            zIndex: 99990,
+            background: 'rgba(0, 0, 0, 0.78)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            boxSizing: 'border-box'
+          }}
+          onClick={() => setIsEditModalOpen(false)}
+        >
+          <div
+            className="glass-panel"
+            style={{
+              width: '100%',
+              maxWidth: '460px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              background: '#181a20',
+              border: '1px solid rgba(0, 173, 181, 0.35)',
+              borderRadius: '16px',
+              padding: '22px',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 173, 181, 0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Edit3 size={18} color="#00FFF5" />
+                  <span>Edit Profile</span>
+                </h3>
+                <p style={{ margin: '3px 0 0 0', fontSize: '11px', color: '#94a3b8' }}>
+                  Sesuaikan foto profil, nama, tag #, status describe, dan username akun Anda.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: '4px'
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
 
-        {/* Data Export */}
-        <div className="glass-panel" style={{ padding: '22px', borderRadius: '8px', border: '1px solid rgba(0, 173, 181, 0.25)' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <Download size={18} color="#00ADB5" />
-            <span>Export & Backup Data</span>
-          </h3>
-          <p style={{ fontSize: '12px', color: '#b0b8c1', marginBottom: '14px' }}>
-            Unduh riwayat mood dan jadwal kuliah Anda untuk cadangan data pribadi.
-          </p>
+            {/* Avatar Edit Row */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              padding: '12px 14px',
+              background: '#232428',
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 255, 255, 0.06)'
+            }}>
+              <div style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                background: '#222831',
+                border: '3px solid #00ADB5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                flexShrink: 0
+              }}>
+                {avatar ? (
+                  avatar.startsWith('data:') || avatar.startsWith('http') ? (
+                    <img src={avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ fontSize: '30px' }}>{avatar}</span>
+                  )
+                ) : (
+                  <User size={32} color="#00FFF5" />
+                )}
+              </div>
 
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <button
-              onClick={exportJSON}
-              className="glass-button"
-              style={{ fontSize: '12px', padding: '8px 14px', borderRadius: '8px', gap: '6px' }}
-            >
-              <FileJson size={15} color="#00ADB5" />
-              <span>Full Backup (JSON)</span>
-            </button>
-            <button
-              onClick={exportCSV}
-              className="glass-button"
-              style={{ fontSize: '12px', padding: '8px 14px', borderRadius: '8px', gap: '6px' }}
-            >
-              <FileSpreadsheet size={15} color="#00FFF5" />
-              <span>Mood History (CSV)</span>
-            </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="glass-button glass-button-primary"
+                    style={{ fontSize: '11px', padding: '6px 10px', borderRadius: '6px', gap: '4px' }}
+                  >
+                    <Camera size={13} />
+                    <span>Ganti Foto</span>
+                  </button>
+
+                  {avatar && (avatar.startsWith('data:') || avatar.startsWith('http')) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRawCropImage(avatar);
+                        setIsCropModalOpen(true);
+                      }}
+                      className="glass-button"
+                      style={{ fontSize: '11px', padding: '6px 10px', borderRadius: '6px', gap: '4px', color: '#00FFF5' }}
+                    >
+                      <Crop size={13} />
+                      <span>Pangkas</span>
+                    </button>
+                  )}
+
+                  {avatar && (
+                    <button
+                      type="button"
+                      onClick={handleDeletePhoto}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#f87171',
+                        fontSize: '11px',
+                        cursor: 'pointer',
+                        padding: '4px 6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <Trash2 size={12} />
+                      <span>Hapus</span>
+                    </button>
+                  )}
+                </div>
+                <span style={{ fontSize: '10px', color: '#94a3b8' }}>Mendukung JPG, PNG, WEBP (Maks. 10MB)</span>
+              </div>
+            </div>
+
+            {/* Quick Avatar Emojis */}
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#94a3b8', marginBottom: '6px' }}>
+                Atau pilih avatar cepat:
+              </label>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {avatarPresets.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => handleSelectPreset(preset)}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      fontSize: '15px',
+                      background: avatar === preset ? 'rgba(0, 173, 181, 0.4)' : '#232428',
+                      border: avatar === preset ? '2px solid #00FFF5' : '1px solid rgba(255, 255, 255, 0.08)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Display Name Input */}
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#b0b8c1', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Display Name (Nama Tampilan)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. SAXTON"
+                value={nama}
+                onChange={(e) => setNama(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  background: '#232428',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: '#EEEEEE',
+                  fontSize: '13px',
+                  outline: 'none',
+                  borderRadius: '8px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            {/* Username & Tag (#) Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: '10px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#b0b8c1', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Username
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: '13px', fontWeight: 700 }}>
+                    .
+                  </span>
+                  <input
+                    type="text"
+                    required
+                    placeholder="pikrii"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px 10px 20px',
+                      background: '#232428',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      color: '#EEEEEE',
+                      fontSize: '13px',
+                      outline: 'none',
+                      borderRadius: '8px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 700, color: '#b0b8c1', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <Hash size={12} color="#00FFF5" />
+                  <span>Tag (#)</span>
+                </label>
+                <input
+                  type="text"
+                  maxLength={10}
+                  placeholder="# atau #0001"
+                  value={tag}
+                  onChange={(e) => setTag(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    background: '#232428',
+                    border: '1px solid rgba(0, 173, 181, 0.35)',
+                    color: '#00FFF5',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    outline: 'none',
+                    borderRadius: '8px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Describe / Status Mood */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: 700, color: '#b0b8c1', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <MessageSquare size={12} color="#00FFF5" />
+                  <span>Describe / Status Mood</span>
+                </label>
+                <span style={{ fontSize: '10px', color: '#64748b' }}>Gelembung pesan avatar</span>
+              </div>
+              <input
+                type="text"
+                maxLength={80}
+                placeholder="e.g. Best emoji to describe your day? atau Lagi fokus ngoding 💻"
+                value={describe}
+                onChange={(e) => setDescribe(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  background: '#232428',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: '#EEEEEE',
+                  fontSize: '13px',
+                  outline: 'none',
+                  borderRadius: '8px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="glass-button"
+                style={{ fontSize: '12px', padding: '8px 14px', borderRadius: '8px' }}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!username.trim()) {
+                    toast.error('Username tidak boleh kosong.');
+                    return;
+                  }
+                  try {
+                    const res = await handleUpdateProfile({
+                      nama: nama.trim(),
+                      username: username.trim().toLowerCase(),
+                      avatar: avatar || null,
+                      tag: tag.trim() || '#',
+                      describe: describe.trim() || 'Best emoji to describe your day?'
+                    });
+                    if (res?.user) {
+                      toast.success('Profil berhasil diperbarui!');
+                      setIsEditModalOpen(false);
+                    }
+                  } catch (err) {
+                    toast.error(err.message || 'Gagal memperbarui profil.');
+                  }
+                }}
+                className="glass-button glass-button-primary"
+                style={{ fontSize: '12px', padding: '8px 20px', borderRadius: '8px', fontWeight: 700, gap: '6px' }}
+              >
+                <Check size={14} />
+                <span>Simpan Perubahan</span>
+              </button>
+            </div>
           </div>
-        </div>
-
-      </div>
+        </div>,
+        document.body
+      )}
 
     </div>
   );

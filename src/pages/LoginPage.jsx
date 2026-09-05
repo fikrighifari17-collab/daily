@@ -303,6 +303,73 @@ export default function LoginPage() {
             </button>
           </form>
 
+          {/* Quick Demo Account 1-Click Login */}
+          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '2px 0' }}>
+              <div style={{ flex: 1, height: '1px', background: 'rgba(0, 173, 181, 0.25)' }} />
+              <span style={{ fontSize: '10px', color: '#b0b8c1', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>
+                Instant Demo Access
+              </span>
+              <div style={{ flex: 1, height: '1px', background: 'rgba(0, 173, 181, 0.25)' }} />
+            </div>
+
+            <button
+              type="button"
+              disabled={loading}
+              onClick={async () => {
+                setMode('login');
+                setUsername('demo');
+                setPassword('demo123');
+                setErrorMsg('');
+                setLoading(true);
+                try {
+                  const res = await handleLogin('demo', 'demo123');
+                  if (res?.user) {
+                    toast.success(`Welcome to Demo Mode, ${res.user.nama || 'Demo User'}!`);
+                  } else {
+                    setErrorMsg('Failed to sign in demo account.');
+                  }
+                } catch (err) {
+                  setErrorMsg(err.message || 'Authentication error.');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              className="glass-button"
+              style={{
+                padding: '11px',
+                fontSize: '13px',
+                fontWeight: 700,
+                justifyContent: 'center',
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, rgba(0, 255, 245, 0.14), rgba(0, 173, 181, 0.28))',
+                borderColor: 'rgba(0, 255, 245, 0.45)',
+                color: '#00FFF5',
+                gap: '8px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 16px rgba(0, 173, 181, 0.15)'
+              }}
+            >
+              <Sparkles size={16} color="#00FFF5" />
+              <span>Masuk dengan Akun Demo (1-Click)</span>
+            </button>
+
+            <div style={{
+              padding: '8px 12px',
+              background: 'rgba(0, 0, 0, 0.35)',
+              border: '1px solid rgba(0, 173, 181, 0.2)',
+              borderRadius: '6px',
+              fontSize: '11px',
+              color: '#b0b8c1',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <span>User: <strong style={{ color: '#00FFF5' }}>demo</strong></span>
+              <span>Pass: <strong style={{ color: '#00FFF5' }}>demo123</strong></span>
+            </div>
+          </div>
+
           <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(0, 173, 181, 0.2)', fontSize: '11px', color: '#b0b8c1', textAlign: 'center' }}>
             🔒 100% Private Data &bull; No Email Required &bull; Stored Securely
           </div>

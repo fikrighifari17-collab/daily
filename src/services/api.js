@@ -132,7 +132,12 @@ export async function loginUser(username, password) {
 
   // Local fallback
   const users = getLocal('daily_registered_users_v1', []);
-  const matched = users.find(u => u.username === cleanUsername && u.password === password);
+  let matched = users.find(u => u.username === cleanUsername && u.password === password);
+  if (!matched && cleanUsername === 'demo' && password === 'demo123') {
+    matched = { id: 3, username: 'demo', password: 'demo123', nama: 'Demo User', pinLock: null };
+    users.push(matched);
+    setLocal('daily_registered_users_v1', users);
+  }
   if (matched) {
     const { password: _, ...safeUser } = matched;
     const token = "jwt-local-token-" + Date.now();
@@ -241,9 +246,36 @@ export async function submitSchedule(data) {
     tanggal: data.tanggal
   };
   const list = getLocal(STORAGE_KEYS.SCHEDULES, []);
-  list.push(newSched);
-  setLocal(STORAGE_KEYS.SCHEDULES, list);
+  const listWithId = list.filter(s => s.id !== newSched.id);
+  listWithId.push(newSched);
+  setLocal(STORAGE_KEYS.SCHEDULES, listWithId);
   return newSched;
+}
+
+export async function updateSchedule(id, data) {
+  try {
+    const res = await fetch(`${BASE_URL}/schedule?id=${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeader() },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.warn("Using offline fallback for updateSchedule");
+  }
+
+  const list = getLocal(STORAGE_KEYS.SCHEDULES, []);
+  const idx = list.findIndex(s => s.id === id);
+  if (idx !== -1) {
+    list[idx] = {
+      ...list[idx],
+      ...data,
+      id
+    };
+    setLocal(STORAGE_KEYS.SCHEDULES, list);
+    return list[idx];
+  }
+  return null;
 }
 
 export async function deleteSchedule(id) {
@@ -345,7 +377,8 @@ export async function submitAcademicCourse(data) {
     sks: Number(data.sks) || 3,
     warna: data.warna || "#00ADB5",
     link: data.link || "",
-    attendance: data.attendance || { present: 0, absent: 0, excused: 0, target: 16 }
+    attendance: data.attendance || { present: 0, absent: 0, excused: 0, target: 16 },
+    materials: data.materials || data.attendance?.materials || []
   };
   const list = getLocal(STORAGE_KEYS.COURSES, []);
   list.push(newCourse);
@@ -381,7 +414,8 @@ export async function updateAcademicCourse(id, data) {
       ...list[index],
       ...data,
       sks: data.sks !== undefined ? Number(data.sks) : list[index].sks,
-      attendance: data.attendance !== undefined ? data.attendance : (list[index].attendance || { present: 0, absent: 0, excused: 0, target: 16 })
+      attendance: data.attendance !== undefined ? data.attendance : (list[index].attendance || { present: 0, absent: 0, excused: 0, target: 16 }),
+      materials: data.materials !== undefined ? data.materials : (list[index].materials || list[index].attendance?.materials || [])
     };
     setLocal(STORAGE_KEYS.COURSES, list);
     return list[index];
@@ -520,23 +554,61 @@ export async function updateUserProfile(data) {
     if (res.ok) {
       const result = await res.json();
       if (result.token) localStorage.setItem("token", result.token);
-      if (result.user) localStorage.setItem("daily_user_info", JSON.stringify(result.user));
+      if (result.user) {
+        localStorage.setItem("daily_user_info", JSON.stringify(result.user));
+        setLocal(STORAGE_KEYS.USER, result.user);
+      }
       return result;
-    } else {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || "Failed to update profile");
     }
+    const err = await res.json().catch(() => ({}));
+    if (res.status === 400 && (err.error?.includes('password') || err.error?.includes('Username is already taken') || err.error?.includes('taken'))) {
+      throw new Error(err.error);
+    }
+    console.warn("Backend profile update unavailable or failed, applying local fallback:", err.error || res.status);
   } catch (e) {
-    if (e.message && e.message !== 'Failed to fetch') {
+    if (e.message && (e.message.includes('password') || e.message.includes('Username is already taken') || e.message.includes('taken'))) {
       throw e;
     }
-    // Offline local fallback
-    console.warn("Using offline fallback for updateUserProfile");
-    const stored = getLocal("daily_user_info", {});
-    const updated = { ...stored, ...data };
-    delete updated.currentPassword;
-    delete updated.newPassword;
-    localStorage.setItem("daily_user_info", JSON.stringify(updated));
-    return { user: updated };
+    console.warn("Using offline fallback for updateUserProfile:", e);
   }
+
+  // Offline local fallback
+  const stored = getLocal("daily_user_info", {});
+  const cleanUsername = data.username ? String(data.username).trim().toLowerCase() : (stored.username || 'demo');
+
+  // Verify and update password if provided
+  if (data.newPassword) {
+    const users = getLocal('daily_registered_users_v1', []);
+    const userMatch = users.find(u => u.username === (stored.username || cleanUsername));
+    if (userMatch && userMatch.password && userMatch.password !== data.currentPassword) {
+      throw new Error("Password saat ini salah.");
+    }
+    if (userMatch) {
+      userMatch.password = data.newPassword;
+      setLocal('daily_registered_users_v1', users);
+    }
+  }
+
+  const updated = {
+    ...stored,
+    ...(data.nama !== undefined ? { nama: String(data.nama).trim() } : {}),
+    ...(data.username !== undefined ? { username: cleanUsername } : {}),
+    ...(data.avatar !== undefined ? { avatar: data.avatar } : {}),
+    ...(data.tag !== undefined ? { tag: String(data.tag).trim() } : {}),
+    ...(data.describe !== undefined ? { describe: String(data.describe).trim() } : {})
+  };
+  delete updated.currentPassword;
+  delete updated.newPassword;
+
+  // Sync with registered users list if found
+  const users = getLocal('daily_registered_users_v1', []);
+  const uIdx = users.findIndex(u => u.username === (stored.username || cleanUsername));
+  if (uIdx !== -1) {
+    users[uIdx] = { ...users[uIdx], ...updated };
+    setLocal('daily_registered_users_v1', users);
+  }
+
+  localStorage.setItem("daily_user_info", JSON.stringify(updated));
+  setLocal(STORAGE_KEYS.USER, updated);
+  return { user: updated };
 }

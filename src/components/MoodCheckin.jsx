@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Frown, Meh, Smile, Zap, AlertCircle, Mic, MicOff, Check, Plus, Tag as TagIcon, Clock, Camera, Image as ImageIcon, Upload, X, Trash2, Video, RefreshCw, Play, Pause, Square } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
+import { isVideoUrl } from '../utils/mediaUtils';
 
 const getMoodInfo = (percent) => {
   if (percent <= 20) return { label: 'Very Bad', desc: 'Severe stress / Overwhelmed', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.18)', score: 1 };
@@ -44,8 +45,15 @@ export default function MoodCheckin({ onSuccess }) {
 
   const [photoUrl, setPhotoUrl] = useState(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraMode, setCameraMode] = useState('photo'); // 'photo' | 'video'
+  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+  const [videoRecordingSeconds, setVideoRecordingSeconds] = useState(0);
   const [cameraError, setCameraError] = useState(null);
   const videoRef = useRef(null);
+  const cameraStreamRef = useRef(null);
+  const videoRecorderRef = useRef(null);
+  const videoChunksRef = useRef([]);
+  const videoTimerRef = useRef(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -68,12 +76,16 @@ export default function MoodCheckin({ onSuccess }) {
     }
   }, [isCameraActive]);
 
-  // Clean up audio streams and timers on unmount
+  // Clean up audio streams, video streams, and timers on unmount
   useEffect(() => {
     return () => {
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
       if (audioStreamRef.current) {
         audioStreamRef.current.getTracks().forEach(t => t.stop());
+      }
+      if (videoTimerRef.current) clearInterval(videoTimerRef.current);
+      if (cameraStreamRef.current) {
+        cameraStreamRef.current.getTracks().forEach(t => t.stop());
       }
     };
   }, []);
@@ -200,27 +212,51 @@ export default function MoodCheckin({ onSuccess }) {
     }
   };
 
-  const handlePhotoFileChange = (e) => {
+  const handleMediaFileChange = (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
+
+    // Check size limit: 30MB
+    if (file.size > 30 * 1024 * 1024) {
+      toast.error('File size too large (max 30MB). Please choose a shorter video or smaller photo.');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onloadend = () => {
       setPhotoUrl(reader.result);
+      if (file.type.startsWith('video/')) {
+        toast.success('Video attached successfully!');
+      } else {
+        toast.success('Photo attached successfully!');
+      }
     };
     reader.readAsDataURL(file);
   };
 
-  const handleRemovePhoto = () => {
+  const handleRemoveMedia = () => {
     setPhotoUrl(null);
   };
 
-  const startCamera = async () => {
+  const startCamera = async (initialMode = 'photo') => {
     setCameraError(null);
+    setCameraMode(initialMode);
     setIsCameraActive(true);
+    setIsRecordingVideo(false);
+    setVideoRecordingSeconds(0);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
-      });
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: true
+        });
+      } catch (audioErr) {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+      }
+      cameraStreamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
@@ -231,10 +267,23 @@ export default function MoodCheckin({ onSuccess }) {
   };
 
   const stopCamera = () => {
+    if (videoTimerRef.current) {
+      clearInterval(videoTimerRef.current);
+      videoTimerRef.current = null;
+    }
+    if (videoRecorderRef.current && videoRecorderRef.current.state !== 'inactive') {
+      try {
+        videoRecorderRef.current.stop();
+      } catch (e) {}
+    }
+    setIsRecordingVideo(false);
+    setVideoRecordingSeconds(0);
+
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach(track => track.stop());
+      cameraStreamRef.current = null;
+    }
     if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject;
-      const tracks = stream.getTracks();
-      tracks.forEach(track => track.stop());
       videoRef.current.srcObject = null;
     }
     setIsCameraActive(false);
@@ -252,6 +301,77 @@ export default function MoodCheckin({ onSuccess }) {
     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
     setPhotoUrl(dataUrl);
     stopCamera();
+    toast.success('Photo snapshot captured!');
+  };
+
+  const startVideoRecording = () => {
+    if (!cameraStreamRef.current) return;
+    videoChunksRef.current = [];
+
+    let options = {};
+    if (typeof MediaRecorder.isTypeSupported === 'function') {
+      if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+        options = { mimeType: 'video/webm;codecs=vp9,opus' };
+      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')) {
+        options = { mimeType: 'video/webm;codecs=vp8,opus' };
+      } else if (MediaRecorder.isTypeSupported('video/webm')) {
+        options = { mimeType: 'video/webm' };
+      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+        options = { mimeType: 'video/mp4' };
+      }
+    }
+    options.videoBitsPerSecond = 800000;
+
+    try {
+      const recorder = new MediaRecorder(cameraStreamRef.current, options);
+      videoRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          videoChunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const mime = recorder.mimeType || 'video/webm';
+        const blob = new Blob(videoChunksRef.current, { type: mime });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPhotoUrl(reader.result);
+          toast.success('Video clip recorded and saved!');
+          stopCamera();
+        };
+        reader.readAsDataURL(blob);
+      };
+
+      recorder.start(200);
+      setIsRecordingVideo(true);
+      setVideoRecordingSeconds(0);
+
+      videoTimerRef.current = setInterval(() => {
+        setVideoRecordingSeconds(prev => {
+          const next = prev + 1;
+          if (next >= 60) {
+            stopVideoRecording();
+          }
+          return next;
+        });
+      }, 1000);
+    } catch (err) {
+      console.error("Video record error:", err);
+      toast.error("Failed to start video recording on this device.");
+    }
+  };
+
+  const stopVideoRecording = () => {
+    if (videoTimerRef.current) {
+      clearInterval(videoTimerRef.current);
+      videoTimerRef.current = null;
+    }
+    if (videoRecorderRef.current && videoRecorderRef.current.state !== 'inactive') {
+      videoRecorderRef.current.stop();
+    }
+    setIsRecordingVideo(false);
   };
 
   const currentMoodInfo = getMoodInfo(percent);
@@ -302,85 +422,103 @@ export default function MoodCheckin({ onSuccess }) {
   };
 
   return (
-    <div className="glass-panel" style={{ padding: '28px', borderRadius: '0px' }}>
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
+    <div className="glass-panel mood-checkin-card">
+      <div style={{ marginBottom: '16px' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span>Today's Mood Check-in</span>
         </h2>
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+        <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
           How are you feeling right now? This data is stored privately for you.
         </p>
       </div>
 
       {message && (
         <div style={{
-          padding: '12px 16px',
+          padding: '12px 14px',
           borderRadius: '0px',
-          marginBottom: '20px',
+          marginBottom: '16px',
           background: message.type === 'success' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
           border: `1px solid ${message.type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
           color: message.type === 'success' ? '#34d399' : '#f87171',
-          fontSize: '14px',
+          fontSize: '13px',
           display: 'flex',
           alignItems: 'center',
           gap: '8px'
         }}>
-          <Check size={16} />
-          {message.text}
+          <Check size={16} style={{ flexShrink: 0 }} />
+          <span>{message.text}</span>
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
         
         {/* Continuous Slider Track Bar (0% - 100%) */}
-        <div style={{ marginBottom: '24px', background: 'rgba(34, 40, 49, 0.6)', padding: '20px', border: '1px solid rgba(0, 173, 181, 0.25)', borderRadius: '0px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-            <div style={{ flex: 1, minWidth: '220px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                Adjust Mood Slider (%):
-              </label>
-              
-              {/* Free-Entry Mood Name Input */}
-              <div style={{ marginTop: '6px' }}>
-                <input
-                  type="text"
-                  value={userLabel}
-                  onChange={(e) => setUserLabel(e.target.value)}
-                  placeholder="Name this emotion..."
-                  style={{
-                    background: 'rgba(0, 0, 0, 0.45)',
-                    border: `2px solid ${currentMoodInfo.color}`,
-                    color: '#ffffff',
-                    fontWeight: 800,
-                    fontSize: '13px',
-                    padding: '6px 12px',
-                    outline: 'none',
-                    borderRadius: '0px',
-                    width: '220px',
-                    boxShadow: `0 0 10px ${currentMoodInfo.color}33`
-                  }}
-                  title="Type your custom emotion name"
-                />
+        <div className="mood-slider-panel">
+          <div className="mood-slider-header">
+            <div className="mood-slider-info">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  Mood Level:
+                </label>
+                <span style={{
+                  background: currentMoodInfo.bg,
+                  color: currentMoodInfo.color,
+                  border: `1px solid ${currentMoodInfo.color}`,
+                  padding: '2px 8px',
+                  fontSize: '12px',
+                  fontWeight: 700
+                }}>
+                  {currentMoodInfo.label}
+                </span>
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                {currentMoodInfo.desc}
               </div>
             </div>
 
             {/* Live Percentage Indicator */}
             <div style={{
-              padding: '6px 16px',
+              padding: '4px 12px',
               background: currentMoodInfo.bg,
               border: `2px solid ${currentMoodInfo.color}`,
               color: currentMoodInfo.color,
-              fontSize: '26px',
+              fontSize: '22px',
               fontWeight: 800,
               borderRadius: '0px',
-              boxShadow: `0 0 15px ${currentMoodInfo.color}44`
+              textAlign: 'center',
+              minWidth: '72px',
+              boxShadow: `0 0 14px ${currentMoodInfo.color}33`,
+              alignSelf: 'flex-start'
             }}>
               {percent}%
             </div>
           </div>
 
+          {/* Free-Entry Mood Name Input */}
+          <div style={{ marginBottom: '14px' }}>
+            <input
+              type="text"
+              value={userLabel}
+              onChange={(e) => setUserLabel(e.target.value)}
+              placeholder={`Custom emotion name (default: ${currentMoodInfo.label})...`}
+              className="mood-name-input"
+              style={{
+                background: 'rgba(0, 0, 0, 0.45)',
+                border: `1px solid ${currentMoodInfo.color}`,
+                color: '#ffffff',
+                fontWeight: 700,
+                fontSize: '13px',
+                padding: '8px 12px',
+                outline: 'none',
+                borderRadius: '0px',
+                boxShadow: `0 0 8px ${currentMoodInfo.color}22`
+              }}
+              title="Type your custom emotion name"
+            />
+          </div>
+
           {/* Slider Input (0 to 100) */}
-          <div style={{ position: 'relative', margin: '20px 0 10px 0' }}>
+          <div style={{ position: 'relative', margin: '14px 0 8px 0' }}>
             {/* Visual Fill Bar */}
             <div style={{
               position: 'absolute',
@@ -408,16 +546,16 @@ export default function MoodCheckin({ onSuccess }) {
 
           {/* Labels for 0% and 100% bounds */}
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 600 }}>
-            <span>0%</span>
+            <span>0% (Very Bad)</span>
             <span>50%</span>
-            <span>100%</span>
+            <span>100% (Very Good)</span>
           </div>
         </div>
 
         {/* Date & Time of Day */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+        <div className="mood-datetime-grid">
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
               Date:
             </label>
             <input
@@ -426,11 +564,12 @@ export default function MoodCheckin({ onSuccess }) {
               value={tanggal}
               onChange={(e) => setTanggal(e.target.value)}
               required
+              style={{ width: '100%', boxSizing: 'border-box' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
               Check-in Time:
             </label>
             <div style={{
@@ -443,11 +582,13 @@ export default function MoodCheckin({ onSuccess }) {
               color: '#00FFF5',
               fontSize: '13px',
               fontWeight: 700,
-              borderRadius: '0px'
+              borderRadius: '0px',
+              width: '100%',
+              boxSizing: 'border-box'
             }}>
-              <Clock size={16} color="#00FFF5" />
+              <Clock size={16} color="#00FFF5" style={{ flexShrink: 0 }} />
               <span>{timeFormatted}</span>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 400, marginLeft: 'auto' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 400, marginLeft: 'auto', whiteSpace: 'nowrap' }}>
                 (Automatic Real-time)
               </span>
             </div>
@@ -455,11 +596,11 @@ export default function MoodCheckin({ onSuccess }) {
         </div>
 
         {/* Tags Selection */}
-        <div style={{ marginBottom: '24px' }}>
+        <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
             Trigger / Context Tags (Select relevant):
           </label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 8px', marginBottom: '10px' }}>
             {tags.map((t) => {
               const isSelected = selectedTagIds.includes(t.id);
               return (
@@ -468,9 +609,9 @@ export default function MoodCheckin({ onSuccess }) {
                   type="button"
                   onClick={() => toggleTag(t.id)}
                   style={{
-                    padding: '6px 14px',
+                    padding: '6px 12px',
                     borderRadius: '0px',
-                    fontSize: '13px',
+                    fontSize: '12px',
                     fontWeight: 600,
                     cursor: 'pointer',
                     background: isSelected ? 'linear-gradient(135deg, #00ADB5, #00888f)' : 'rgba(255, 255, 255, 0.05)',
@@ -479,10 +620,11 @@ export default function MoodCheckin({ onSuccess }) {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '6px',
-                    transition: 'all 0.15s ease'
+                    transition: 'all 0.15s ease',
+                    touchAction: 'manipulation'
                   }}
                 >
-                  <TagIcon size={13} />
+                  <TagIcon size={12} />
                   {t.nama}
                 </button>
               );
@@ -490,11 +632,11 @@ export default function MoodCheckin({ onSuccess }) {
           </div>
 
           {/* Inline add new tag */}
-          <div style={{ display: 'flex', gap: '8px', maxWidth: '350px' }}>
+          <div style={{ display: 'flex', gap: '8px', width: '100%', maxWidth: '360px' }}>
             <input
               type="text"
               className="glass-input"
-              style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '0px' }}
+              style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '0px', flex: 1, minWidth: 0 }}
               placeholder="+ Add custom tag..."
               value={newTagInput}
               onChange={(e) => setNewTagInput(e.target.value)}
@@ -503,7 +645,7 @@ export default function MoodCheckin({ onSuccess }) {
               type="button"
               onClick={handleAddNewTag}
               className="glass-button"
-              style={{ padding: '8px 14px', fontSize: '12px', borderRadius: '0px' }}
+              style={{ padding: '8px 14px', fontSize: '12px', borderRadius: '0px', flexShrink: 0 }}
             >
               <Plus size={14} />
               Add
@@ -512,7 +654,7 @@ export default function MoodCheckin({ onSuccess }) {
         </div>
 
         {/* Note / Journal */}
-        <div style={{ marginBottom: '24px' }}>
+        <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
             Emotion Notes (Optional):
           </label>
@@ -522,32 +664,47 @@ export default function MoodCheckin({ onSuccess }) {
             placeholder="Write what is making you feel this way (e.g., assignment pileup, professor, sleep schedule)..."
             value={catatan}
             onChange={(e) => setCatatan(e.target.value)}
-            style={{ resize: 'vertical', borderRadius: '0px' }}
+            style={{ resize: 'vertical', borderRadius: '0px', width: '100%', boxSizing: 'border-box' }}
           />
         </div>
 
-        {/* Photo Attachment Section */}
-        <div style={{ marginBottom: '24px' }}>
+        {/* Photo & Video Attachment Section */}
+        <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
-            Photo / Daily Mood Attachment (Optional):
+            Photo & Video / Mood Atmosphere Attachment (Optional):
           </label>
 
           {photoUrl ? (
-            <div style={{ position: 'relative', width: 'fit-content', borderRadius: '0px', overflow: 'hidden', border: '1px solid rgba(0, 173, 181, 0.4)', background: 'rgba(0, 0, 0, 0.3)', padding: '6px' }}>
-              <img
-                src={photoUrl}
-                alt="Checkin attachment preview"
-                style={{ maxHeight: '220px', maxWidth: '100%', objectFit: 'cover', borderRadius: '0px', display: 'block' }}
-              />
+            <div style={{ position: 'relative', width: '100%', maxWidth: '420px', borderRadius: '0px', overflow: 'hidden', border: '1px solid rgba(0, 173, 181, 0.4)', background: 'rgba(0, 0, 0, 0.45)', padding: '6px' }}>
+              {isVideoUrl(photoUrl) ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <video
+                    src={photoUrl}
+                    controls
+                    playsInline
+                    style={{ maxHeight: '240px', width: '100%', borderRadius: '0px', display: 'block', background: '#000' }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#00FFF5', fontWeight: 700, padding: '2px 4px' }}>
+                    <Video size={13} />
+                    <span>Video Clip Attached</span>
+                  </div>
+                </div>
+              ) : (
+                <img
+                  src={photoUrl}
+                  alt="Checkin attachment preview"
+                  style={{ maxHeight: '220px', width: '100%', objectFit: 'contain', background: '#000', borderRadius: '0px', display: 'block' }}
+                />
+              )}
               <button
                 type="button"
-                onClick={handleRemovePhoto}
+                onClick={handleRemoveMedia}
                 className="glass-button"
                 style={{
                   position: 'absolute',
-                  top: '12px',
-                  right: '12px',
-                  background: 'rgba(239, 68, 68, 0.85)',
+                  top: '10px',
+                  right: '10px',
+                  background: 'rgba(239, 68, 68, 0.88)',
                   color: 'white',
                   border: 'none',
                   padding: '6px 12px',
@@ -556,86 +713,149 @@ export default function MoodCheckin({ onSuccess }) {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  zIndex: 3
                 }}
               >
                 <X size={14} />
-                Remove Photo
+                {isVideoUrl(photoUrl) ? 'Remove Video' : 'Remove Photo'}
               </button>
             </div>
           ) : (
             <div style={{
-              padding: '18px',
+              padding: '14px',
               borderRadius: '0px',
               background: 'rgba(34, 40, 49, 0.4)',
               border: '1px dashed rgba(0, 173, 181, 0.35)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '14px'
+              gap: '12px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{
-                  width: '42px',
-                  height: '42px',
+                  width: '38px',
+                  height: '38px',
                   borderRadius: '0px',
                   background: 'rgba(0, 173, 181, 0.15)',
                   border: '1px solid rgba(0, 173, 181, 0.3)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#00FFF5'
+                  color: '#00FFF5',
+                  flexShrink: 0
                 }}>
-                  <Camera size={22} />
+                  <Video size={20} />
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE' }}>
-                    Capture Today's Moment / Atmosphere
+                    Capture Atmosphere / Moment (Photo & Video)
                   </div>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Select from gallery or snap directly using device camera
+                    Capture photo, short video clip, or choose from device gallery
                   </div>
                 </div>
               </div>
 
-              {/* Dual Options: Camera vs File Upload */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                {/* Live Camera Button */}
+              {/* Action Buttons: Capture Photo vs Record Video vs File Upload */}
+              <div className="mood-media-buttons-grid">
+                {/* Live Camera Photo Button */}
                 <button
                   type="button"
-                  onClick={startCamera}
+                  onClick={() => startCamera('photo')}
                   className="glass-button glass-button-primary"
-                  style={{ fontSize: '12px', padding: '9px 16px', flex: 1, minWidth: '150px', justifyContent: 'center' }}
+                  style={{ fontSize: '12px', padding: '9px 12px', justifyContent: 'center' }}
                 >
                   <Camera size={15} />
-                  <span>Capture via Camera</span>
+                  <span>Capture Photo</span>
+                </button>
+
+                {/* Live Video Recorder Button */}
+                <button
+                  type="button"
+                  onClick={() => startCamera('video')}
+                  className="glass-button"
+                  style={{
+                    fontSize: '12px',
+                    padding: '9px 12px',
+                    justifyContent: 'center',
+                    borderColor: 'rgba(239, 68, 68, 0.45)',
+                    background: 'rgba(239, 68, 68, 0.12)',
+                    color: '#fca5a5'
+                  }}
+                >
+                  <Video size={15} color="#ef4444" />
+                  <span>Record Video</span>
                 </button>
 
                 {/* File Upload Button */}
                 <label
                   className="glass-button"
-                  style={{ fontSize: '12px', padding: '9px 16px', flex: 1, minWidth: '150px', justifyContent: 'center', cursor: 'pointer' }}
+                  style={{ fontSize: '12px', padding: '9px 12px', justifyContent: 'center', cursor: 'pointer' }}
                 >
                   <Upload size={15} color="#00FFF5" />
-                  <span>Choose from Gallery</span>
+                  <span>Choose Media</span>
                   <input
                     type="file"
-                    accept="image/*"
-                    onChange={handlePhotoFileChange}
+                    accept="image/*,video/*"
+                    onChange={handleMediaFileChange}
                     style={{ display: 'none' }}
                   />
                 </label>
               </div>
 
-              {/* Direct mobile camera fallback input */}
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>Or on smartphone:</span>
-                <label style={{ color: '#00FFF5', cursor: 'pointer', textDecoration: 'underline' }}>
-                  Open native camera
+              {/* Direct mobile camera fallback inputs */}
+              <div style={{
+                fontSize: '11px',
+                color: 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                flexWrap: 'wrap',
+                paddingTop: '6px',
+                borderTop: '1px dashed rgba(255, 255, 255, 0.08)'
+              }}>
+                <span>Direct phone camera:</span>
+                <label style={{
+                  color: '#00FFF5',
+                  cursor: 'pointer',
+                  padding: '4px 10px',
+                  background: 'rgba(0, 173, 181, 0.12)',
+                  border: '1px solid rgba(0, 173, 181, 0.3)',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <Camera size={12} />
+                  Snap Photo
                   <input
                     type="file"
                     accept="image/*"
                     capture="environment"
-                    onChange={handlePhotoFileChange}
+                    onChange={handleMediaFileChange}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+                <label style={{
+                  color: '#f87171',
+                  cursor: 'pointer',
+                  padding: '4px 10px',
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <Video size={12} />
+                  Record Video
+                  <input
+                    type="file"
+                    accept="video/*"
+                    capture="environment"
+                    onChange={handleMediaFileChange}
                     style={{ display: 'none' }}
                   />
                 </label>
@@ -644,7 +864,7 @@ export default function MoodCheckin({ onSuccess }) {
           )}
         </div>
 
-        {/* Live Camera Viewfinder Modal - Rendered at document.body level to escape parent stacking contexts */}
+        {/* Live Camera Viewfinder Modal */}
         {isCameraActive && typeof document !== 'undefined' && createPortal(
           <div
             style={{
@@ -662,123 +882,296 @@ export default function MoodCheckin({ onSuccess }) {
               alignItems: 'center',
               justifyContent: 'center',
               zIndex: 9999999,
-              padding: '16px',
+              padding: '12px',
               overflow: 'hidden',
               touchAction: 'none',
               overscrollBehavior: 'none'
             }}
             onClick={(e) => {
-              if (e.target === e.currentTarget) stopCamera();
+              if (e.target === e.currentTarget && !isRecordingVideo) stopCamera();
             }}
           >
             <div
+              className="mood-camera-modal"
               style={{
-                background: '#1b2028',
-                border: '1px solid rgba(0, 173, 181, 0.45)',
-                padding: '18px 20px',
-                maxWidth: '520px',
-                width: '94%',
-                maxHeight: 'min(580px, 92vh)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                borderRadius: '0px',
-                boxShadow: '0 25px 60px rgba(0, 0, 0, 0.95)',
-                margin: 'auto',
-                overflow: 'hidden'
+                border: isRecordingVideo ? '1px solid #ef4444' : '1px solid rgba(0, 173, 181, 0.45)'
               }}
               onClick={(e) => e.stopPropagation()}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Camera size={18} color="#00FFF5" />
-                  <span>Live Check-in Camera</span>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {cameraMode === 'video' ? (
+                    <>
+                      <Video size={16} color="#ef4444" />
+                      <span>Record Video Clip</span>
+                    </>
+                  ) : (
+                    <>
+                      <Camera size={16} color="#00FFF5" />
+                      <span>Live Photo Camera</span>
+                    </>
+                  )}
                 </h3>
                 <button
                   type="button"
+                  disabled={isRecordingVideo}
                   onClick={stopCamera}
-                  style={{ background: 'none', border: 'none', color: '#b0b8c1', cursor: 'pointer', padding: '4px' }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: isRecordingVideo ? '#555' : '#b0b8c1',
+                    cursor: isRecordingVideo ? 'not-allowed' : 'pointer',
+                    padding: '4px'
+                  }}
                   title="Close camera"
                 >
                   <X size={20} />
                 </button>
               </div>
 
+              {/* Mode Switcher Tabs */}
+              {!cameraError && (
+                <div style={{ display: 'flex', background: 'rgba(0, 0, 0, 0.45)', padding: '3px', border: '1px solid rgba(0, 173, 181, 0.25)', gap: '4px' }}>
+                  <button
+                    type="button"
+                    disabled={isRecordingVideo}
+                    onClick={() => setCameraMode('photo')}
+                    style={{
+                      flex: 1,
+                      padding: '7px 8px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      background: cameraMode === 'photo' ? 'rgba(0, 173, 181, 0.25)' : 'transparent',
+                      color: cameraMode === 'photo' ? '#00FFF5' : 'var(--text-secondary)',
+                      border: cameraMode === 'photo' ? '1px solid #00ADB5' : '1px solid transparent',
+                      cursor: isRecordingVideo ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <Camera size={14} />
+                    <span>Photo Mode</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isRecordingVideo}
+                    onClick={() => setCameraMode('video')}
+                    style={{
+                      flex: 1,
+                      padding: '7px 8px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      background: cameraMode === 'video' ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
+                      color: cameraMode === 'video' ? '#f87171' : 'var(--text-secondary)',
+                      border: cameraMode === 'video' ? '1px solid #ef4444' : '1px solid transparent',
+                      cursor: isRecordingVideo ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <Video size={14} />
+                    <span>Video Mode</span>
+                  </button>
+                </div>
+              )}
+
               {cameraError ? (
                 <div style={{
-                  padding: '16px',
+                  padding: '14px',
                   background: 'rgba(239, 68, 68, 0.15)',
                   border: '1px solid rgba(239, 68, 68, 0.3)',
                   color: '#f87171',
-                  fontSize: '13px',
+                  fontSize: '12px',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '10px',
                   borderRadius: '0px'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <AlertCircle size={18} />
+                    <AlertCircle size={16} style={{ flexShrink: 0 }} />
                     <span>{cameraError}</span>
                   </div>
-                  <label className="glass-button" style={{ alignSelf: 'flex-start', fontSize: '12px', padding: '6px 12px', cursor: 'pointer' }}>
-                    <Camera size={14} />
-                    Use Native Device Camera
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={(e) => {
-                        handlePhotoFileChange(e);
-                        stopCamera();
-                      }}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <label className="glass-button" style={{ fontSize: '11px', padding: '6px 10px', cursor: 'pointer', flex: 1, justifyContent: 'center' }}>
+                      <Camera size={13} />
+                      Native Photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={(e) => {
+                          handleMediaFileChange(e);
+                          stopCamera();
+                        }}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                    <label className="glass-button" style={{ fontSize: '11px', padding: '6px 10px', cursor: 'pointer', flex: 1, justifyContent: 'center' }}>
+                      <Video size={13} color="#ef4444" />
+                      Native Video
+                      <input
+                        type="file"
+                        accept="video/*"
+                        capture="environment"
+                        onChange={(e) => {
+                          handleMediaFileChange(e);
+                          stopCamera();
+                        }}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  </div>
                 </div>
               ) : (
-                <div style={{ position: 'relative', width: '100%', background: '#000', overflow: 'hidden', border: '1px solid rgba(0, 173, 181, 0.25)' }}>
+                <div style={{
+                  position: 'relative',
+                  width: '100%',
+                  background: '#000',
+                  overflow: 'hidden',
+                  border: isRecordingVideo ? '2px solid #ef4444' : '1px solid rgba(0, 173, 181, 0.25)'
+                }}>
                   <video
                     ref={videoRef}
                     autoPlay
                     playsInline
                     muted
-                    style={{ width: '100%', height: 'min(280px, 45vh)', objectFit: 'cover', display: 'block' }}
+                    style={{ width: '100%', height: 'min(240px, 36vh)', objectFit: 'cover', display: 'block' }}
                   />
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '10px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    background: 'rgba(0,0,0,0.65)',
-                    padding: '4px 12px',
-                    fontSize: '11px',
-                    color: '#00FFF5',
-                    border: '1px solid rgba(0, 173, 181, 0.3)',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    Point camera to your surroundings/moment
-                  </div>
+
+                  {/* Photo Mode Subtitle */}
+                  {cameraMode === 'photo' && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '8px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: 'rgba(0,0,0,0.7)',
+                      padding: '4px 10px',
+                      fontSize: '11px',
+                      color: '#00FFF5',
+                      border: '1px solid rgba(0, 173, 181, 0.3)',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      Point camera to your surroundings
+                    </div>
+                  )}
+
+                  {/* Video Mode Subtitle & Status */}
+                  {cameraMode === 'video' && isRecordingVideo && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '10px',
+                      left: '10px',
+                      background: 'rgba(239, 68, 68, 0.9)',
+                      color: 'white',
+                      padding: '4px 10px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 0 14px rgba(239, 68, 68, 0.65)'
+                    }}>
+                      <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: 'white' }} />
+                      <span>REC {formatSeconds(videoRecordingSeconds)} / 01:00</span>
+                    </div>
+                  )}
+
+                  {cameraMode === 'video' && !isRecordingVideo && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '8px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: 'rgba(0,0,0,0.7)',
+                      padding: '4px 10px',
+                      fontSize: '11px',
+                      color: '#fca5a5',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      Click "Start Recording" (max 60s)
+                    </div>
+                  )}
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '2px' }}>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                 <button
                   type="button"
+                  disabled={isRecordingVideo}
                   onClick={stopCamera}
                   className="glass-button"
-                  style={{ fontSize: '13px', padding: '9px 18px' }}
+                  style={{
+                    fontSize: '13px',
+                    padding: '8px 14px',
+                    flex: 1,
+                    justifyContent: 'center',
+                    cursor: isRecordingVideo ? 'not-allowed' : 'pointer',
+                    opacity: isRecordingVideo ? 0.5 : 1
+                  }}
                 >
                   Cancel
                 </button>
-                {!cameraError && (
+
+                {!cameraError && cameraMode === 'photo' && (
                   <button
                     type="button"
                     onClick={takeSnapshot}
                     className="glass-button glass-button-primary"
-                    style={{ fontSize: '13px', padding: '9px 20px' }}
+                    style={{ fontSize: '13px', padding: '8px 16px', flex: 1.5, justifyContent: 'center' }}
                   >
-                    <Camera size={16} />
+                    <Camera size={15} />
                     Take Snapshot
+                  </button>
+                )}
+
+                {!cameraError && cameraMode === 'video' && !isRecordingVideo && (
+                  <button
+                    type="button"
+                    onClick={startVideoRecording}
+                    className="glass-button"
+                    style={{
+                      fontSize: '13px',
+                      padding: '8px 16px',
+                      flex: 1.5,
+                      justifyContent: 'center',
+                      background: '#ef4444',
+                      borderColor: '#ef4444',
+                      color: 'white',
+                      fontWeight: 700
+                    }}
+                  >
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'white' }} />
+                    Start Recording
+                  </button>
+                )}
+
+                {!cameraError && cameraMode === 'video' && isRecordingVideo && (
+                  <button
+                    type="button"
+                    onClick={stopVideoRecording}
+                    className="glass-button"
+                    style={{
+                      fontSize: '13px',
+                      padding: '8px 16px',
+                      flex: 1.5,
+                      justifyContent: 'center',
+                      background: '#dc2626',
+                      borderColor: '#ef4444',
+                      color: 'white',
+                      fontWeight: 700,
+                      boxShadow: '0 0 15px rgba(239, 68, 68, 0.7)'
+                    }}
+                  >
+                    <Square size={13} fill="white" />
+                    Stop & Save
                   </button>
                 )}
               </div>
@@ -788,15 +1181,12 @@ export default function MoodCheckin({ onSuccess }) {
         )}
 
         {/* Voice Note Recording Section */}
-        <div style={{
-          marginBottom: '24px',
-          padding: '16px',
-          borderRadius: '0px',
-          background: 'rgba(0,0,0,0.22)',
-          border: `1px ${isRecording ? 'solid #ef4444' : voiceNoteData ? 'solid rgba(0, 255, 245, 0.4)' : 'dashed var(--border-glass)'}`,
-          transition: 'all 0.25s ease'
-        }}>
-          
+        <div
+          className="mood-voice-panel"
+          style={{
+            border: `1px ${isRecording ? 'solid #ef4444' : voiceNoteData ? 'solid rgba(0, 255, 245, 0.4)' : 'dashed var(--border-glass)'}`
+          }}
+        >
           {voiceNoteError && (
             <div style={{
               padding: '8px 12px',
@@ -804,34 +1194,35 @@ export default function MoodCheckin({ onSuccess }) {
               border: '1px solid rgba(239, 68, 68, 0.3)',
               color: '#f87171',
               fontSize: '12px',
-              marginBottom: '12px',
+              marginBottom: '10px',
               display: 'flex',
               alignItems: 'center',
               gap: '8px'
             }}>
-              <AlertCircle size={15} />
+              <AlertCircle size={15} style={{ flexShrink: 0 }} />
               <span>{voiceNoteError}</span>
             </div>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="mood-voice-content">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{
-                width: '40px',
-                height: '40px',
+                width: '38px',
+                height: '38px',
                 borderRadius: '0px',
                 background: isRecording ? 'rgba(239, 68, 68, 0.25)' : voiceNoteData ? 'rgba(0, 173, 181, 0.25)' : 'rgba(255, 255, 255, 0.05)',
                 border: `1px solid ${isRecording ? '#ef4444' : voiceNoteData ? '#00FFF5' : 'rgba(255, 255, 255, 0.1)'}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: isRecording ? '#ef4444' : voiceNoteData ? '#00FFF5' : 'var(--text-secondary)'
+                color: isRecording ? '#ef4444' : voiceNoteData ? '#00FFF5' : 'var(--text-secondary)',
+                flexShrink: 0
               }}>
-                <Mic size={20} className={isRecording ? 'pulse-glow' : ''} />
+                <Mic size={18} className={isRecording ? 'pulse-glow' : ''} />
               </div>
 
               <div>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: isRecording ? '#f87171' : 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: isRecording ? '#f87171' : 'white', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   {isRecording ? (
                     <>
                       <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }} />
@@ -840,38 +1231,51 @@ export default function MoodCheckin({ onSuccess }) {
                   ) : voiceNoteData ? (
                     <span style={{ color: '#00FFF5' }}>Voice Note Attached ({formatSeconds(voiceNoteDuration || recordingSeconds)})</span>
                   ) : (
-                    <span>Record Voice Note Reflection</span>
+                    <span>Voice Note Reflection</span>
                   )}
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
                   {isRecording
-                    ? 'Speak into your microphone. Click "Stop Recording" when finished.'
+                    ? 'Speak clearly. Tap "Stop Recording" when finished.'
                     : voiceNoteData
-                    ? 'Voice reflection recorded. Click Play Audio to listen or Re-record.'
-                    : 'Press button to record a real voice reflection (up to 10 minutes) using your microphone'}
+                    ? 'Voice reflection saved. Tap Play to listen or Re-record.'
+                    : 'Record up to 10 minutes of voice reflection using microphone'}
                 </div>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <div className="mood-voice-actions">
               {isRecording ? (
                 <button
                   type="button"
                   onClick={stopRecording}
                   className="glass-button"
-                  style={{ fontSize: '12px', padding: '8px 16px', background: 'rgba(239, 68, 68, 0.9)', color: 'white', border: '1px solid #ef4444', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                  style={{
+                    fontSize: '12px',
+                    padding: '9px 16px',
+                    background: 'rgba(239, 68, 68, 0.9)',
+                    color: 'white',
+                    border: '1px solid #ef4444',
+                    borderRadius: '0px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                    width: '100%'
+                  }}
                 >
                   <Square size={13} fill="#ffffff" />
                   <span>Stop Recording ({formatSeconds(recordingSeconds)})</span>
                 </button>
               ) : voiceNoteData ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
                   <button
                     type="button"
                     onClick={togglePlayVoiceNote}
                     className="glass-button glass-button-primary"
-                    style={{ fontSize: '12px', padding: '8px 14px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    style={{ fontSize: '12px', padding: '8px 14px', borderRadius: '0px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flex: 1 }}
                   >
                     {isPlayingVoice ? <Pause size={14} /> : <Play size={14} />}
                     <span>{isPlayingVoice ? 'Pause' : 'Play Audio'}</span>
@@ -880,7 +1284,7 @@ export default function MoodCheckin({ onSuccess }) {
                     type="button"
                     onClick={handleRemoveVoiceNote}
                     className="glass-button"
-                    style={{ fontSize: '12px', padding: '8px 12px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    style={{ fontSize: '12px', padding: '8px 12px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)', borderRadius: '0px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flex: 1 }}
                     title="Delete and record again"
                   >
                     <Trash2 size={13} />
@@ -892,7 +1296,7 @@ export default function MoodCheckin({ onSuccess }) {
                   type="button"
                   onClick={startRecording}
                   className="glass-button glass-button-primary"
-                  style={{ fontSize: '12px', padding: '8px 16px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ fontSize: '12px', padding: '9px 16px', borderRadius: '0px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%' }}
                 >
                   <Mic size={14} />
                   <span>Start Recording</span>
@@ -918,7 +1322,7 @@ export default function MoodCheckin({ onSuccess }) {
           type="submit"
           disabled={isSubmitting}
           className="glass-button glass-button-primary"
-          style={{ width: '100%', padding: '14px', justifyContent: 'center', fontSize: '15px', borderRadius: '0px' }}
+          style={{ width: '100%', padding: '14px', justifyContent: 'center', fontSize: '14px', fontWeight: 700, borderRadius: '0px' }}
         >
           {isSubmitting ? 'Saving...' : 'Save Emotion Check-in'}
         </button>

@@ -14,13 +14,8 @@ export function AuthProvider({ children }) {
   });
 
   const [pinInput, setPinInput] = useState('');
-  const [isPinLocked, setIsPinLocked] = useState(() => {
-    const savedPin = localStorage.getItem('daily_pin_code');
-    return Boolean(savedPin);
-  });
-  const [pinCode, setPinCode] = useState(() => {
-    return localStorage.getItem('daily_pin_code') || '';
-  });
+  const [isPinLocked, setIsPinLocked] = useState(false);
+  const [pinCode, setPinCode] = useState('');
 
   useEffect(() => {
     if (user) {

@@ -69,6 +69,12 @@ export function DataProvider({ children }) {
     return res;
   };
 
+  const updateScheduleItem = async (id, schedData) => {
+    const res = await api.updateSchedule(id, schedData);
+    await reloadData();
+    return res;
+  };
+
   const removeScheduleItem = async (id) => {
     await api.deleteSchedule(id);
     await reloadData();
@@ -123,6 +129,7 @@ export function DataProvider({ children }) {
         addMoodEntry,
         removeMoodEntry,
         addScheduleItem,
+        updateScheduleItem,
         removeScheduleItem,
         addAcademicCourse,
         updateAcademicCourse,
