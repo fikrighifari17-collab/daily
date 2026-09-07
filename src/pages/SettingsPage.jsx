@@ -806,7 +806,7 @@ export default function SettingsPage() {
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type="text"
-                    placeholder="Contoh: 8025609014"
+                    placeholder="Contoh: 123456789"
                     value={telegramChatId}
                     onChange={(e) => setTelegramChatId(e.target.value)}
                     style={{

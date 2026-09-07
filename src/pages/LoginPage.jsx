@@ -1,7 +1,28 @@
 import React, { useState } from 'react';
-import { Sparkles, Lock, User, LogIn, UserPlus, ShieldCheck, HeartPulse, BookOpen, Brain, Activity, Eye, EyeOff, Send } from 'lucide-react';
+import {
+  Lock, User, LogIn, UserPlus, ShieldCheck, HeartPulse, Eye, EyeOff, Send,
+  Heart, Sparkles, BookOpen, Coffee, Brain, Smile, Moon, Zap, Music, Feather, Sun, GraduationCap, Star, Compass
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import SemestaraLogo from '../components/SemestaraLogo';
+
+const FLOATING_ICONS = [
+  { id: 1, Icon: Heart, top: '12%', left: '16%', size: 48, iconSize: 22, color: '#f43f5e', bg: 'rgba(244, 63, 94, 0.12)', border: 'rgba(244, 63, 94, 0.3)', anim: 'floatIcon1', dur: '5.6s', delay: '0s' },
+  { id: 2, Icon: Sparkles, top: '16%', left: '72%', size: 54, iconSize: 26, color: '#00FFF5', bg: 'rgba(0, 255, 245, 0.14)', border: 'rgba(0, 255, 245, 0.35)', anim: 'floatIcon2', dur: '6.2s', delay: '0.8s' },
+  { id: 3, Icon: BookOpen, top: '28%', left: '26%', size: 50, iconSize: 24, color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.12)', border: 'rgba(56, 189, 248, 0.3)', anim: 'floatIcon3', dur: '7.1s', delay: '1.4s' },
+  { id: 4, Icon: Coffee, top: '25%', left: '84%', size: 46, iconSize: 21, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.3)', anim: 'floatIcon4', dur: '5.8s', delay: '0.3s' },
+  { id: 5, Icon: Brain, top: '46%', left: '14%', size: 52, iconSize: 24, color: '#a855f7', bg: 'rgba(168, 85, 247, 0.12)', border: 'rgba(168, 85, 247, 0.3)', anim: 'floatIcon1', dur: '6.5s', delay: '2.1s' },
+  { id: 6, Icon: Smile, top: '48%', left: '80%', size: 50, iconSize: 24, color: '#10b981', bg: 'rgba(16, 185, 129, 0.14)', border: 'rgba(16, 185, 129, 0.35)', anim: 'floatIcon2', dur: '6.8s', delay: '1.1s' },
+  { id: 7, Icon: Moon, top: '66%', left: '18%', size: 46, iconSize: 22, color: '#818cf8', bg: 'rgba(129, 140, 248, 0.12)', border: 'rgba(129, 140, 248, 0.3)', anim: 'floatIcon3', dur: '5.3s', delay: '1.7s' },
+  { id: 8, Icon: Zap, top: '65%', left: '76%', size: 48, iconSize: 22, color: '#fbbf24', bg: 'rgba(251, 191, 36, 0.14)', border: 'rgba(251, 191, 36, 0.35)', anim: 'floatIcon4', dur: '6.0s', delay: '2.5s' },
+  { id: 9, Icon: Music, top: '82%', left: '30%', size: 50, iconSize: 24, color: '#ec4899', bg: 'rgba(236, 72, 153, 0.12)', border: 'rgba(236, 72, 153, 0.3)', anim: 'floatIcon1', dur: '7.3s', delay: '0.6s' },
+  { id: 10, Icon: Feather, top: '84%', left: '72%', size: 48, iconSize: 22, color: '#00ADB5', bg: 'rgba(0, 173, 181, 0.15)', border: 'rgba(0, 173, 181, 0.35)', anim: 'floatIcon2', dur: '5.9s', delay: '1.9s' },
+  { id: 11, Icon: Sun, top: '10%', left: '46%', size: 44, iconSize: 20, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.3)', anim: 'floatIcon3', dur: '6.4s', delay: '2.8s' },
+  { id: 12, Icon: GraduationCap, top: '38%', left: '60%', size: 50, iconSize: 24, color: '#00FFF5', bg: 'rgba(0, 255, 245, 0.13)', border: 'rgba(0, 255, 245, 0.35)', anim: 'floatIcon4', dur: '6.7s', delay: '1.3s' },
+  { id: 13, Icon: Star, top: '60%', left: '42%', size: 42, iconSize: 19, color: '#eab308', bg: 'rgba(234, 179, 8, 0.12)', border: 'rgba(234, 179, 8, 0.3)', anim: 'floatIcon1', dur: '5.4s', delay: '0.7s' },
+  { id: 14, Icon: Compass, top: '78%', left: '52%', size: 46, iconSize: 21, color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.12)', border: 'rgba(6, 182, 212, 0.3)', anim: 'floatIcon2', dur: '7.4s', delay: '2.3s' }
+];
 
 export default function LoginPage() {
   const { handleLogin, handleRegister } = useAuth();
@@ -59,47 +80,45 @@ export default function LoginPage() {
       padding: '8px' // Gap 8px mentok atas, bawah, kiri, kanan
     }}>
       {/* Split Screen Container (stretched mentok edge-to-edge with 8px margin and 8px border-radius) */}
-      <div className="glass-panel animate-fade-in" style={{
+      <div className="glass-panel animate-fade-in login-split-container" style={{
         width: '100%',
-        minHeight: 'calc(100vh - 16px)',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+        height: 'calc(100vh - 16px)',
         background: 'linear-gradient(135deg, rgba(34, 40, 49, 0.96), rgba(57, 62, 70, 0.92))',
         border: '1px solid rgba(0, 173, 181, 0.35)',
         boxShadow: '0 25px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(0, 173, 181, 0.2)',
-        borderRadius: '8px',
-        overflow: 'auto'
+        borderRadius: '8px'
       }}>
         
         {/* ================= LEFT COLUMN: LOGIN / REGISTER FORM ================= */}
-        <div style={{
-          padding: '48px 40px',
+        <div className="login-left-column" style={{
+          padding: mode === 'register' ? '24px 36px' : '40px 40px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          borderRight: '1px solid rgba(0, 173, 181, 0.2)',
+          alignItems: 'center',
           background: 'rgba(34, 40, 49, 0.85)'
         }}>
-          {/* Logo & Title */}
-          <div style={{ marginBottom: '22px' }}>
+          <div style={{ width: '100%', maxWidth: '440px' }}>
+            {/* Logo & Title */}
+          <div style={{ marginBottom: mode === 'register' ? '12px' : '22px' }}>
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '48px',
-              height: '48px',
+              width: mode === 'register' ? '38px' : '48px',
+              height: mode === 'register' ? '38px' : '48px',
               borderRadius: '8px',
               background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.3), rgba(0, 255, 245, 0.15))',
               border: '1px solid rgba(0, 173, 181, 0.5)',
-              marginBottom: '12px',
+              marginBottom: mode === 'register' ? '8px' : '12px',
               boxShadow: '0 8px 20px rgba(0, 173, 181, 0.3)'
             }}>
-              <HeartPulse size={26} color="#00FFF5" />
+              <SemestaraLogo size={mode === 'register' ? 24 : 32} idPrefix="login-head" />
             </div>
-            <h1 style={{ fontSize: '26px', fontWeight: 800, color: '#EEEEEE', margin: '0 0 4px 0', letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontSize: mode === 'register' ? '22px' : '26px', fontWeight: 800, color: '#EEEEEE', margin: '0 0 2px 0', letterSpacing: '-0.02em' }}>
               Semest<span className="text-gradient-teal">ara</span>
             </h1>
-            <p style={{ fontSize: '13px', color: '#b0b8c1', margin: 0 }}>
+            <p style={{ fontSize: '12px', color: '#b0b8c1', margin: 0 }}>
               {mode === 'login'
                 ? 'Yuk masuk, seimbangin mood sama ritme kuliahmu'
                 : 'Bikin akun yuk, biar bisa pantau kabar hatimu tiap hari'}
@@ -113,7 +132,7 @@ export default function LoginPage() {
             gap: '4px',
             background: 'rgba(0, 0, 0, 0.4)',
             padding: '4px',
-            marginBottom: '20px',
+            marginBottom: mode === 'register' ? '12px' : '20px',
             border: '1px solid rgba(0, 173, 181, 0.25)',
             borderRadius: '8px'
           }}>
@@ -183,26 +202,26 @@ export default function LoginPage() {
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: mode === 'register' ? '9px' : '14px' }}>
             {mode === 'register' && (
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '3px' }}>
                   Nama Lengkap (Bebas / Opsional)
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <User size={16} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <User size={15} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                   <input
                     type="text"
-                    placeholder="misal: Fikri Ghifari"
+                    placeholder="misal: Anonim"
                     value={nama}
                     onChange={(e) => setNama(e.target.value)}
                     style={{
                       width: '100%',
-                      padding: '10px 12px 10px 38px',
+                      padding: '8px 12px 8px 36px',
                       background: 'rgba(34, 40, 49, 0.9)',
                       border: '1px solid rgba(0, 173, 181, 0.3)',
                       color: '#EEEEEE',
-                      fontSize: '13px',
+                      fontSize: '12px',
                       outline: 'none',
                       borderRadius: '8px'
                     }}
@@ -212,11 +231,11 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: mode === 'register' ? '3px' : '6px' }}>
                 Username
               </label>
               <div style={{ position: 'relative' }}>
-                <User size={16} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                <User size={15} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type="text"
                   required
@@ -225,11 +244,11 @@ export default function LoginPage() {
                   onChange={(e) => setUsername(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '10px 12px 10px 38px',
+                    padding: mode === 'register' ? '8px 12px 8px 36px' : '10px 12px 10px 38px',
                     background: 'rgba(34, 40, 49, 0.9)',
                     border: '1px solid rgba(0, 173, 181, 0.3)',
                     color: '#EEEEEE',
-                    fontSize: '13px',
+                    fontSize: mode === 'register' ? '12px' : '13px',
                     outline: 'none',
                     borderRadius: '8px'
                   }}
@@ -238,11 +257,11 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: mode === 'register' ? '3px' : '6px' }}>
                 Password
               </label>
               <div style={{ position: 'relative' }}>
-                <Lock size={16} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                <Lock size={15} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
@@ -251,11 +270,11 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '10px 42px 10px 38px',
+                    padding: mode === 'register' ? '8px 40px 8px 36px' : '10px 42px 10px 38px',
                     background: 'rgba(34, 40, 49, 0.9)',
                     border: '1px solid rgba(0, 173, 181, 0.3)',
                     color: '#EEEEEE',
-                    fontSize: '13px',
+                    fontSize: mode === 'register' ? '12px' : '13px',
                     outline: 'none',
                     borderRadius: '8px'
                   }}
@@ -280,14 +299,14 @@ export default function LoginPage() {
                   }}
                   title={showPassword ? 'Sembunyikan password' : 'Lihat password'}
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
             </div>
 
             {mode === 'register' && (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
                   <label style={{ fontSize: '11px', fontWeight: 600, color: '#b0b8c1' }}>
                     Telegram Chat ID <span style={{ color: '#00FFF5', fontWeight: 400 }}>(Opsional)</span>
                   </label>
@@ -301,25 +320,25 @@ export default function LoginPage() {
                   </a>
                 </div>
                 <div style={{ position: 'relative' }}>
-                  <Send size={16} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <Send size={15} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                   <input
                     type="text"
-                    placeholder="Contoh: 8025609014 (untuk notifikasi deadline)"
+                    placeholder="Contoh: 123456789 (untuk notifikasi deadline)"
                     value={telegramChatId}
                     onChange={(e) => setTelegramChatId(e.target.value)}
                     style={{
                       width: '100%',
-                      padding: '10px 12px 10px 38px',
+                      padding: '8px 12px 8px 36px',
                       background: 'rgba(34, 40, 49, 0.9)',
                       border: '1px solid rgba(0, 173, 181, 0.3)',
                       color: '#EEEEEE',
-                      fontSize: '13px',
+                      fontSize: '12px',
                       outline: 'none',
                       borderRadius: '8px'
                     }}
                   />
                 </div>
-                <span style={{ fontSize: '10px', color: '#8892b0', marginTop: '4px', display: 'block' }}>
+                <span style={{ fontSize: '10px', color: '#8892b0', marginTop: '2px', display: 'block' }}>
                   Bisa diisi nanti kapan saja di menu Pengaturan.
                 </span>
               </div>
@@ -330,9 +349,9 @@ export default function LoginPage() {
               disabled={loading}
               className="glass-button glass-button-primary"
               style={{
-                marginTop: '8px',
-                padding: '12px',
-                fontSize: '14px',
+                marginTop: mode === 'register' ? '4px' : '8px',
+                padding: mode === 'register' ? '9px' : '12px',
+                fontSize: mode === 'register' ? '13px' : '14px',
                 fontWeight: 700,
                 justifyContent: 'center',
                 borderRadius: '8px',
@@ -340,202 +359,116 @@ export default function LoginPage() {
                 cursor: loading ? 'not-allowed' : 'pointer'
               }}
             >
-              {loading ? 'Bentar ya...' : mode === 'login' ? 'Gas Masuk' : 'Bikin Akun Sekarang'}
+              {loading ? 'Bentar ya...' : mode === 'login' ? 'Masuk' : 'Daftar'}
             </button>
           </form>
 
-          {/* Quick Demo Account 1-Click Login */}
-          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '2px 0' }}>
-              <div style={{ flex: 1, height: '1px', background: 'rgba(0, 173, 181, 0.25)' }} />
-              <span style={{ fontSize: '10px', color: '#b0b8c1', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>
-                Akses Demo Cepat
-              </span>
-              <div style={{ flex: 1, height: '1px', background: 'rgba(0, 173, 181, 0.25)' }} />
-            </div>
-
-            <button
-              type="button"
-              disabled={loading}
-              onClick={async () => {
-                setMode('login');
-                setUsername('demo');
-                setPassword('demo123');
-                setErrorMsg('');
-                setLoading(true);
-                try {
-                  const res = await handleLogin('demo', 'demo123');
-                  if (res?.user) {
-                    toast.success(`Halo ${res.user.nama || 'Sobat Semestara'}, selamat datang!`);
-                  } else {
-                    setErrorMsg('Gagal masuk ke akun demo nih.');
-                  }
-                } catch (err) {
-                  setErrorMsg(err.message || 'Ada kendala pas mau masuk.');
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              className="glass-button"
-              style={{
-                padding: '11px',
-                fontSize: '13px',
-                fontWeight: 700,
-                justifyContent: 'center',
-                borderRadius: '8px',
-                background: 'linear-gradient(135deg, rgba(0, 255, 245, 0.14), rgba(0, 173, 181, 0.28))',
-                borderColor: 'rgba(0, 255, 245, 0.45)',
-                color: '#00FFF5',
-                gap: '8px',
-                cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(0, 173, 181, 0.15)'
-              }}
-            >
-              <Sparkles size={16} color="#00FFF5" />
-              <span>Masuk dengan Akun Demo (1-Click)</span>
-            </button>
-
-            <div style={{
-              padding: '8px 12px',
-              background: 'rgba(0, 0, 0, 0.35)',
-              border: '1px solid rgba(0, 173, 181, 0.2)',
-              borderRadius: '6px',
-              fontSize: '11px',
-              color: '#b0b8c1',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <span>User: <strong style={{ color: '#00FFF5' }}>demo</strong></span>
-              <span>Pass: <strong style={{ color: '#00FFF5' }}>demo123</strong></span>
-            </div>
+          {/* Footer message placed right under form */}
+          <div style={{
+            marginTop: mode === 'register' ? '12px' : '20px',
+            paddingTop: mode === 'register' ? '8px' : '14px',
+            borderTop: '1px solid rgba(0, 173, 181, 0.15)',
+            fontSize: '11px',
+            color: '#7a848f',
+            textAlign: 'center',
+            letterSpacing: '0.02em'
+          }}>
+            I hope this makes things a little easier for you.
           </div>
-
-          <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(0, 173, 181, 0.2)', fontSize: '11px', color: '#b0b8c1', textAlign: 'center' }}>
-            🔒 100% Privasi Aman &bull; Nggak Butuh Email &bull; Tersimpan Aman
           </div>
         </div>
 
-        {/* ================= RIGHT COLUMN: INFORMATIVE & INSPIRING CONTENT ================= */}
-        <div style={{
-          padding: '48px 40px',
+        {/* ================= RIGHT COLUMN: FLOATING ICONS ANIMATION (NO WORDS) ================= */}
+        <div className="login-right-column" style={{
+          position: 'relative',
+          overflow: 'hidden',
           display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.12), rgba(57, 62, 70, 0.7))',
-          position: 'relative'
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'radial-gradient(circle at 50% 50%, rgba(0, 173, 181, 0.16) 0%, rgba(34, 40, 49, 0.95) 75%)',
+          padding: '28px',
+          minHeight: '480px'
         }}>
-          <div>
-            {/* Tag Badge */}
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '4px 12px',
-              borderRadius: '8px',
-              background: 'rgba(0, 173, 181, 0.2)',
-              border: '1px solid rgba(0, 173, 181, 0.4)',
-              marginBottom: '16px'
-            }}>
-              <Sparkles size={13} color="#00FFF5" />
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#00FFF5', letterSpacing: '0.04em' }}>
-                🌿 KESEHATAN MENTALMU ITU PENTING
-              </span>
-            </div>
-
-            {/* Main Headline */}
-            <h2 style={{ fontSize: '26px', fontWeight: 800, color: '#EEEEEE', lineHeight: 1.3, marginBottom: '12px' }}>
-              Pahami Isi Hatimu, <br />
-              <span className="text-gradient-teal">Taklukin Semester Ini.</span>
-            </h2>
-
-            <p style={{ fontSize: '13px', color: '#b0b8c1', lineHeight: 1.6, marginBottom: '22px' }}>
-              Tempat aman & privat buat pantau perasaanmu, lihat gimana tugas kuliah ngaruh ke mood, dan bikin pikiran tetap plong sepanjang semester.
-            </p>
-
-            {/* Feature Highlights Grid */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px',
-                padding: '12px 14px',
-                background: 'rgba(34, 40, 49, 0.65)',
-                border: '1px solid rgba(0, 173, 181, 0.2)',
-                borderRadius: '8px'
-              }}>
-                <div style={{ padding: '8px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)', borderRadius: '8px' }}>
-                  <Activity size={18} color="#00FFF5" />
-                </div>
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE', marginBottom: '2px' }}>
-                    Kenali Pola Stres Kamu
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#b0b8c1', lineHeight: 1.4 }}>
-                    Cari tahu kapan rasa capek atau stresmu lagi numpuk—apakah pas musim UTS, UAS, atau pas tugas lagi bejibun.
-                  </div>
-                </div>
-              </div>
-
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px',
-                padding: '12px 14px',
-                background: 'rgba(34, 40, 49, 0.65)',
-                border: '1px solid rgba(0, 173, 181, 0.2)',
-                borderRadius: '8px'
-              }}>
-                <div style={{ padding: '8px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)', borderRadius: '8px' }}>
-                  <Brain size={18} color="#00FFF5" />
-                </div>
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE', marginBottom: '2px' }}>
-                    Ruang Curhat & Latihan Rileks
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#b0b8c1', lineHeight: 1.4 }}>
-                    Keluarin unek-unek yang bikin pusing di sini dengan aman, plus cobain teknik napas 4-7-8 kalau butuh rehat sejenak.
-                  </div>
-                </div>
-              </div>
-
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px',
-                padding: '12px 14px',
-                background: 'rgba(34, 40, 49, 0.65)',
-                border: '1px solid rgba(0, 173, 181, 0.2)',
-                borderRadius: '8px'
-              }}>
-                <div style={{ padding: '8px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)', borderRadius: '8px' }}>
-                  <ShieldCheck size={18} color="#00FFF5" />
-                </div>
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE', marginBottom: '2px' }}>
-                    100% Aman & Khusus Buat Kamu
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#b0b8c1', lineHeight: 1.4 }}>
-                    Cuma kamu yang bisa lihat. Datamu nggak bakal pernah dibagikan ke pihak kampus atau orang lain. Tempat ini murni punyamu.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Inspirational Quote at Bottom */}
+          {/* Ambient Glowing Orbs */}
           <div style={{
-            marginTop: '22px',
-            padding: '12px 16px',
-            background: 'rgba(0, 173, 181, 0.08)',
-            borderLeft: '3px solid #00ADB5',
-            borderRadius: '8px'
+            position: 'absolute',
+            width: '400px',
+            height: '400px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(0, 255, 245, 0.22) 0%, rgba(0, 173, 181, 0.05) 60%, transparent 80%)',
+            filter: 'blur(60px)',
+            pointerEvents: 'none',
+            zIndex: 0
+          }} />
+
+          {/* Central Pulsing Heart Emblem */}
+          <div style={{
+            position: 'relative',
+            zIndex: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}>
-            <p style={{ fontSize: '12px', fontStyle: 'italic', color: '#EEEEEE', margin: 0, lineHeight: 1.5 }}>
-              "Jujur sama perasaan sendiri itu bukan tanda lemah—justru cara paling keren biar bisa lewatin tiap semester dengan kepala dingin dan hati tenang."
-            </p>
+            {/* Concentric Pulsing Light Rings */}
+            <div style={{
+              position: 'absolute',
+              width: '190px',
+              height: '190px',
+              borderRadius: '50%',
+              border: '1px solid rgba(0, 255, 245, 0.25)',
+              animation: 'pulseGlowRing 4s ease-in-out infinite',
+              pointerEvents: 'none'
+            }} />
+            <div style={{
+              position: 'absolute',
+              width: '270px',
+              height: '270px',
+              borderRadius: '50%',
+              border: '1px dashed rgba(0, 173, 181, 0.2)',
+              animation: 'pulseGlowRing 6s ease-in-out infinite reverse',
+              pointerEvents: 'none'
+            }} />
+
+            {/* Glowing Center Badge */}
+            <div style={{
+              width: '92px',
+              height: '92px',
+              borderRadius: '26px',
+              background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.35), rgba(0, 255, 245, 0.18))',
+              border: '1.5px solid rgba(0, 255, 245, 0.45)',
+              boxShadow: '0 0 45px rgba(0, 173, 181, 0.45), inset 0 0 25px rgba(0, 255, 245, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              animation: 'floatIcon1 6s ease-in-out infinite'
+            }}>
+              <SemestaraLogo size={52} idPrefix="login-center" />
+            </div>
           </div>
 
+          {/* Floating Random Icons */}
+          {FLOATING_ICONS.map(({ id, Icon, top, left, size, iconSize, color, bg, border, anim, dur, delay }) => (
+            <div
+              key={id}
+              className="floating-icon-badge"
+              style={{
+                top,
+                left,
+                width: `${size}px`,
+                height: `${size}px`,
+                background: bg,
+                borderColor: border,
+                boxShadow: `0 8px 24px rgba(0, 0, 0, 0.35), 0 0 16px ${color}33`,
+                animation: `${anim} ${dur} ease-in-out infinite`,
+                animationDelay: delay,
+                zIndex: 1
+              }}
+            >
+              <Icon size={iconSize} color={color} />
+            </div>
+          ))}
         </div>
 
       </div>

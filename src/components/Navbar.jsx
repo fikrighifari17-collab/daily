@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AuthModal from './AuthModal';
+import SemestaraLogo from './SemestaraLogo';
 
 export default function Navbar() {
   const { user, handleLogout } = useAuth();
@@ -98,7 +99,7 @@ export default function Navbar() {
               justifyContent: 'center',
               boxShadow: '0 0 15px rgba(0, 173, 181, 0.3)'
             }}>
-              <HeartPulse size={18} color="#00FFF5" />
+              <SemestaraLogo size={22} idPrefix="nav" />
             </div>
             <span style={{ 
               fontSize: '16px', 
