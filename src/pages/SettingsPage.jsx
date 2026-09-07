@@ -52,12 +52,12 @@ export default function SettingsPage() {
       setAvatar(user.avatar || '');
       if (user.tag !== undefined) setTag(user.tag || '#');
       if (user.describe !== undefined) setDescribe(user.describe || 'Best emoji to describe your day?');
-      if (user.telegramChatId) setTelegramChatId(user.telegramChatId);
+      setTelegramChatId(user.telegramChatId || '');
     }
   }, [user]);
 
   // Telegram Notifications State
-  const [telegramChatId, setTelegramChatId] = useState(user?.telegramChatId || getStoredChatId());
+  const [telegramChatId, setTelegramChatId] = useState(user?.telegramChatId || '');
   const [isTelegramEnabled, setIsTelegramEnabled] = useState(isTelegramNotificationEnabled());
   const [isTestingTelegram, setIsTestingTelegram] = useState(false);
 
@@ -83,7 +83,7 @@ export default function SettingsPage() {
     setAvatar(user?.avatar || '');
     setTag(user?.tag || '#');
     setDescribe(user?.describe || 'Best emoji to describe your day?');
-    setTelegramChatId(user?.telegramChatId || getStoredChatId());
+    setTelegramChatId(user?.telegramChatId || '');
     setIsTelegramEnabled(isTelegramNotificationEnabled());
     setEditCurrentPassword('');
     setEditNewPassword('');

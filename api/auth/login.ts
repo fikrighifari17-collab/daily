@@ -53,7 +53,14 @@ export default async function handler(req: any, res: any) {
 
     return res.status(200).json({
       token,
-      user: { id: user.id, nama: user.nama, username: user.username, pinLock: user.pinLock, avatar: user.avatar }
+      user: {
+        id: user.id,
+        nama: user.nama,
+        username: user.username,
+        pinLock: user.pinLock,
+        avatar: user.avatar,
+        telegramChatId: user.telegramChatId || null
+      }
     });
   } catch (err: any) {
     console.error('Login error:', err);

@@ -1,18 +1,44 @@
 // Telegram Notification Service for Daily App
 const BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || '8921487742:AAHhTul_2PYhlZBxlYmDa9-BtM0q8FVKoTc';
-const DEFAULT_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID || '8025609014';
 export const BOT_USERNAME = 'Semestara_Bot';
 export const BOT_URL = 'https://t.me/Semestara_Bot';
 
 export function getStoredChatId() {
-  return localStorage.getItem('telegram_chat_id') || DEFAULT_CHAT_ID;
+  try {
+    const saved = localStorage.getItem('daily_user_info');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.telegramChatId) return parsed.telegramChatId;
+      if (parsed.username) {
+        return localStorage.getItem(`telegram_chat_id_${parsed.username}`) || null;
+      }
+      return null;
+    }
+  } catch {}
+  return null;
 }
 
 export function setStoredChatId(chatId) {
-  if (chatId) {
-    localStorage.setItem('telegram_chat_id', chatId.trim());
+  let username = null;
+  try {
+    const saved = localStorage.getItem('daily_user_info');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      username = parsed.username;
+    }
+  } catch {}
+
+  if (chatId && chatId.trim()) {
+    const clean = chatId.trim();
+    localStorage.setItem('telegram_chat_id', clean);
+    if (username) {
+      localStorage.setItem(`telegram_chat_id_${username}`, clean);
+    }
   } else {
     localStorage.removeItem('telegram_chat_id');
+    if (username) {
+      localStorage.removeItem(`telegram_chat_id_${username}`);
+    }
   }
 }
 

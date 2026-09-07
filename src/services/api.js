@@ -117,7 +117,16 @@ export async function loginUser(username, password) {
     if (res.ok) {
       const data = await res.json();
       if (data.token) localStorage.setItem("token", data.token);
-      if (data.user) localStorage.setItem("daily_user_info", JSON.stringify(data.user));
+      if (data.user) {
+        localStorage.setItem("daily_user_info", JSON.stringify(data.user));
+        if (data.user.telegramChatId) {
+          localStorage.setItem('telegram_chat_id', data.user.telegramChatId);
+          localStorage.setItem(`telegram_chat_id_${data.user.username}`, data.user.telegramChatId);
+        } else {
+          localStorage.removeItem('telegram_chat_id');
+          localStorage.removeItem(`telegram_chat_id_${data.user.username}`);
+        }
+      }
       return data;
     } else if (res.status === 400 || res.status === 401) {
       // If server explicitly said invalid, also check local fallback before rejecting
@@ -128,6 +137,13 @@ export async function loginUser(username, password) {
         const token = "jwt-local-token-" + Date.now();
         localStorage.setItem("token", token);
         localStorage.setItem("daily_user_info", JSON.stringify(safeUser));
+        if (safeUser.telegramChatId) {
+          localStorage.setItem('telegram_chat_id', safeUser.telegramChatId);
+          localStorage.setItem(`telegram_chat_id_${safeUser.username}`, safeUser.telegramChatId);
+        } else {
+          localStorage.removeItem('telegram_chat_id');
+          localStorage.removeItem(`telegram_chat_id_${safeUser.username}`);
+        }
         setLocal(STORAGE_KEYS.USER, safeUser);
         return { token, user: safeUser };
       }
@@ -153,6 +169,13 @@ export async function loginUser(username, password) {
     const token = "jwt-local-token-" + Date.now();
     localStorage.setItem("token", token);
     localStorage.setItem("daily_user_info", JSON.stringify(safeUser));
+    if (safeUser.telegramChatId) {
+      localStorage.setItem('telegram_chat_id', safeUser.telegramChatId);
+      localStorage.setItem(`telegram_chat_id_${safeUser.username}`, safeUser.telegramChatId);
+    } else {
+      localStorage.removeItem('telegram_chat_id');
+      localStorage.removeItem(`telegram_chat_id_${safeUser.username}`);
+    }
     setLocal(STORAGE_KEYS.USER, safeUser);
     return { token, user: safeUser };
   }
@@ -162,6 +185,7 @@ export async function loginUser(username, password) {
 export function logoutUser() {
   localStorage.removeItem("token");
   localStorage.removeItem("daily_user_info");
+  localStorage.removeItem("telegram_chat_id");
   localStorage.removeItem(STORAGE_KEYS.USER);
 }
 
@@ -566,6 +590,13 @@ export async function updateUserProfile(data) {
       if (result.token) localStorage.setItem("token", result.token);
       if (result.user) {
         localStorage.setItem("daily_user_info", JSON.stringify(result.user));
+        if (result.user.telegramChatId) {
+          localStorage.setItem('telegram_chat_id', result.user.telegramChatId);
+          localStorage.setItem(`telegram_chat_id_${result.user.username}`, result.user.telegramChatId);
+        } else {
+          localStorage.removeItem('telegram_chat_id');
+          localStorage.removeItem(`telegram_chat_id_${result.user.username}`);
+        }
         setLocal(STORAGE_KEYS.USER, result.user);
       }
       return result;
@@ -605,7 +636,8 @@ export async function updateUserProfile(data) {
     ...(data.username !== undefined ? { username: cleanUsername } : {}),
     ...(data.avatar !== undefined ? { avatar: data.avatar } : {}),
     ...(data.tag !== undefined ? { tag: String(data.tag).trim() } : {}),
-    ...(data.describe !== undefined ? { describe: String(data.describe).trim() } : {})
+    ...(data.describe !== undefined ? { describe: String(data.describe).trim() } : {}),
+    ...(data.telegramChatId !== undefined ? { telegramChatId: data.telegramChatId ? String(data.telegramChatId).trim() : null } : {})
   };
   delete updated.currentPassword;
   delete updated.newPassword;
@@ -616,6 +648,14 @@ export async function updateUserProfile(data) {
   if (uIdx !== -1) {
     users[uIdx] = { ...users[uIdx], ...updated };
     setLocal('daily_registered_users_v1', users);
+  }
+
+  if (updated.telegramChatId) {
+    localStorage.setItem('telegram_chat_id', updated.telegramChatId);
+    localStorage.setItem(`telegram_chat_id_${updated.username}`, updated.telegramChatId);
+  } else {
+    localStorage.removeItem('telegram_chat_id');
+    localStorage.removeItem(`telegram_chat_id_${updated.username}`);
   }
 
   localStorage.setItem("daily_user_info", JSON.stringify(updated));
