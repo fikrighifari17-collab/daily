@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useSearchParams } from 'react-router-dom';
 import {
   Calendar as CalendarIcon,
   Plus,
@@ -29,7 +29,9 @@ import {
   ExternalLink,
   UploadCloud,
   Link2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ArrowLeft,
+  ArrowRight
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
@@ -96,8 +98,16 @@ export default function SchedulePage() {
   // Expandable subtasks state for cards (accordion/expanded preview)
   const [expandedCards, setExpandedCards] = useState({});
 
-  // Collapsible toggle for completed tasks list ("List Tugas Beres")
-  const [isCompletedListExpanded, setIsCompletedListExpanded] = useState(true);
+  // Navigation Tab State (active vs completed) synced with URL query param ?tab=
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get('tab') === 'completed' ? 'completed' : 'active';
+  const setTab = (tab) => {
+    if (tab === 'completed') {
+      setSearchParams({ tab: 'completed' });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   const toggleCardExpanded = (id) => {
     setExpandedCards((prev) => ({
@@ -695,6 +705,10 @@ export default function SchedulePage() {
     return true;
   });
 
+  // Total unfiltered counts for tabs
+  const allActiveCount = schedules.filter((s) => parseScheduleItem(s).progress < 100).length;
+  const allCompletedCount = schedules.filter((s) => parseScheduleItem(s).progress === 100).length;
+
   // Separate active vs completed schedules
   const activeSchedules = displayedSchedules.filter((s) => {
     const parsed = parseScheduleItem(s);
@@ -708,6 +722,9 @@ export default function SchedulePage() {
 
   const getCategoryCount = (cat) => {
     return schedules.filter((s) => {
+      const parsed = parseScheduleItem(s);
+      const matchesTab = currentTab === 'completed' ? parsed.progress === 100 : parsed.progress < 100;
+      if (!matchesTab) return false;
       if (cat === 'all') return true;
       return (s.jenis || '').toLowerCase() === cat.toLowerCase();
     }).length;
@@ -948,23 +965,23 @@ export default function SchedulePage() {
           </div>
         )}
 
-        {/* Attachments (Word, PPT, PDF, Link) */}
+        {/* Minimalist Attachments Section on Task Card */}
         {attachments.length > 0 && (
           <div style={{
             marginTop: '2px',
-            padding: '8px 12px',
-            background: 'rgba(0, 0, 0, 0.25)',
-            border: '1px solid rgba(0, 173, 181, 0.18)',
+            padding: '6px 8px',
+            background: 'rgba(0, 0, 0, 0.2)',
+            border: '1px solid rgba(0, 173, 181, 0.15)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '6px'
+            gap: '4px'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#00FFF5', fontWeight: 700 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#00FFF5', fontWeight: 600, padding: '0 2px' }}>
               <Paperclip size={12} />
-              <span>Berkas / Materi Tugas ({attachments.length}):</span>
+              <span>Berkas / Materi ({attachments.length}):</span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {attachments.map((att) => {
                 const badge = getFileBadgeInfo(att);
                 const isMobile = isMobileDevice();
@@ -973,126 +990,124 @@ export default function SchedulePage() {
                     key={att.id}
                     style={{
                       display: 'flex',
-                      flexDirection: 'column',
-                      gap: '7px',
-                      padding: '8px 10px',
-                      background: 'rgba(34, 40, 49, 0.75)',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                      padding: '4px 8px',
+                      background: 'rgba(34, 40, 49, 0.65)',
                       border: `1px solid ${badge.border}`,
                       borderRadius: '0px'
                     }}
                   >
-                    {/* Row 1: File Icon + Badge + Full Filename (gets full width, never squished!) */}
+                    {/* Left: Icon + Type Badge + Truncated Filename + Size */}
                     <div
                       onClick={() => handleDownloadAttachment(att, false)}
                       style={{
                         display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '8px',
+                        alignItems: 'center',
+                        gap: '6px',
+                        minWidth: 0,
+                        flex: 1,
                         cursor: 'pointer'
                       }}
-                      title={isMobile ? 'Klik untuk membuka sesuai bawaan HP' : 'Klik untuk membuka langsung di browser'}
+                      title={`${att.name}${att.size ? ` (${att.size})` : ''} - Klik untuk membuka`}
                     >
-                      <div style={{ flexShrink: 0, marginTop: '2px', display: 'flex', alignItems: 'center' }}>
+                      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
                         {badge.icon}
                       </div>
+
                       <span
                         style={{
                           fontSize: '9px',
-                          fontWeight: 800,
-                          padding: '1px 5px',
+                          fontWeight: 700,
+                          padding: '1px 4px',
                           color: badge.color,
                           background: badge.bg,
                           border: `1px solid ${badge.border}`,
                           flexShrink: 0,
                           textTransform: 'uppercase',
-                          marginTop: '1px'
+                          lineHeight: '1.2'
                         }}
                       >
                         {badge.label}
                       </span>
+
                       <span
                         style={{
-                          fontSize: '12px',
+                          fontSize: '11px',
                           color: '#EEEEEE',
-                          fontWeight: 600,
-                          lineHeight: '1.4',
-                          wordBreak: 'break-word',
-                          flex: 1
+                          fontWeight: 500,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          minWidth: 0,
+                          flex: '1 1 auto'
                         }}
-                        title={att.name}
                       >
                         {att.name}
                       </span>
+
+                      {att.size && (
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', flexShrink: 0, marginLeft: '2px' }}>
+                          ({att.size})
+                        </span>
+                      )}
                     </div>
 
-                    {/* Row 2: File Size on Left, Action buttons on Right */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '8px',
-                        paddingTop: '6px',
-                        borderTop: '1px solid rgba(255, 255, 255, 0.05)'
-                      }}
-                    >
-                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                        {att.size ? att.size : (isMobile ? 'Berkas lampiran' : 'PDF / Dokumen')}
-                      </span>
+                    {/* Right: Compact Action Buttons */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownloadAttachment(att, false);
+                        }}
+                        className="glass-button glass-button-primary"
+                        style={{
+                          fontSize: '10px',
+                          padding: '2px 7px',
+                          borderRadius: '0px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          lineHeight: '1.2'
+                        }}
+                        title={
+                          att.link
+                            ? 'Buka tautan'
+                            : isMobile
+                            ? 'Buka di HP'
+                            : 'Buka langsung'
+                        }
+                      >
+                        <ExternalLink size={10} />
+                        <span>Buka</span>
+                      </button>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {!att.link && (
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDownloadAttachment(att, false);
+                            handleDownloadAttachment(att, true);
                           }}
-                          className="glass-button glass-button-primary"
+                          className="glass-button"
                           style={{
                             fontSize: '10px',
-                            padding: '3px 9px',
+                            padding: '2px 5px',
                             borderRadius: '0px',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '4px'
+                            gap: '3px',
+                            color: '#EEEEEE',
+                            borderColor: 'rgba(255, 255, 255, 0.2)',
+                            lineHeight: '1.2'
                           }}
-                          title={
-                            att.link
-                              ? 'Buka tautan di tab baru'
-                              : isMobile
-                              ? 'Buka sesuai pengaturan bawaan HP'
-                              : 'Buka langsung di tab browser default'
-                          }
+                          title="Unduh file"
                         >
-                          <ExternalLink size={11} />
-                          <span>Buka</span>
+                          <Download size={10} />
                         </button>
-
-                        {!att.link && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDownloadAttachment(att, true);
-                            }}
-                            className="glass-button"
-                            style={{
-                              fontSize: '10px',
-                              padding: '3px 9px',
-                              borderRadius: '0px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              color: '#EEEEEE',
-                              borderColor: 'rgba(255, 255, 255, 0.2)'
-                            }}
-                            title="Unduh file ke perangkat"
-                          >
-                            <Download size={11} />
-                            <span>Unduh</span>
-                          </button>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -1141,29 +1156,107 @@ export default function SchedulePage() {
         schedules={schedules}
       />
 
-      {/* ================= SECTION 1: DAFTAR TUGAS AKTIF ================= */}
-      <div className="glass-panel" style={{ padding: '16px 18px', borderRadius: '0px' }}>
-        {/* Header Title & Add Task Button */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+      {/* ================= SECTION: DAFTAR TUGAS (AKTIF & SELESAI VIA TAB) ================= */}
+      <div
+        className="glass-panel"
+        style={{
+          padding: '16px 18px',
+          borderRadius: '0px',
+          borderColor: currentTab === 'completed' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(0, 173, 181, 0.25)',
+          background: currentTab === 'completed' ? 'rgba(20, 30, 26, 0.55)' : undefined
+        }}
+      >
+        {/* Top View Switcher Tabs & Actions */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+          {/* Tab buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#EEEEEE', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <BookOpen size={16} color="#00FFF5" />
-              <span>Daftar Tugas & Deadline</span>
-            </h3>
-            <span style={{ fontSize: '11px', color: '#00FFF5', fontWeight: 600, background: 'rgba(0, 173, 181, 0.15)', border: '1px solid rgba(0, 173, 181, 0.35)', padding: '2px 8px' }}>
-              {activeSchedules.length} Tugas Aktif
-            </span>
+            <button
+              type="button"
+              onClick={() => setTab('active')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '7px',
+                padding: '6px 13px',
+                borderRadius: '0px',
+                border: currentTab === 'active' ? '1px solid #00FFF5' : '1px solid rgba(255,255,255,0.1)',
+                background: currentTab === 'active' ? 'rgba(0, 173, 181, 0.25)' : 'rgba(34, 40, 49, 0.4)',
+                color: currentTab === 'active' ? '#00FFF5' : 'var(--text-secondary)',
+                fontWeight: currentTab === 'active' ? 700 : 500,
+                fontSize: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <BookOpen size={14} />
+              <span>Tugas Aktif</span>
+              <span style={{
+                fontSize: '11px',
+                padding: '1px 6px',
+                borderRadius: '0px',
+                background: currentTab === 'active' ? 'rgba(0, 255, 245, 0.2)' : 'rgba(255,255,255,0.08)',
+                color: currentTab === 'active' ? '#00FFF5' : 'var(--text-muted)'
+              }}>
+                {allActiveCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTab('completed')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '7px',
+                padding: '6px 13px',
+                borderRadius: '0px',
+                border: currentTab === 'completed' ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.1)',
+                background: currentTab === 'completed' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(34, 40, 49, 0.4)',
+                color: currentTab === 'completed' ? '#10b981' : 'var(--text-secondary)',
+                fontWeight: currentTab === 'completed' ? 700 : 500,
+                fontSize: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <CheckCircle2 size={14} />
+              <span>Tugas Selesai</span>
+              <span style={{
+                fontSize: '11px',
+                padding: '1px 6px',
+                borderRadius: '0px',
+                background: currentTab === 'completed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.08)',
+                color: currentTab === 'completed' ? '#10b981' : 'var(--text-muted)'
+              }}>
+                {allCompletedCount}
+              </span>
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsAddModalOpen(true)}
-            className="glass-button glass-button-primary"
-            style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            <Plus size={14} />
-            <span>Tambah Tugas</span>
-          </button>
+          {/* Action button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {currentTab === 'completed' ? (
+              <button
+                type="button"
+                onClick={() => setTab('active')}
+                className="glass-button"
+                style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '6px', color: '#00FFF5', borderColor: 'rgba(0, 173, 181, 0.35)' }}
+              >
+                <ArrowLeft size={14} />
+                <span>Kembali ke Tugas Aktif</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(true)}
+                className="glass-button glass-button-primary"
+                style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Plus size={14} />
+                <span>Tambah Tugas</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Filter Bar: Category Tabs & Search Box */}
@@ -1176,12 +1269,12 @@ export default function SchedulePage() {
           marginBottom: '12px',
           padding: '8px 10px',
           background: 'rgba(34, 40, 49, 0.5)',
-          border: '1px solid rgba(0, 173, 181, 0.2)'
+          border: currentTab === 'completed' ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(0, 173, 181, 0.2)'
         }}>
           {/* Category Filter Tabs */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, marginRight: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Filter size={12} color="#00FFF5" />
+              <Filter size={12} color={currentTab === 'completed' ? '#10b981' : '#00FFF5'} />
               <span>Filter:</span>
             </span>
 
@@ -1193,9 +1286,15 @@ export default function SchedulePage() {
                 padding: '3px 9px',
                 fontSize: '11px',
                 borderRadius: '0px',
-                background: selectedCategory === 'all' ? 'rgba(0, 173, 181, 0.35)' : 'transparent',
-                borderColor: selectedCategory === 'all' ? '#00FFF5' : 'rgba(0, 173, 181, 0.2)',
-                color: selectedCategory === 'all' ? '#00FFF5' : 'var(--text-secondary)',
+                background: selectedCategory === 'all'
+                  ? (currentTab === 'completed' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(0, 173, 181, 0.35)')
+                  : 'transparent',
+                borderColor: selectedCategory === 'all'
+                  ? (currentTab === 'completed' ? '#10b981' : '#00FFF5')
+                  : 'rgba(255, 255, 255, 0.1)',
+                color: selectedCategory === 'all'
+                  ? (currentTab === 'completed' ? '#10b981' : '#00FFF5')
+                  : 'var(--text-secondary)',
                 fontWeight: selectedCategory === 'all' ? 700 : 500
               }}
             >
@@ -1212,9 +1311,15 @@ export default function SchedulePage() {
                   padding: '3px 9px',
                   fontSize: '11px',
                   borderRadius: '0px',
-                  background: selectedCategory === cat.toLowerCase() ? 'rgba(0, 173, 181, 0.35)' : 'transparent',
-                  borderColor: selectedCategory === cat.toLowerCase() ? '#00FFF5' : 'rgba(0, 173, 181, 0.2)',
-                  color: selectedCategory === cat.toLowerCase() ? '#00FFF5' : 'var(--text-secondary)',
+                  background: selectedCategory === cat.toLowerCase()
+                    ? (currentTab === 'completed' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(0, 173, 181, 0.35)')
+                    : 'transparent',
+                  borderColor: selectedCategory === cat.toLowerCase()
+                    ? (currentTab === 'completed' ? '#10b981' : '#00FFF5')
+                    : 'rgba(255, 255, 255, 0.1)',
+                  color: selectedCategory === cat.toLowerCase()
+                    ? (currentTab === 'completed' ? '#10b981' : '#00FFF5')
+                    : 'var(--text-secondary)',
                   fontWeight: selectedCategory === cat.toLowerCase() ? 700 : 500
                 }}
               >
@@ -1225,10 +1330,10 @@ export default function SchedulePage() {
 
           {/* Search Box */}
           <div style={{ position: 'relative', minWidth: '160px', flex: '1 1 160px', maxWidth: '240px' }}>
-            <Search size={13} color="#00FFF5" style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', opacity: 0.7 }} />
+            <Search size={13} color={currentTab === 'completed' ? '#10b981' : '#00FFF5'} style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', opacity: 0.7 }} />
             <input
               type="text"
-              placeholder="Cari tugas..."
+              placeholder={currentTab === 'completed' ? 'Cari tugas selesai...' : 'Cari tugas aktif...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
@@ -1254,100 +1359,103 @@ export default function SchedulePage() {
           </div>
         </div>
 
-        {/* Active Schedule List Items */}
-        {activeSchedules.length === 0 ? (
-          <div style={{ padding: '30px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-            <CalendarIcon size={28} style={{ opacity: 0.35 }} />
-            <div>
-              {completedSchedules.length > 0
-                ? 'Semua tugas aktif sudah selesai! Cek "List Tugas Beres" di bawah.'
-                : searchQuery || selectedCategory !== 'all'
-                ? 'Tidak ada tugas yang sesuai dengan filter pencarian / kategori.'
-                : 'Belum ada tugas atau deadline ujian yang dijadwalkan.'}
-            </div>
-            {(selectedCategory !== 'all' || searchQuery) && (
+        {/* View Mode 1: Active Schedules */}
+        {currentTab === 'active' && (
+          <div>
+            {activeSchedules.length === 0 ? (
+              <div style={{ padding: '30px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                <CalendarIcon size={28} style={{ opacity: 0.35 }} />
+                <div>
+                  {allCompletedCount > 0
+                    ? 'Semua tugas aktif sudah selesai! Silakan buka tab "Tugas Selesai" di atas.'
+                    : searchQuery || selectedCategory !== 'all'
+                    ? 'Tidak ada tugas aktif yang sesuai dengan filter pencarian / kategori.'
+                    : 'Belum ada tugas atau deadline ujian yang dijadwalkan.'}
+                </div>
+                {(selectedCategory !== 'all' || searchQuery) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory('all');
+                      setSearchQuery('');
+                    }}
+                    className="glass-button"
+                    style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '0px' }}
+                  >
+                    Reset Semua Filter
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {activeSchedules.map((s) => renderTaskCard(s, false))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* View Mode 2: Completed Schedules */}
+        {currentTab === 'completed' && (
+          <div>
+            {completedSchedules.length === 0 ? (
+              <div style={{ padding: '30px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle2 size={28} style={{ opacity: 0.35, color: '#10b981' }} />
+                <div>
+                  {searchQuery || selectedCategory !== 'all'
+                    ? 'Tidak ada tugas selesai yang sesuai dengan filter pencarian / kategori.'
+                    : 'Belum ada riwayat tugas yang diselesaikan.'}
+                </div>
+                {(selectedCategory !== 'all' || searchQuery) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory('all');
+                      setSearchQuery('');
+                    }}
+                    className="glass-button"
+                    style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '0px' }}
+                  >
+                    Reset Semua Filter
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {completedSchedules.map((s) => renderTaskCard(s, true))}
+              </div>
+            )}
+
+            {/* Bottom Back Button to Active Tasks */}
+            <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px dashed rgba(16, 185, 129, 0.25)', display: 'flex', justifyContent: 'center' }}>
               <button
                 type="button"
                 onClick={() => {
-                  setSelectedCategory('all');
-                  setSearchQuery('');
+                  setTab('active');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="glass-button"
-                style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '0px' }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '9px 18px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  borderRadius: '0px',
+                  color: '#00FFF5',
+                  background: 'rgba(0, 173, 181, 0.12)',
+                  border: '1px solid rgba(0, 173, 181, 0.45)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
               >
-                Reset Semua Filter
+                <ArrowLeft size={14} color="#00FFF5" />
+                <span>Kembali ke Daftar Tugas Aktif</span>
               </button>
-            )}
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {activeSchedules.map((s) => renderTaskCard(s, false))}
+            </div>
           </div>
         )}
       </div>
-
-      {/* ================= SECTION 2: LIST TUGAS BERES (RIWAYAT SELESAI) ================= */}
-      {completedSchedules.length > 0 && (
-        <div
-          className="glass-panel"
-          style={{
-            padding: '16px 18px',
-            borderRadius: '0px',
-            border: '1px solid rgba(16, 185, 129, 0.35)',
-            background: 'rgba(20, 30, 26, 0.55)'
-          }}
-        >
-          {/* Header List Tugas Beres */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: isCompletedListExpanded ? '14px' : '0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <div style={{
-                padding: '5px',
-                borderRadius: '0px',
-                background: 'rgba(16, 185, 129, 0.15)',
-                border: '1px solid rgba(16, 185, 129, 0.4)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#10b981'
-              }}>
-                <CheckCircle2 size={15} />
-              </div>
-              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#EEEEEE', margin: 0 }}>
-                List Tugas Beres (Riwayat Selesai)
-              </h3>
-              <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 700, background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', padding: '2px 8px' }}>
-                {completedSchedules.length} Beres
-              </span>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsCompletedListExpanded((prev) => !prev)}
-              className="glass-button"
-              style={{
-                fontSize: '11px',
-                padding: '4px 10px',
-                borderRadius: '0px',
-                color: '#10b981',
-                borderColor: 'rgba(16, 185, 129, 0.35)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px'
-              }}
-            >
-              <span>{isCompletedListExpanded ? 'Sembunyikan' : `Tampilkan (${completedSchedules.length})`}</span>
-              {isCompletedListExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-            </button>
-          </div>
-
-          {/* List of Completed Task Cards */}
-          {isCompletedListExpanded && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {completedSchedules.map((s) => renderTaskCard(s, true))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ================= EDIT TASK MODAL ================= */}
       {editingSchedule && typeof document !== 'undefined' && createPortal(

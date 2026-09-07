@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Frown, Meh, Smile, Zap, AlertCircle, Mic, MicOff, Check, Plus, Tag as TagIcon, Clock, Camera, Image as ImageIcon, Upload, X, Trash2, Video, RefreshCw, Play, Pause, Square } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
-import { isVideoUrl } from '../utils/mediaUtils';
+import { isVideoUrl, compressImageFile } from '../utils/mediaUtils';
 
 const getMoodInfo = (percent) => {
   if (percent <= 20) return { label: 'Very Bad', desc: 'Severe stress / Overwhelmed', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.18)', score: 1 };
@@ -212,7 +212,7 @@ export default function MoodCheckin({ onSuccess }) {
     }
   };
 
-  const handleMediaFileChange = (e) => {
+  const handleMediaFileChange = async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
 
@@ -222,16 +222,23 @@ export default function MoodCheckin({ onSuccess }) {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPhotoUrl(reader.result);
-      if (file.type.startsWith('video/')) {
-        toast.success('Video attached successfully!');
+    try {
+      if (file.type.startsWith('image/')) {
+        const compressed = await compressImageFile(file, 1200, 0.8);
+        setPhotoUrl(compressed);
+        toast.success('Photo compressed and attached successfully!');
       } else {
-        toast.success('Photo attached successfully!');
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPhotoUrl(reader.result);
+          toast.success('Video attached successfully!');
+        };
+        reader.readAsDataURL(file);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('File process error:', err);
+      toast.error('Failed to process selected file.');
+    }
   };
 
   const handleRemoveMedia = () => {

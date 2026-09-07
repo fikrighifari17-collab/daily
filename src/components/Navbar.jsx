@@ -4,7 +4,6 @@ import { NavLink, Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Calendar, 
-  BarChart3, 
   ShieldCheck, 
   Lock, 
   PlusCircle, 
@@ -15,9 +14,8 @@ import {
   LogOut, 
   Menu, 
   X, 
-  HeartPulse,
-  ChevronRight,
-  ChevronUp
+  HeartPulse, 
+  ChevronRight 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AuthModal from './AuthModal';
@@ -49,7 +47,6 @@ export default function Navbar() {
     { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
     { to: '/checkin/new', label: 'Catat Mood', icon: PlusCircle },
     { to: '/checkin', label: 'Riwayat Mood', icon: History, end: true },
-    { to: '/insight', label: 'Analisis Mood', icon: BarChart3 },
     { to: '/academic-schedule', label: 'Jadwal Kuliah', icon: BookOpen },
     { to: '/schedule', label: 'Tugas & Deadline', icon: Calendar }
   ];
@@ -230,36 +227,43 @@ export default function Navbar() {
                 to="/settings"
                 onClick={closeMobileMenu}
                 title="Pengaturan PIN & Privasi"
+                className="navbar-mobile-user-badge"
                 style={({ isActive }) => ({
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  padding: '6px 10px',
                   background: isActive ? 'linear-gradient(135deg, #00ADB5, #00888f)' : 'rgba(0, 173, 181, 0.15)',
                   border: isActive ? '1px solid rgba(255, 255, 255, 0.4)' : '1px solid rgba(0, 173, 181, 0.35)',
-                  borderRadius: '8px',
-                  fontSize: '12px',
                   color: isActive ? '#ffffff' : '#00FFF5',
-                  fontWeight: 700,
-                  maxWidth: '130px',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  textDecoration: 'none',
                   boxShadow: isActive ? '0 4px 12px rgba(0, 173, 181, 0.4)' : 'none'
                 })}
               >
-                {user.avatar ? (
-                  user.avatar.startsWith('data:') || user.avatar.startsWith('http') ? (
-                    <img src={user.avatar} alt="Avatar" style={{ width: '18px', height: '18px', borderRadius: '4px', objectFit: 'cover' }} />
+                <div style={{
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '5px',
+                  background: 'rgba(0, 173, 181, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  flexShrink: 0
+                }}>
+                  {user.avatar ? (
+                    user.avatar.startsWith('data:') || user.avatar.startsWith('http') ? (
+                      <img src={user.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <span style={{ fontSize: '13px', lineHeight: 1 }}>{user.avatar}</span>
+                    )
                   ) : (
-                    <span style={{ fontSize: '13px', lineHeight: 1 }}>{user.avatar}</span>
-                  )
-                ) : (
-                  <User size={13} />
-                )}
-                <span>{user.nama || user.username}</span>
-                <ShieldCheck size={11} opacity={0.7} />
+                    <User size={12} />
+                  )}
+                </div>
+                <span className="navbar-mobile-user-name" style={{
+                  maxWidth: '75px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {(user.nama || user.username || 'User').split(' ')[0]}
+                </span>
               </NavLink>
             )}
 
@@ -440,33 +444,6 @@ export default function Navbar() {
                   <span>Masuk / Daftar</span>
                 </button>
               )}
-
-              {/* Tombol Tutup Menu / Kembali ke Atas */}
-              <button
-                type="button"
-                onClick={closeMobileMenu}
-                style={{
-                  width: '100%',
-                  marginTop: '10px',
-                  padding: '10px',
-                  borderRadius: '8px',
-                  background: 'rgba(0, 173, 181, 0.15)',
-                  border: '1px solid rgba(0, 173, 181, 0.4)',
-                  color: '#00FFF5',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  boxShadow: '0 4px 14px rgba(0, 173, 181, 0.2)',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <ChevronUp size={16} />
-                <span>Tutup Menu / Kembali ke Atas</span>
-              </button>
             </div>
           </div>
         )}

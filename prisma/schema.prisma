@@ -36,6 +36,8 @@ model MoodEntry {
   createdAt     DateTime  @default(now())
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   tags          MoodTag[]
+
+  @@index([userId, tanggal])
 }
 
 model Tag {
@@ -62,6 +64,8 @@ model Schedule {
   jenis   String
   tanggal DateTime @db.Date
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, tanggal])
 }
 
 model CopingStrategy {
@@ -95,5 +99,8 @@ model AcademicCourse {
   attendance Json?
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, hari])
 }
+
 

@@ -1,37 +1,9 @@
-import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-
-const SUPABASE_URL = "postgresql://postgres.nkfyyhsihmwpwmahyyqd:Jrfikrizero123@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres";
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = SUPABASE_URL;
-}
-if (!process.env.JWT_SECRET) {
-  process.env.JWT_SECRET = "Jrfikrizero123SuperSecretDailyAuthKey2026";
-}
-
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL
-    }
-  }
-});
-
-function verifyToken(req: any): number | null {
-  const authHeader = req.headers?.authorization;
-  if (!authHeader) return null;
-  try {
-    const token = authHeader.replace('Bearer ', '').trim();
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "Jrfikrizero123SuperSecretDailyAuthKey2026") as { userId: number };
-    return decoded.userId;
-  } catch {
-    return null;
-  }
-}
+import prisma from '../lib/prisma';
+import { verifyToken } from '../lib/auth';
 
 export default async function handler(req: any, res: any) {
   const userId = verifyToken(req);
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  if (!userId) return res.status(401).json({ error: 'Unauthorized: Sesi tidak valid atau telah kedaluwarsa.' });
 
   if (req.method === 'GET') {
     try {
@@ -53,10 +25,11 @@ export default async function handler(req: any, res: any) {
       }
 
       const { isi } = body || {};
-      if (!isi) return res.status(400).json({ error: 'Content is required' });
+      if (!isi) return res.status(400).json({ error: 'Isi pikiran tidak boleh kosong' });
 
+      const cleanIsi = String(isi).trim().slice(0, 10000);
       const dump = await prisma.brainDump.create({
-        data: { userId, isi: String(isi) }
+        data: { userId, isi: cleanIsi }
       });
       return res.status(201).json(dump);
     } catch (err: any) {

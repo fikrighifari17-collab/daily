@@ -1,21 +1,5 @@
-import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-
-const SUPABASE_URL = "postgresql://postgres.nkfyyhsihmwpwmahyyqd:Jrfikrizero123@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres";
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = SUPABASE_URL;
-}
-if (!process.env.JWT_SECRET) {
-  process.env.JWT_SECRET = "Jrfikrizero123SuperSecretDailyAuthKey2026";
-}
-
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL
-    }
-  }
-});
+import prisma from './lib/prisma';
+import { verifyToken } from './lib/auth';
 
 export const config = {
   api: {
@@ -25,32 +9,11 @@ export const config = {
   }
 };
 
-function verifyToken(req: any): number | null {
-  const authHeader = req.headers?.authorization;
-  if (!authHeader) return null;
-  try {
-    const token = authHeader.replace('Bearer ', '').trim();
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "Jrfikrizero123SuperSecretDailyAuthKey2026") as { userId: number };
-    return decoded.userId;
-  } catch {
-    return null;
-  }
-}
-
 export default async function handler(req: any, res: any) {
-  let userId = verifyToken(req);
+  const userId = verifyToken(req);
   if (!userId) {
-    const userHeader = req.headers?.['x-user-username'] || req.query?.username;
-    if (userHeader) {
-      try {
-        const u = await prisma.user.findUnique({
-          where: { username: String(userHeader).trim().toLowerCase() }
-        });
-        if (u) userId = u.id;
-      } catch {}
-    }
+    return res.status(401).json({ error: 'Unauthorized: Sesi tidak valid atau telah kedaluwarsa.' });
   }
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
   if (req.method === 'GET') {
     try {
@@ -74,14 +37,14 @@ export default async function handler(req: any, res: any) {
 
       const { judul, jenis, tanggal } = body || {};
       if (!judul || !jenis || !tanggal) {
-        return res.status(400).json({ error: 'Title, type, and date are required' });
+        return res.status(400).json({ error: 'Judul, jenis, dan tanggal wajib diisi' });
       }
 
       const schedule = await prisma.schedule.create({
         data: {
           userId,
           judul: String(judul).trim(),
-          jenis: String(jenis).trim(),
+          jenis: String(jenis).trim().toLowerCase(),
           tanggal: new Date(tanggal)
         }
       });
@@ -102,13 +65,21 @@ export default async function handler(req: any, res: any) {
       const rawId = req.query?.id || (typeof body === 'object' ? body?.id : null);
       const scheduleId = Number(rawId);
       if (isNaN(scheduleId)) {
-        return res.status(400).json({ error: 'Invalid ID' });
+        return res.status(400).json({ error: 'ID tidak valid' });
+      }
+
+      // Ensure user owns this schedule item before updating
+      const existing = await prisma.schedule.findFirst({
+        where: { id: scheduleId, userId }
+      });
+      if (!existing) {
+        return res.status(404).json({ error: 'Tugas tidak ditemukan atau bukan milik Anda' });
       }
 
       const { judul, jenis, tanggal } = body || {};
       const updateData: any = {};
       if (judul !== undefined) updateData.judul = String(judul).trim();
-      if (jenis !== undefined) updateData.jenis = String(jenis).trim();
+      if (jenis !== undefined) updateData.jenis = String(jenis).trim().toLowerCase();
       if (tanggal !== undefined) updateData.tanggal = new Date(tanggal);
 
       const schedule = await prisma.schedule.update({
@@ -126,7 +97,7 @@ export default async function handler(req: any, res: any) {
     const rawId = req.query?.id || (typeof req.body === 'object' ? req.body?.id : null);
     const scheduleId = Number(rawId);
     if (isNaN(scheduleId)) {
-      return res.status(400).json({ error: 'Invalid ID' });
+      return res.status(400).json({ error: 'ID tidak valid' });
     }
     try {
       await prisma.schedule.deleteMany({

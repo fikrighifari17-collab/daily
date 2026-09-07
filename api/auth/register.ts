@@ -1,22 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-
-const SUPABASE_URL = "postgresql://postgres.nkfyyhsihmwpwmahyyqd:Jrfikrizero123@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres";
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = SUPABASE_URL;
-}
-if (!process.env.JWT_SECRET) {
-  process.env.JWT_SECRET = "Jrfikrizero123SuperSecretDailyAuthKey2026";
-}
-
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL
-    }
-  }
-});
+import prisma from '../lib/prisma';
+import { getJwtSecret } from '../lib/auth';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -38,6 +23,13 @@ export default async function handler(req: any, res: any) {
   }
 
   const cleanUsername = String(username).trim().toLowerCase();
+  if (cleanUsername.length < 3 || cleanUsername.length > 30) {
+    return res.status(400).json({ error: 'Username harus memiliki panjang antara 3 hingga 30 karakter' });
+  }
+
+  if (String(password).length < 6) {
+    return res.status(400).json({ error: 'Password minimal 6 karakter' });
+  }
 
   try {
     const existing = await prisma.user.findUnique({ where: { username: cleanUsername } });
@@ -49,17 +41,17 @@ export default async function handler(req: any, res: any) {
     const user = await prisma.user.create({
       data: {
         username: cleanUsername,
-        nama: nama ? String(nama).trim() : cleanUsername,
+        nama: nama ? String(nama).trim().slice(0, 50) : cleanUsername,
         password: hashedPassword
       }
     });
 
-    const secret = process.env.JWT_SECRET || 'Jrfikrizero123SuperSecretDailyAuthKey2026';
+    const secret = getJwtSecret();
     const token = jwt.sign({ userId: user.id, username: user.username }, secret, { expiresIn: '30d' });
 
     return res.status(201).json({
       token,
-      user: { id: user.id, nama: user.nama, username: user.username, pinLock: user.pinLock }
+      user: { id: user.id, nama: user.nama, username: user.username, pinLock: user.pinLock, avatar: user.avatar }
     });
   } catch (err: any) {
     console.error('Register error:', err);

@@ -1,22 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-
-const SUPABASE_URL = "postgresql://postgres.nkfyyhsihmwpwmahyyqd:Jrfikrizero123@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres";
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = SUPABASE_URL;
-}
-if (!process.env.JWT_SECRET) {
-  process.env.JWT_SECRET = "Jrfikrizero123SuperSecretDailyAuthKey2026";
-}
-
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL
-    }
-  }
-});
+import prisma from '../lib/prisma';
+import { getJwtSecret, checkRateLimit, resetRateLimit } from '../lib/auth';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -38,6 +23,16 @@ export default async function handler(req: any, res: any) {
   }
 
   const cleanUsername = String(username).trim().toLowerCase();
+  const clientIp = req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown-ip';
+  const rateLimitKey = `login_${clientIp}_${cleanUsername}`;
+
+  // Rate Limiting: max 5 failed attempts per 10 minutes
+  const rateCheck = checkRateLimit(rateLimitKey, 5, 10 * 60 * 1000);
+  if (!rateCheck.allowed) {
+    return res.status(429).json({
+      error: `Terlalu banyak percobaan login yang gagal. Silakan coba lagi dalam ${rateCheck.retryAfterSec} detik.`
+    });
+  }
 
   try {
     const user = await prisma.user.findUnique({ where: { username: cleanUsername } });
@@ -50,12 +45,15 @@ export default async function handler(req: any, res: any) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    const secret = process.env.JWT_SECRET || 'Jrfikrizero123SuperSecretDailyAuthKey2026';
+    // Login successful: reset rate limit attempts
+    resetRateLimit(rateLimitKey);
+
+    const secret = getJwtSecret();
     const token = jwt.sign({ userId: user.id, username: user.username }, secret, { expiresIn: '30d' });
 
     return res.status(200).json({
       token,
-      user: { id: user.id, nama: user.nama, username: user.username, pinLock: user.pinLock }
+      user: { id: user.id, nama: user.nama, username: user.username, pinLock: user.pinLock, avatar: user.avatar }
     });
   } catch (err: any) {
     console.error('Login error:', err);

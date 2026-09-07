@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { HeartPulse, Calendar, PlusCircle, Sparkles, ArrowRight, ShieldCheck, CheckCircle2, TrendingUp, Sun, Moon, Clock, BookOpen, CheckSquare } from 'lucide-react';
+import { HeartPulse, Calendar, PlusCircle, Sparkles, ArrowRight, ShieldCheck, CheckCircle2, TrendingUp, Sun, Moon, Clock, BookOpen, CheckSquare, AlertCircle, History } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -18,8 +18,12 @@ export default function Dashboard() {
   const { moods, schedules, courses, copingList } = useData();
 
   // Find today's checkin
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayDayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  const todayDayName = now.toLocaleDateString('en-US', { weekday: 'long' });
   const todayMood = moods.find((m) => {
     const dStr = typeof m.tanggal === 'string' ? m.tanggal.split('T')[0] : new Date(m.tanggal).toISOString().split('T')[0];
     return dStr === todayStr;
@@ -28,21 +32,30 @@ export default function Dashboard() {
   // Today's course classes
   const todayClasses = (courses || []).filter(c => c.hari === todayDayName);
 
-  // Upcoming active task/exam deadlines (exclude completed tasks & parse titles)
+  // Upcoming active task/exam deadlines:
+  // Show max 3 tasks, sorted by earliest deadline (closest to submission time or already expired/overdue)
   const upcomingSchedules = schedules
-    .map((s) => ({ ...s, parsed: parseScheduleItem(s) }))
-    .filter((s) => {
-      // Exclude 100% completed tasks
-      if (s.parsed.progress === 100) return false;
-      const dStr = typeof s.tanggal === 'string' ? s.tanggal.split('T')[0] : new Date(s.tanggal).toISOString().split('T')[0];
-      return dStr >= todayStr;
+    .map((s) => {
+      const parsed = parseScheduleItem(s);
+      const dStr = s.tanggal 
+        ? (typeof s.tanggal === 'string' ? s.tanggal.split('T')[0] : new Date(s.tanggal).toISOString().split('T')[0]) 
+        : todayStr;
+      const timeStr = parsed.deadlineTime ? parsed.deadlineTime.trim() : '23:59';
+      const [h, m] = timeStr.includes(':') ? timeStr.split(':').map(Number) : [23, 59];
+      const deadlineDate = new Date(`${dStr}T${String(h || 0).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}:00`);
+      const validDeadline = isNaN(deadlineDate.getTime()) ? new Date(dStr) : deadlineDate;
+      const isOverdue = validDeadline.getTime() < now.getTime();
+      return {
+        ...s,
+        parsed,
+        dStr,
+        deadlineDate: validDeadline,
+        isOverdue
+      };
     })
-    .sort((a, b) => {
-      const dateA = typeof a.tanggal === 'string' ? a.tanggal.split('T')[0] : new Date(a.tanggal).toISOString().split('T')[0];
-      const dateB = typeof b.tanggal === 'string' ? b.tanggal.split('T')[0] : new Date(b.tanggal).toISOString().split('T')[0];
-      return dateA.localeCompare(dateB);
-    })
-    .slice(0, 4);
+    .filter((s) => s.parsed.progress < 100)
+    .sort((a, b) => a.deadlineDate.getTime() - b.deadlineDate.getTime())
+    .slice(0, 3);
 
   // Random coping tip
   const randomTip = copingList.length ? copingList[Math.floor(Math.random() * copingList.length)] : null;
@@ -55,49 +68,37 @@ export default function Dashboard() {
     <div className="animate-fade-in" style={{ width: '100%', margin: '0 auto', padding: '0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       
       {/* Welcome Hero Banner */}
-      <div className="glass-panel" style={{
-        padding: '20px 24px',
-        background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.22) 0%, rgba(57, 62, 70, 0.8) 50%, rgba(0, 255, 245, 0.15) 100%)',
-        border: '1px solid rgba(0, 173, 181, 0.3)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '8px',
-        position: 'relative',
-        overflow: 'hidden',
-        borderRadius: '0px'
-      }}>
+      <div className="glass-panel dashboard-hero-panel">
         <div style={{ position: 'relative', zIndex: 2, maxWidth: '650px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '0px', background: 'rgba(0, 173, 181, 0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(0, 173, 181, 0.3)', marginBottom: '8px' }}>
+          <div className="dashboard-hero-badge">
             <Sparkles size={13} color="#00FFF5" />
             <span style={{ fontSize: '11px', fontWeight: 700, color: '#00FFF5' }}>Mental Health Dashboard</span>
           </div>
-          <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#EEEEEE', marginBottom: '6px', lineHeight: 1.2 }}>
+          <h2 className="dashboard-hero-title">
             {greeting}, <span className="text-gradient-teal">{user?.nama || 'Friend'}!</span>
           </h2>
-          <p style={{ fontSize: '13px', color: '#b0b8c1', lineHeight: 1.5 }}>
+          <p className="dashboard-hero-desc mobile-hide">
             Track daily emotional patterns, align with academic workloads, and maintain performance with peace of mind.
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', zIndex: 2 }}>
-          <NavLink to="/checkin/new" className="glass-button glass-button-primary" style={{ padding: '10px 16px', fontSize: '13px', borderRadius: '0px' }}>
-            <PlusCircle size={16} />
-            Mood Check-in
+        <div className="dashboard-hero-actions">
+          <NavLink to="/checkin/new" className="glass-button glass-button-primary dashboard-hero-btn">
+            <PlusCircle size={15} />
+            <span>Mood Check-in</span>
           </NavLink>
-          <NavLink to="/insight" className="glass-button" style={{ padding: '10px 16px', fontSize: '13px', borderRadius: '0px' }}>
-            <TrendingUp size={16} color="#00ADB5" />
-            View Insights
+          <NavLink to="/checkin" className="glass-button dashboard-hero-btn">
+            <History size={15} color="#00ADB5" />
+            <span>Riwayat Mood</span>
           </NavLink>
         </div>
       </div>
 
       {/* Top Banner Overview Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '8px' }}>
+      <div className="dashboard-overview-grid">
         
         {/* Today's Checkin Card */}
-        <div className="glass-panel glass-panel-hover" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRadius: '0px' }}>
+        <div className="glass-panel glass-panel-hover dashboard-overview-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRadius: '0px' }}>
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
               <div>
@@ -166,7 +167,7 @@ export default function Dashboard() {
         </div>
 
         {/* Today's Academic Classes (Jadwal Kuliah) */}
-        <div className="glass-panel glass-panel-hover" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRadius: '0px' }}>
+        <div className="glass-panel glass-panel-hover dashboard-overview-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRadius: '0px' }}>
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
@@ -205,7 +206,7 @@ export default function Dashboard() {
         </div>
 
         {/* Upcoming Deadlines & Tasks (Jadwal Tugas) */}
-        <div className="glass-panel glass-panel-hover" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRadius: '0px' }}>
+        <div className="glass-panel glass-panel-hover dashboard-overview-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRadius: '0px' }}>
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
@@ -224,8 +225,10 @@ export default function Dashboard() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {upcomingSchedules.map((s) => {
-                  const { parsed } = s;
-                  const dStr = typeof s.tanggal === 'string' ? s.tanggal.split('T')[0] : new Date(s.tanggal).toISOString().split('T')[0];
+                  const { parsed, dStr, isOverdue } = s;
+                  const isToday = dStr === todayStr;
+                  const isTomorrow = dStr === tomorrowStr;
+
                   return (
                     <div
                       key={s.id}
@@ -236,24 +239,52 @@ export default function Dashboard() {
                         fontSize: '12px',
                         padding: '9px 12px',
                         borderRadius: '0px',
-                        background: 'rgba(34, 40, 49, 0.65)',
-                        border: '1px solid rgba(0, 173, 181, 0.2)'
+                        background: isOverdue ? 'rgba(239, 68, 68, 0.08)' : 'rgba(34, 40, 49, 0.65)',
+                        border: isOverdue ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(0, 173, 181, 0.2)'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                         <span style={{ color: '#EEEEEE', fontWeight: 700, fontSize: '13px', wordBreak: 'break-word' }}>
                           {parsed.cleanTitle}
                         </span>
-                        <span className={`badge badge-${(s.jenis || 'tugas').toLowerCase()}`} style={{ flexShrink: 0 }}>
-                          {(s.jenis || 'tugas').toUpperCase()}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
+                          {isOverdue && (
+                            <span style={{
+                              fontSize: '9px',
+                              fontWeight: 800,
+                              color: '#ffffff',
+                              background: '#ef4444',
+                              padding: '1px 5px',
+                              borderRadius: '2px',
+                              letterSpacing: '0.04em'
+                            }}>
+                              HABIS
+                            </span>
+                          )}
+                          <span className={`badge badge-${(s.jenis || 'tugas').toLowerCase()}`}>
+                            {(s.jenis || 'tugas').toUpperCase()}
+                          </span>
+                        </div>
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--text-muted)', flexWrap: 'wrap', gap: '6px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ color: '#00FFF5', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Clock size={11} />
-                            {parsed.deadlineTime ? `Deadline: ${parsed.deadlineTime}` : dStr}
+                          <span style={{
+                            color: isOverdue ? '#f87171' : isToday ? '#f59e0b' : '#00FFF5',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontWeight: isOverdue || isToday ? 600 : 400
+                          }}>
+                            {isOverdue ? <AlertCircle size={11} /> : <Clock size={11} />}
+                            {isOverdue 
+                              ? (isToday ? `Habis jam ${parsed.deadlineTime || '23:59'}` : `Lewat (${dStr})`)
+                              : isToday 
+                              ? `Hari ini, ${parsed.deadlineTime || '23:59'}` 
+                              : isTomorrow 
+                              ? `Besok, ${parsed.deadlineTime || '23:59'}` 
+                              : `${dStr}${parsed.deadlineTime ? ` (${parsed.deadlineTime})` : ''}`
+                            }
                           </span>
                           {parsed.attachments && parsed.attachments.length > 0 && (
                             <span style={{ color: 'var(--text-muted)' }}>
@@ -264,9 +295,9 @@ export default function Dashboard() {
 
                         <span style={{
                           fontSize: '10px',
-                          color: '#00FFF5',
-                          background: 'rgba(0, 173, 181, 0.15)',
-                          border: '1px solid rgba(0, 173, 181, 0.35)',
+                          color: isOverdue ? '#f87171' : '#00FFF5',
+                          background: isOverdue ? 'rgba(239, 68, 68, 0.15)' : 'rgba(0, 173, 181, 0.15)',
+                          border: isOverdue ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(0, 173, 181, 0.35)',
                           padding: '1px 6px',
                           fontWeight: 700
                         }}>

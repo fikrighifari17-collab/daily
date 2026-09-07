@@ -1,48 +1,9 @@
-import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-
-const SUPABASE_URL = "postgresql://postgres.nkfyyhsihmwpwmahyyqd:Jrfikrizero123@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres";
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = SUPABASE_URL;
-}
-if (!process.env.JWT_SECRET) {
-  process.env.JWT_SECRET = "Jrfikrizero123SuperSecretDailyAuthKey2026";
-}
-
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL
-    }
-  }
-});
-
-function verifyToken(req: any): number | null {
-  const authHeader = req.headers?.authorization;
-  if (!authHeader) return null;
-  try {
-    const token = authHeader.replace('Bearer ', '').trim();
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "Jrfikrizero123SuperSecretDailyAuthKey2026") as { userId: number };
-    return decoded.userId;
-  } catch {
-    return null;
-  }
-}
+import prisma from './lib/prisma';
+import { verifyToken } from './lib/auth';
 
 export default async function handler(req: any, res: any) {
-  let userId = verifyToken(req);
-  if (!userId) {
-    const userHeader = req.headers?.['x-user-username'] || req.query?.username;
-    if (userHeader) {
-      try {
-        const u = await prisma.user.findUnique({
-          where: { username: String(userHeader).trim().toLowerCase() }
-        });
-        if (u) userId = u.id;
-      } catch {}
-    }
-  }
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const userId = verifyToken(req);
+  if (!userId) return res.status(401).json({ error: 'Unauthorized: Sesi tidak valid atau telah kedaluwarsa.' });
 
   // GET: Fetch all courses for user
   if (req.method === 'GET') {

@@ -11,6 +11,7 @@ import {
   Trash2,
   Crop,
   ChevronDown,
+  ChevronUp,
   Edit3,
   X,
   Check,
@@ -49,12 +50,29 @@ export default function SettingsPage() {
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const [showEditMenu, setShowEditMenu] = useState(false);
 
+  // Edit Profile Modal Password State
+  const [editCurrentPassword, setEditCurrentPassword] = useState('');
+  const [editNewPassword, setEditNewPassword] = useState('');
+  const [editConfirmPassword, setEditConfirmPassword] = useState('');
+  const [showEditCurrentPass, setShowEditCurrentPass] = useState(false);
+  const [showEditNewPass, setShowEditNewPass] = useState(false);
+  const [showEditConfirmPass, setShowEditConfirmPass] = useState(false);
+  const [isPasswordExpandedInModal, setIsPasswordExpandedInModal] = useState(false);
+  const [savingEditProfile, setSavingEditProfile] = useState(false);
+
   const openEditProfileModal = () => {
     setNama(user?.nama || '');
     setUsername(user?.username || '');
     setAvatar(user?.avatar || '');
     setTag(user?.tag || '#');
     setDescribe(user?.describe || 'Best emoji to describe your day?');
+    setEditCurrentPassword('');
+    setEditNewPassword('');
+    setEditConfirmPassword('');
+    setShowEditCurrentPass(false);
+    setShowEditNewPass(false);
+    setShowEditConfirmPass(false);
+    setIsPasswordExpandedInModal(false);
     setIsEditModalOpen(true);
   };
 
@@ -64,6 +82,7 @@ export default function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
 
   const fileInputRef = useRef(null);
@@ -224,24 +243,22 @@ export default function SettingsPage() {
     <div className="animate-fade-in" style={{ width: '100%', margin: '0 auto', padding: '0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
       
       {/* Header Banner */}
-      <div className="glass-panel" style={{ 
-        padding: '18px 20px', 
-        background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.2), rgba(57, 62, 70, 0.8))', 
-        border: '1px solid rgba(0, 173, 181, 0.3)',
+      <div className="glass-panel page-header-panel" style={{ 
         borderRadius: '8px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ 
-            padding: '10px', 
+            padding: '7px', 
             borderRadius: '8px', 
             background: 'rgba(0, 173, 181, 0.2)', 
-            border: '1px solid rgba(0, 173, 181, 0.4)' 
+            border: '1px solid rgba(0, 173, 181, 0.4)',
+            flexShrink: 0
           }}>
-            <ShieldCheck size={22} color="#00FFF5" />
+            <ShieldCheck size={18} color="#00FFF5" />
           </div>
           <div>
-            <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#EEEEEE', margin: 0 }}>Account & Profile Settings</h2>
-            <p style={{ fontSize: '12px', color: '#b0b8c1', margin: '3px 0 0 0' }}>
+            <h2 className="page-header-title" style={{ fontWeight: 800, color: '#EEEEEE', margin: 0, lineHeight: 1.2 }}>Account & Profile Settings</h2>
+            <p className="mobile-hide" style={{ fontSize: '11px', color: '#b0b8c1', margin: '2px 0 0 0' }}>
               Perbarui nama, username, foto profil, dan kata sandi akun Anda.
             </p>
           </div>
@@ -576,23 +593,41 @@ export default function SettingsPage() {
               <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '6px' }}>
                 Konfirmasi Password Baru
               </label>
-              <input
-                type="password"
-                required
-                placeholder="Ulangi password baru"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  background: 'rgba(34, 40, 49, 0.9)',
-                  border: '1px solid rgba(0, 173, 181, 0.3)',
-                  color: '#EEEEEE',
-                  fontSize: '13px',
-                  outline: 'none',
-                  borderRadius: '8px'
-                }}
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showConfirmPass ? 'text' : 'password'}
+                  required
+                  placeholder="Ulangi password baru"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '9px 38px 9px 12px',
+                    background: 'rgba(34, 40, 49, 0.9)',
+                    border: '1px solid rgba(0, 173, 181, 0.3)',
+                    color: '#EEEEEE',
+                    fontSize: '13px',
+                    outline: 'none',
+                    borderRadius: '8px'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPass(!showConfirmPass)}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    color: showConfirmPass ? '#00FFF5' : '#b0b8c1',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {showConfirmPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
             </div>
 
             <button
@@ -918,6 +953,170 @@ export default function SettingsPage() {
               />
             </div>
 
+            {/* Change Password Section in Edit Profile Modal */}
+            <div style={{
+              background: '#232428',
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '12px 14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}>
+              <div
+                onClick={() => setIsPasswordExpandedInModal(!isPasswordExpandedInModal)}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <KeyRound size={15} color="#00FFF5" />
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#EEEEEE' }}>
+                    Ganti Password (Opsional)
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0 }}
+                >
+                  {isPasswordExpandedInModal ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+              </div>
+
+              {isPasswordExpandedInModal && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '4px' }}>
+                  {/* Password Saat Ini */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: '#b0b8c1', marginBottom: '5px' }}>
+                      PASSWORD SAAT INI
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showEditCurrentPass ? 'text' : 'password'}
+                        placeholder="Masukkan password saat ini"
+                        value={editCurrentPassword}
+                        onChange={(e) => setEditCurrentPassword(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 36px 8px 12px',
+                          background: '#181a20',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          color: '#EEEEEE',
+                          fontSize: '12px',
+                          outline: 'none',
+                          borderRadius: '6px',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEditCurrentPass(!showEditCurrentPass)}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'transparent',
+                          border: 'none',
+                          color: showEditCurrentPass ? '#00FFF5' : '#b0b8c1',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {showEditCurrentPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Password Baru */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: '#b0b8c1', marginBottom: '5px' }}>
+                      PASSWORD BARU (MIN. 6 KARAKTER)
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showEditNewPass ? 'text' : 'password'}
+                        placeholder="Masukkan password baru"
+                        value={editNewPassword}
+                        onChange={(e) => setEditNewPassword(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 36px 8px 12px',
+                          background: '#181a20',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          color: '#EEEEEE',
+                          fontSize: '12px',
+                          outline: 'none',
+                          borderRadius: '6px',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEditNewPass(!showEditNewPass)}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'transparent',
+                          border: 'none',
+                          color: showEditNewPass ? '#00FFF5' : '#b0b8c1',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {showEditNewPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Konfirmasi Password Baru dengan tombol mata */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: '#b0b8c1', marginBottom: '5px' }}>
+                      KONFIRMASI PASSWORD BARU
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showEditConfirmPass ? 'text' : 'password'}
+                        placeholder="Ulangi password baru"
+                        value={editConfirmPassword}
+                        onChange={(e) => setEditConfirmPassword(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 36px 8px 12px',
+                          background: '#181a20',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          color: '#EEEEEE',
+                          fontSize: '12px',
+                          outline: 'none',
+                          borderRadius: '6px',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEditConfirmPass(!showEditConfirmPass)}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'transparent',
+                          border: 'none',
+                          color: showEditConfirmPass ? '#00FFF5' : '#b0b8c1',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {showEditConfirmPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Modal Actions */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
               <button
@@ -930,32 +1129,59 @@ export default function SettingsPage() {
               </button>
               <button
                 type="button"
+                disabled={savingEditProfile}
                 onClick={async () => {
                   if (!username.trim()) {
                     toast.error('Username tidak boleh kosong.');
                     return;
                   }
+
+                  const wantsToChangePass = Boolean(editCurrentPassword || editNewPassword || editConfirmPassword);
+                  if (wantsToChangePass) {
+                    if (!editCurrentPassword) {
+                      toast.error('Masukkan password saat ini untuk mengganti password.');
+                      return;
+                    }
+                    if (editNewPassword.length < 6) {
+                      toast.error('Password baru minimal 6 karakter.');
+                      return;
+                    }
+                    if (editNewPassword !== editConfirmPassword) {
+                      toast.error('Konfirmasi password baru tidak cocok.');
+                      return;
+                    }
+                  }
+
+                  setSavingEditProfile(true);
                   try {
-                    const res = await handleUpdateProfile({
+                    const payload = {
                       nama: nama.trim(),
                       username: username.trim().toLowerCase(),
                       avatar: avatar || null,
                       tag: tag.trim() || '#',
                       describe: describe.trim() || 'Best emoji to describe your day?'
-                    });
+                    };
+                    if (wantsToChangePass) {
+                      payload.currentPassword = editCurrentPassword;
+                      payload.newPassword = editNewPassword;
+                    }
+
+                    const res = await handleUpdateProfile(payload);
                     if (res?.user) {
-                      toast.success('Profil berhasil diperbarui!');
+                      toast.success(wantsToChangePass ? 'Profil & password berhasil diperbarui!' : 'Profil berhasil diperbarui!');
                       setIsEditModalOpen(false);
                     }
                   } catch (err) {
                     toast.error(err.message || 'Gagal memperbarui profil.');
+                  } finally {
+                    setSavingEditProfile(false);
                   }
                 }}
                 className="glass-button glass-button-primary"
                 style={{ fontSize: '12px', padding: '8px 20px', borderRadius: '8px', fontWeight: 700, gap: '6px' }}
               >
                 <Check size={14} />
-                <span>Simpan Perubahan</span>
+                <span>{savingEditProfile ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
               </button>
             </div>
           </div>
