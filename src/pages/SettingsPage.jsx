@@ -76,15 +76,6 @@ export default function SettingsPage() {
     setIsEditModalOpen(true);
   };
 
-  // Password Change State
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showCurrentPass, setShowCurrentPass] = useState(false);
-  const [showNewPass, setShowNewPass] = useState(false);
-  const [showConfirmPass, setShowConfirmPass] = useState(false);
-  const [savingPassword, setSavingPassword] = useState(false);
-
   const fileInputRef = useRef(null);
   const editMenuRef = useRef(null);
 
@@ -201,44 +192,6 @@ export default function SettingsPage() {
     }
   };
 
-  // Save Password Change
-  const handleSavePassword = async (e) => {
-    e.preventDefault();
-    if (!currentPassword) {
-      toast.error('Please enter your current password.');
-      return;
-    }
-    if (newPassword.length < 6) {
-      toast.error('New password must be at least 6 characters long.');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast.error('New passwords do not match.');
-      return;
-    }
-
-    setSavingPassword(true);
-    try {
-      const res = await handleUpdateProfile({
-        currentPassword,
-        newPassword
-      });
-
-      if (res?.user) {
-        toast.success('Password successfully changed!');
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-      } else {
-        toast.error('Failed to update password.');
-      }
-    } catch (err) {
-      toast.error(err.message || 'Error updating password. Check your current password.');
-    } finally {
-      setSavingPassword(false);
-    }
-  };
-
   return (
     <div className="animate-fade-in" style={{ width: '100%', margin: '0 auto', padding: '0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
       
@@ -265,11 +218,11 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Grid Layout: Left Column (Profile & Photo), Right Column (Password & PIN) */}
+      {/* User Profile Card */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-        gap: '12px'
+        width: '100%',
+        maxWidth: '620px',
+        margin: '0 auto'
       }}>
         
         {/* ================= CARD 1: DISCORD-STYLE USER PROFILE CARD ================= */}
@@ -495,160 +448,6 @@ export default function SettingsPage() {
             />
           </div>
         </div>
-
-        {/* ================= CARD 2: CHANGE PASSWORD ("BENARKAN PASSWORD") ================= */}
-        <div className="glass-panel" style={{ padding: '22px', borderRadius: '8px', border: '1px solid rgba(0, 173, 181, 0.25)' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-            <KeyRound size={18} color="#00ADB5" />
-            <span>Ganti Password</span>
-          </h3>
-
-          <form onSubmit={handleSavePassword} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* Current Password */}
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '6px' }}>
-                Password Saat Ini
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showCurrentPass ? 'text' : 'password'}
-                  required
-                  placeholder="Masukkan password saat ini"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '9px 38px 9px 12px',
-                    background: 'rgba(34, 40, 49, 0.9)',
-                    border: '1px solid rgba(0, 173, 181, 0.3)',
-                    color: '#EEEEEE',
-                    fontSize: '13px',
-                    outline: 'none',
-                    borderRadius: '8px'
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCurrentPass(!showCurrentPass)}
-                  style={{
-                    position: 'absolute',
-                    right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    color: showCurrentPass ? '#00FFF5' : '#b0b8c1',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {showCurrentPass ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              </div>
-            </div>
-
-            {/* New Password */}
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '6px' }}>
-                Password Baru (Min. 6 Karakter)
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showNewPass ? 'text' : 'password'}
-                  required
-                  placeholder="Masukkan password baru"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '9px 38px 9px 12px',
-                    background: 'rgba(34, 40, 49, 0.9)',
-                    border: '1px solid rgba(0, 173, 181, 0.3)',
-                    color: '#EEEEEE',
-                    fontSize: '13px',
-                    outline: 'none',
-                    borderRadius: '8px'
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPass(!showNewPass)}
-                  style={{
-                    position: 'absolute',
-                    right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    color: showNewPass ? '#00FFF5' : '#b0b8c1',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {showNewPass ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Confirm New Password */}
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '6px' }}>
-                Konfirmasi Password Baru
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showConfirmPass ? 'text' : 'password'}
-                  required
-                  placeholder="Ulangi password baru"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '9px 38px 9px 12px',
-                    background: 'rgba(34, 40, 49, 0.9)',
-                    border: '1px solid rgba(0, 173, 181, 0.3)',
-                    color: '#EEEEEE',
-                    fontSize: '13px',
-                    outline: 'none',
-                    borderRadius: '8px'
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPass(!showConfirmPass)}
-                  style={{
-                    position: 'absolute',
-                    right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    color: showConfirmPass ? '#00FFF5' : '#b0b8c1',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {showConfirmPass ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={savingPassword}
-              className="glass-button glass-button-primary"
-              style={{
-                marginTop: '4px',
-                padding: '10px',
-                fontSize: '13px',
-                fontWeight: 700,
-                justifyContent: 'center',
-                borderRadius: '8px'
-              }}
-            >
-              <KeyRound size={15} />
-              <span>{savingPassword ? 'Updating...' : 'Perbarui Password'}</span>
-            </button>
-          </form>
-        </div>
-
       </div>
 
       {/* Discord-style Avatar Crop Modal */}
