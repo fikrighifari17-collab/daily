@@ -7,20 +7,31 @@ import {
   Camera, 
   Eye, 
   EyeOff, 
-  Save, 
-  Trash2,
-  Crop,
-  ChevronDown,
-  ChevronUp,
-  Edit3,
-  X,
-  Check,
-  Hash,
-  MessageSquare
+  Trash2, 
+  Crop, 
+  ChevronDown, 
+  ChevronUp, 
+  Edit3, 
+  X, 
+  Check, 
+  Hash, 
+  MessageSquare,
+  Send,
+  Bell,
+  ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import AvatarCropModal from '../components/AvatarCropModal';
+import { 
+  getStoredChatId, 
+  setStoredChatId, 
+  isTelegramNotificationEnabled, 
+  setTelegramNotificationEnabled, 
+  testTelegramConnection, 
+  BOT_URL, 
+  BOT_USERNAME 
+} from '../services/telegramService';
 
 export default function SettingsPage() {
   const { user, handleUpdateProfile } = useAuth();
@@ -41,8 +52,14 @@ export default function SettingsPage() {
       setAvatar(user.avatar || '');
       if (user.tag !== undefined) setTag(user.tag || '#');
       if (user.describe !== undefined) setDescribe(user.describe || 'Best emoji to describe your day?');
+      if (user.telegramChatId) setTelegramChatId(user.telegramChatId);
     }
   }, [user]);
+
+  // Telegram Notifications State
+  const [telegramChatId, setTelegramChatId] = useState(user?.telegramChatId || getStoredChatId());
+  const [isTelegramEnabled, setIsTelegramEnabled] = useState(isTelegramNotificationEnabled());
+  const [isTestingTelegram, setIsTestingTelegram] = useState(false);
 
   // Discord Modals State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -66,6 +83,8 @@ export default function SettingsPage() {
     setAvatar(user?.avatar || '');
     setTag(user?.tag || '#');
     setDescribe(user?.describe || 'Best emoji to describe your day?');
+    setTelegramChatId(user?.telegramChatId || getStoredChatId());
+    setIsTelegramEnabled(isTelegramNotificationEnabled());
     setEditCurrentPassword('');
     setEditNewPassword('');
     setEditConfirmPassword('');
@@ -158,42 +177,23 @@ export default function SettingsPage() {
   const handleSelectPreset = async (preset) => {
     setAvatar(preset);
     try {
-      await handleUpdateProfile({
+      const res = await handleUpdateProfile({
         nama: nama.trim(),
         username: username.trim().toLowerCase(),
         avatar: preset
       });
-      toast.success('Avatar berhasil diperbarui!');
+      if (res?.user) {
+        toast.success('Avatar berhasil diperbarui!');
+      } else {
+        toast.error('Gagal memperbarui avatar.');
+      }
     } catch (err) {
       toast.error(err.message || 'Gagal memperbarui avatar.');
     }
   };
 
-  // Auto-save Nama & Username saat selesai mengetik (onBlur) atau tekan Enter
-  const handleAutoSaveField = async () => {
-    if (!username.trim()) {
-      toast.error('Username tidak boleh kosong.');
-      return;
-    }
-    if (nama.trim() === (user?.nama || '') && username.trim().toLowerCase() === (user?.username || '')) {
-      return;
-    }
-    try {
-      const res = await handleUpdateProfile({
-        nama: nama.trim(),
-        username: username.trim().toLowerCase(),
-        avatar: avatar || null
-      });
-      if (res?.user) {
-        toast.success('Profil berhasil diperbarui!');
-      }
-    } catch (err) {
-      toast.error(err.message || 'Gagal memperbarui profil.');
-    }
-  };
-
   return (
-    <div className="animate-fade-in" style={{ width: '100%', margin: '0 auto', padding: '0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+    <div className="animate-fade-in" style={{ width: '100%', margin: '0 auto', padding: '0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       
       {/* Header Banner */}
       <div className="glass-panel page-header-panel" style={{ 
@@ -218,237 +218,233 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* User Profile Card */}
+      {/* DISCORD-STYLE USER PROFILE CARD */}
       <div style={{
         width: '100%',
-        maxWidth: '620px',
-        margin: '0 auto'
+        background: '#181a20',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        border: '1px solid rgba(0, 173, 181, 0.25)',
+        boxShadow: '0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 173, 181, 0.1)',
+        display: 'flex',
+        flexDirection: 'column'
       }}>
-        
-        {/* ================= CARD 1: DISCORD-STYLE USER PROFILE CARD ================= */}
+        {/* Top Banner (Discord style) */}
         <div style={{
-          background: '#181a20',
-          borderRadius: '16px',
-          overflow: 'hidden',
-          border: '1px solid rgba(0, 173, 181, 0.25)',
-          boxShadow: '0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 173, 181, 0.1)',
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
-          {/* Top Banner (Discord style) */}
-          <div style={{
-            height: '75px',
-            background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.45), rgba(34, 40, 49, 0.95))',
-            position: 'relative',
-            borderBottom: '1px solid rgba(0, 173, 181, 0.2)'
-          }} />
+          height: '80px',
+          background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.45), rgba(34, 40, 49, 0.95))',
+          position: 'relative',
+          borderBottom: '1px solid rgba(0, 173, 181, 0.2)'
+        }} />
 
-          {/* Profile Card Body */}
-          <div style={{ padding: '0 18px 20px 18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* Avatar & Speech Bubble Row */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: '-42px' }}>
-              {/* Circular Avatar */}
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                title="Klik untuk mengganti foto profil"
-                style={{
-                  width: '84px',
-                  height: '84px',
-                  borderRadius: '50%',
-                  border: '6px solid #181a20',
-                  background: '#222831',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  position: 'relative',
-                  flexShrink: 0,
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
-                }}
-                className="discord-avatar-container"
-              >
-                {avatar ? (
-                  avatar.startsWith('data:') || avatar.startsWith('http') ? (
-                    <img src={avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <span style={{ fontSize: '38px' }}>{avatar}</span>
-                  )
+        {/* Profile Card Body */}
+        <div style={{ padding: '0 18px 20px 18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* Avatar & Speech Bubble Row */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: '-42px' }}>
+            {/* Circular Avatar */}
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              title="Klik untuk mengganti foto profil"
+              style={{
+                width: '84px',
+                height: '84px',
+                borderRadius: '50%',
+                border: '6px solid #181a20',
+                background: '#222831',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                cursor: 'pointer',
+                position: 'relative',
+                flexShrink: 0,
+                boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
+              }}
+              className="discord-avatar-container"
+            >
+              {avatar ? (
+                avatar.startsWith('data:') || avatar.startsWith('http') ? (
+                  <img src={avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <User size={40} color="#00FFF5" />
-                )}
+                  <span style={{ fontSize: '38px' }}>{avatar}</span>
+                )
+              ) : (
+                <User size={40} color="#00FFF5" />
+              )}
 
-                {/* Hover Camera Overlay */}
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'rgba(0, 0, 0, 0.55)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: 0,
-                  transition: 'opacity 0.2s'
-                }}
-                className="discord-avatar-overlay"
-                >
-                  <Camera size={20} color="#FFFFFF" />
-                </div>
-
-                {/* Status Indicator Dot (Online Green) */}
-                <div style={{
-                  position: 'absolute',
-                  bottom: '2px',
-                  right: '2px',
-                  width: '18px',
-                  height: '18px',
-                  borderRadius: '50%',
-                  background: '#10b981',
-                  border: '3px solid #181a20'
-                }} />
-              </div>
-
-              {/* Status Speech Bubble (Discord style) */}
-              <div 
-                onClick={openEditProfileModal}
-                title="Klik untuk ubah status describe"
-                style={{
-                  position: 'relative',
-                  background: '#2b2d31',
-                  borderRadius: '12px',
-                  padding: '8px 14px',
-                  fontSize: '12px',
-                  color: '#b0b8c1',
-                  maxWidth: '220px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  marginBottom: '8px',
-                  cursor: 'pointer',
-                  transition: 'background 0.2s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#32353b'}
-                onMouseLeave={(e) => e.currentTarget.style.background = '#2b2d31'}
+              {/* Hover Camera Overlay */}
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'rgba(0, 0, 0, 0.55)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: 0,
+                transition: 'opacity 0.2s'
+              }}
+              className="discord-avatar-overlay"
               >
-                {/* Speech Bubble Arrow */}
-                <div style={{
-                  position: 'absolute',
-                  left: '-6px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  width: 0,
-                  height: 0,
-                  borderTop: '6px solid transparent',
-                  borderBottom: '6px solid transparent',
-                  borderRight: '6px solid #2b2d31'
-                }} />
-                <span style={{ color: '#00FFF5', fontSize: '13px' }}>+</span>
-                <span style={{ fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {user?.describe || 'Best emoji to describe your day?'}
-                </span>
+                <Camera size={20} color="#FFFFFF" />
               </div>
+
             </div>
 
-            {/* User Identity: Bold Name & Handle */}
-            <div>
-              <h3 style={{
-                margin: 0,
-                fontSize: '22px',
-                fontWeight: 800,
-                color: '#EEEEEE',
-                letterSpacing: '0.02em',
-                lineHeight: 1.2
-              }}>
-                {user?.nama || 'SAXTON'}
-              </h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 600 }}>
-                  .{user?.username || 'pikrii'}
-                </span>
-                <span style={{
-                  background: 'rgba(0, 173, 181, 0.25)',
-                  color: '#00FFF5',
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  padding: '1px 6px',
-                  borderRadius: '4px',
-                  border: '1px solid rgba(0, 173, 181, 0.4)'
-                }}>
-                  {user?.tag ? (user.tag.startsWith('#') ? user.tag : `#${user.tag}`) : '#'}
-                </span>
-              </div>
+            {/* Status Speech Bubble (Discord style) */}
+            <div 
+              onClick={openEditProfileModal}
+              title="Klik untuk ubah status describe"
+              style={{
+                position: 'relative',
+                background: '#2b2d31',
+                borderRadius: '12px',
+                padding: '8px 14px',
+                fontSize: '12px',
+                color: '#b0b8c1',
+                maxWidth: '220px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                marginBottom: '8px',
+                cursor: 'pointer',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#32353b'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#2b2d31'}
+            >
+              {/* Speech Bubble Arrow */}
+              <div style={{
+                position: 'absolute',
+                left: '-6px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: 0,
+                height: 0,
+                borderTop: '6px solid transparent',
+                borderBottom: '6px solid transparent',
+                borderRight: '6px solid #2b2d31'
+              }} />
+              <span style={{ color: '#00FFF5', fontSize: '13px' }}>+</span>
+              <span style={{ fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user?.describe || 'Best emoji to describe your day?'}
+              </span>
             </div>
+          </div>
 
-            {/* Category / Collection Pill (Game Collection style) */}
-            <div style={{
-              background: '#232428',
-              borderRadius: '8px',
-              padding: '12px 14px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              border: '1px solid rgba(255, 255, 255, 0.06)'
+          {/* User Identity: Bold Name & Handle */}
+          <div>
+            <h3 style={{
+              margin: 0,
+              fontSize: '22px',
+              fontWeight: 800,
+              color: '#EEEEEE',
+              letterSpacing: '0.02em',
+              lineHeight: 1.2
             }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE' }}>
-                Akun Mahasiswa
+              {user?.nama || 'SAXTON'}
+            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+              <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 600 }}>
+                .{user?.username || 'pikrii'}
               </span>
               <span style={{
-                fontSize: '11px',
+                background: 'rgba(0, 173, 181, 0.25)',
                 color: '#00FFF5',
-                background: 'rgba(0, 173, 181, 0.2)',
-                padding: '2px 8px',
-                borderRadius: '6px',
-                fontWeight: 700,
-                border: '1px solid rgba(0, 173, 181, 0.35)'
+                fontSize: '11px',
+                fontWeight: 800,
+                padding: '1px 6px',
+                borderRadius: '4px',
+                border: '1px solid rgba(0, 173, 181, 0.4)'
               }}>
-                Aktif
+                {user?.tag ? (user.tag.startsWith('#') ? user.tag : `#${user.tag}`) : '#'}
               </span>
             </div>
 
-            {/* Action Card: Edit Profile only (Tanpa Do Not Disturb & Switch Accounts) */}
-            <div style={{
-              background: '#232428',
-              borderRadius: '8px',
-              overflow: 'hidden',
-              border: '1px solid rgba(255, 255, 255, 0.06)'
-            }}>
-              <button
-                type="button"
-                onClick={openEditProfileModal}
+            {/* Telegram Bot Connection Pill */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+              <a
+                href={BOT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '14px 16px',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#EEEEEE',
-                  fontSize: '14px',
+                  fontSize: '11px',
                   fontWeight: 600,
-                  cursor: 'pointer',
-                  textAlign: 'left',
+                  color: '#00FFF5',
+                  background: 'rgba(0, 173, 181, 0.15)',
+                  padding: '3px 9px',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(0, 173, 181, 0.35)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  textDecoration: 'none',
                   transition: 'background 0.2s'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.07)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                title="Klik untuk membuka bot di Telegram"
               >
-                <Edit3 size={16} color="#94a3b8" />
-                <span>Edit Profile</span>
-              </button>
+                <Send size={11} color="#00FFF5" />
+                <span>Telegram: @{BOT_USERNAME}</span>
+                <span style={{
+                  fontSize: '9px',
+                  background: isTelegramEnabled && telegramChatId ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.1)',
+                  color: isTelegramEnabled && telegramChatId ? '#10b981' : '#94a3b8',
+                  padding: '1px 5px',
+                  borderRadius: '4px',
+                  fontWeight: 800
+                }}>
+                  {isTelegramEnabled && telegramChatId ? 'AKTIF' : 'NONAKTIF'}
+                </span>
+              </a>
             </div>
-
-            {/* Hidden File Input */}
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              accept="image/*" 
-              onChange={handlePhotoUpload} 
-              style={{ display: 'none' }} 
-            />
           </div>
+
+
+          {/* Action Card: Edit Profile only */}
+          <div style={{
+            background: '#232428',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            border: '1px solid rgba(255, 255, 255, 0.06)'
+          }}>
+            <button
+              type="button"
+              onClick={openEditProfileModal}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '14px 16px',
+                background: 'transparent',
+                border: 'none',
+                color: '#EEEEEE',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.07)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <Edit3 size={16} color="#94a3b8" />
+              <span>Edit Profil</span>
+            </button>
+          </div>
+
+          {/* Hidden File Input */}
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            accept="image/*" 
+            onChange={handlePhotoUpload} 
+            style={{ display: 'none' }} 
+          />
         </div>
       </div>
+
+
 
       {/* Discord-style Avatar Crop Modal */}
       {isCropModalOpen && rawCropImage && (
@@ -505,10 +501,10 @@ export default function SettingsPage() {
               <div>
                 <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Edit3 size={18} color="#00FFF5" />
-                  <span>Edit Profile</span>
+                  <span>Edit Profil</span>
                 </h3>
                 <p style={{ margin: '3px 0 0 0', fontSize: '11px', color: '#94a3b8' }}>
-                  Sesuaikan foto profil, nama, tag #, status describe, dan username akun Anda.
+                  Atur foto profil, nama, tag #, status bio, dan username kamu.
                 </p>
               </div>
               <button
@@ -752,6 +748,133 @@ export default function SettingsPage() {
               />
             </div>
 
+            {/* Telegram Bot Notification Integration */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.12), rgba(35, 36, 40, 0.95))',
+              borderRadius: '12px',
+              border: '1px solid rgba(0, 173, 181, 0.35)',
+              padding: '14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ padding: '6px', borderRadius: '8px', background: 'rgba(0, 173, 181, 0.25)' }}>
+                    <Send size={15} color="#00FFF5" />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '12px', fontWeight: 800, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      Notifikasi Bot Telegram
+                      <span style={{ fontSize: '10px', color: '#00FFF5', background: 'rgba(0, 173, 181, 0.2)', padding: '1px 6px', borderRadius: '4px' }}>
+                        @{BOT_USERNAME}
+                      </span>
+                    </span>
+                    <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+                      Kirim otomatis tugas & deadline kuliah ke Telegram
+                    </span>
+                  </div>
+                </div>
+
+                <a
+                  href={BOT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    fontSize: '11px',
+                    color: '#00FFF5',
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    background: 'rgba(0, 173, 181, 0.15)',
+                    border: '1px solid rgba(0, 173, 181, 0.3)'
+                  }}
+                  title="Buka bot di Telegram"
+                >
+                  <span>Buka Bot</span>
+                  <ExternalLink size={11} />
+                </a>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: '#b0b8c1', marginBottom: '5px' }}>
+                  TELEGRAM CHAT ID
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="Contoh: 8025609014"
+                    value={telegramChatId}
+                    onChange={(e) => setTelegramChatId(e.target.value)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      background: '#181a20',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      color: '#00FFF5',
+                      fontWeight: 700,
+                      fontSize: '12px',
+                      outline: 'none',
+                      borderRadius: '6px'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={isTestingTelegram}
+                    onClick={async () => {
+                      if (!telegramChatId.trim()) {
+                        toast.error('Masukkan Chat ID terlebih dahulu.');
+                        return;
+                      }
+                      setIsTestingTelegram(true);
+                      try {
+                        const displayName = nama || username || 'demo';
+                        const res = await testTelegramConnection(telegramChatId.trim(), displayName);
+                        if (res?.ok) {
+                          toast.success('Pesan tes berhasil dikirim! Silakan periksa Telegram Anda.');
+                        } else {
+                          if (res?.description?.includes('chat not found')) {
+                            toast.error('Gagal: Buka @Semestara_Bot di Telegram dan klik tombol "START" terlebih dahulu!');
+                          } else {
+                            toast.error(res?.description || res?.error || 'Gagal mengirim pesan tes Telegram.');
+                          }
+                        }
+                      } catch (err) {
+                        toast.error(err.message || 'Gagal terhubung ke Telegram.');
+                      } finally {
+                        setIsTestingTelegram(false);
+                      }
+                    }}
+                    className="glass-button"
+                    style={{ fontSize: '11px', padding: '6px 12px', borderRadius: '6px', whiteSpace: 'nowrap', gap: '5px' }}
+                  >
+                    <Send size={12} color="#00FFF5" />
+                    <span>{isTestingTelegram ? 'Mengirim...' : 'Tes Pesan'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '2px' }}>
+                <input
+                  type="checkbox"
+                  id="telegramToggle"
+                  checked={isTelegramEnabled}
+                  onChange={(e) => setIsTelegramEnabled(e.target.checked)}
+                  style={{ accentColor: '#00ADB5', cursor: 'pointer' }}
+                />
+                <label htmlFor="telegramToggle" style={{ fontSize: '11px', color: '#EEEEEE', cursor: 'pointer' }}>
+                  Aktifkan kirim notifikasi otomatis saat menambah/menyelesaikan tugas
+                </label>
+              </div>
+
+              <div style={{ fontSize: '10px', color: '#94a3b8', background: 'rgba(0,0,0,0.3)', padding: '6px 8px', borderRadius: '6px' }}>
+                💡 <em>Catatan:</em> Pastikan Anda sudah membuka <a href={BOT_URL} target="_blank" rel="noreferrer" style={{ color: '#00FFF5' }}>@{BOT_USERNAME}</a> dan menekan tombol <strong>Start</strong> di Telegram agar bot diizinkan mengirim pesan.
+              </div>
+            </div>
+
             {/* Change Password Section in Edit Profile Modal */}
             <div style={{
               background: '#232428',
@@ -958,12 +1081,17 @@ export default function SettingsPage() {
                       username: username.trim().toLowerCase(),
                       avatar: avatar || null,
                       tag: tag.trim() || '#',
-                      describe: describe.trim() || 'Best emoji to describe your day?'
+                      describe: describe.trim() || 'Best emoji to describe your day?',
+                      telegramChatId: telegramChatId.trim() || null
                     };
                     if (wantsToChangePass) {
                       payload.currentPassword = editCurrentPassword;
                       payload.newPassword = editNewPassword;
                     }
+
+                    // Save telegram preference locally
+                    setStoredChatId(telegramChatId);
+                    setTelegramNotificationEnabled(isTelegramEnabled);
 
                     const res = await handleUpdateProfile(payload);
                     if (res?.user) {

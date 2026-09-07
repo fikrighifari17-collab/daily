@@ -10,7 +10,7 @@ import { isVideoUrl } from '../utils/mediaUtils';
 import { parseScheduleItem } from '../utils/scheduleUtils';
 
 const MOOD_PERCENT = { 1: '20%', 2: '40%', 3: '60%', 4: '80%', 5: '100%' };
-const MOOD_LABELS = { 1: 'Very Bad', 2: 'Bad / Stressed', 3: 'Neutral', 4: 'Good / Calm', 5: 'Very Good' };
+const MOOD_LABELS = { 1: 'Lagi Kacau / Drop', 2: 'Stres / Berat Banget', 3: 'Biasa Aja / Datar', 4: 'Tenang / Adem', 5: 'Semangat / Happy Banget' };
 const MOOD_COLORS = { 1: '#ef4444', 2: '#f97316', 3: '#eab308', 4: '#00ADB5', 5: '#10b981' };
 
 export default function Dashboard() {
@@ -23,14 +23,15 @@ export default function Dashboard() {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
-  const todayDayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+  const todayDayNameEn = now.toLocaleDateString('en-US', { weekday: 'long' });
+  const todayDayNameId = now.toLocaleDateString('id-ID', { weekday: 'long' });
   const todayMood = moods.find((m) => {
     const dStr = typeof m.tanggal === 'string' ? m.tanggal.split('T')[0] : new Date(m.tanggal).toISOString().split('T')[0];
     return dStr === todayStr;
   });
 
   // Today's course classes
-  const todayClasses = (courses || []).filter(c => c.hari === todayDayName);
+  const todayClasses = (courses || []).filter(c => c.hari === todayDayNameEn || c.hari === todayDayNameId);
 
   // Upcoming active task/exam deadlines:
   // Show max 3 tasks, sorted by earliest deadline (closest to submission time or already expired/overdue)
@@ -62,7 +63,7 @@ export default function Dashboard() {
 
   // Time based greeting
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+  const greeting = hour < 12 ? 'Selamat Pagi' : hour < 15 ? 'Selamat Siang' : hour < 18 ? 'Selamat Sore' : 'Selamat Malam';
 
   return (
     <div className="animate-fade-in" style={{ width: '100%', margin: '0 auto', padding: '0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -72,20 +73,20 @@ export default function Dashboard() {
         <div style={{ position: 'relative', zIndex: 2, maxWidth: '650px' }}>
           <div className="dashboard-hero-badge">
             <Sparkles size={13} color="#00FFF5" />
-            <span style={{ fontSize: '11px', fontWeight: 700, color: '#00FFF5' }}>Mental Health Dashboard</span>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: '#00FFF5' }}>Kabar Mood & Kuliah</span>
           </div>
           <h2 className="dashboard-hero-title">
-            {greeting}, <span className="text-gradient-teal">{user?.nama || 'Friend'}!</span>
+            {greeting}, <span className="text-gradient-teal">{user?.nama || 'Sobat'}!</span>
           </h2>
           <p className="dashboard-hero-desc mobile-hide">
-            Track daily emotional patterns, align with academic workloads, and maintain performance with peace of mind.
+            Pantau mood harian, atur ritme tugas kuliah, dan jalani hari dengan hati lebih tenang.
           </p>
         </div>
 
         <div className="dashboard-hero-actions">
           <NavLink to="/checkin/new" className="glass-button glass-button-primary dashboard-hero-btn">
             <PlusCircle size={15} />
-            <span>Mood Check-in</span>
+            <span>Catat Mood</span>
           </NavLink>
           <NavLink to="/checkin" className="glass-button dashboard-hero-btn">
             <History size={15} color="#00ADB5" />
@@ -103,10 +104,10 @@ export default function Dashboard() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
               <div>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#00ADB5', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  Today's Status
+                  Kondisi Hari Ini
                 </span>
                 <h3 style={{ fontSize: '19px', fontWeight: 800, color: '#EEEEEE', marginTop: '4px' }}>
-                  {todayMood ? MOOD_LABELS[todayMood.moodScore] : 'Not Checked In'}
+                  {todayMood ? MOOD_LABELS[todayMood.moodScore] : 'Belum Catat Mood'}
                 </h3>
               </div>
               <div style={{
@@ -128,7 +129,7 @@ export default function Dashboard() {
             {todayMood ? (
               <>
                 <p style={{ fontSize: '13px', color: '#EEEEEE', marginBottom: '10px', lineHeight: 1.5, background: 'rgba(34, 40, 49, 0.6)', padding: '10px 12px', borderRadius: '0px', border: '1px solid rgba(0, 173, 181, 0.15)' }}>
-                  "{todayMood.catatan || 'No written notes.'}"
+                  "{todayMood.catatan || 'Nggak ada catatan tambahan.'}"
                 </p>
                 {todayMood.photoUrl && (
                   <div style={{ marginBottom: '14px', border: '1px solid rgba(0, 173, 181, 0.3)', overflow: 'hidden', maxHeight: '140px', background: '#000' }}>
@@ -140,14 +141,14 @@ export default function Dashboard() {
                         style={{ width: '100%', maxHeight: '140px', objectFit: 'contain', display: 'block' }}
                       />
                     ) : (
-                      <img src={todayMood.photoUrl} alt="Today's Photo" style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }} />
+                      <img src={todayMood.photoUrl} alt="Foto Hari Ini" style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }} />
                     )}
                   </div>
                 )}
               </>
             ) : (
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '14px', lineHeight: 1.5 }}>
-                Take 30 seconds to record your mood and identify its triggers.
+                Yuk luangkan waktu 30 detik buat cerita perasaanmu hari ini.
               </p>
             )}
           </div>
@@ -155,12 +156,12 @@ export default function Dashboard() {
           <div>
             {todayMood ? (
               <NavLink to="/checkin/new" className="glass-button" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', borderRadius: '0px' }}>
-                Update Check-in
+                Ubah Catatan Mood
               </NavLink>
             ) : (
               <NavLink to="/checkin/new" className="glass-button glass-button-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', borderRadius: '0px' }}>
                 <PlusCircle size={15} />
-                Check-in Emotion Now
+                Catat Mood Sekarang
               </NavLink>
             )}
           </div>
@@ -172,16 +173,16 @@ export default function Dashboard() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
                 <BookOpen size={17} color="#00FFF5" />
-                <span>Today's Classes ({todayDayName})</span>
+                <span>Kelas Kuliah Hari Ini ({todayDayNameId})</span>
               </h4>
               <NavLink to="/academic-schedule" style={{ fontSize: '12px', color: '#00FFF5', textDecoration: 'none', fontWeight: 600 }}>
-                Timetable
+                Lihat Jadwal
               </NavLink>
             </div>
 
             {todayClasses.length === 0 ? (
               <div style={{ padding: '16px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
-                No lectures scheduled for today.
+                Asik, hari ini nggak ada jadwal kelas kuliah!
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -200,7 +201,7 @@ export default function Dashboard() {
 
           <div style={{ marginTop: '12px' }}>
             <NavLink to="/academic-schedule" className="glass-button" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', borderRadius: '0px' }}>
-              Manage Academic Schedule
+              Atur Jadwal Kuliah
             </NavLink>
           </div>
         </div>
@@ -211,10 +212,10 @@ export default function Dashboard() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
                 <CheckSquare size={17} color="#00ADB5" />
-                <span>Upcoming Tasks & Deadlines</span>
+                <span>Tugas & Deadline Terdekat</span>
               </h4>
               <NavLink to="/schedule" style={{ fontSize: '12px', color: '#00FFF5', textDecoration: 'none', fontWeight: 600 }}>
-                View All
+                Lihat Semua
               </NavLink>
             </div>
 
@@ -313,7 +314,7 @@ export default function Dashboard() {
 
           <div style={{ marginTop: '12px' }}>
             <NavLink to="/schedule" className="glass-button" style={{ width: '100%', justifyContent: 'center', fontSize: '12px', borderRadius: '0px' }}>
-              Manage Tasks & Deadlines
+              Buka Daftar Tugas & Deadline
             </NavLink>
           </div>
         </div>

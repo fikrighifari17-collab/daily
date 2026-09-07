@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Lock, User, LogIn, UserPlus, ShieldCheck, HeartPulse, BookOpen, Brain, Activity, Eye, EyeOff } from 'lucide-react';
+import { Sparkles, Lock, User, LogIn, UserPlus, ShieldCheck, HeartPulse, BookOpen, Brain, Activity, Eye, EyeOff, Send } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [nama, setNama] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [telegramChatId, setTelegramChatId] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -34,7 +35,7 @@ export default function LoginPage() {
           setLoading(false);
           return;
         }
-        const res = await handleRegister(username, password, nama || username);
+        const res = await handleRegister(username, password, nama || username, telegramChatId);
         if (res?.user) {
           toast.success(`Account created! Welcome, ${res.user.nama || res.user.username}!`);
         } else {
@@ -100,8 +101,8 @@ export default function LoginPage() {
             </h1>
             <p style={{ fontSize: '13px', color: '#b0b8c1', margin: 0 }}>
               {mode === 'login'
-                ? 'Sign in to balance your mood and academic pace'
-                : 'Create an account to start tracking your daily wellbeing'}
+                ? 'Yuk masuk, seimbangin mood sama ritme kuliahmu'
+                : 'Bikin akun yuk, biar bisa pantau kabar hatimu tiap hari'}
             </p>
           </div>
 
@@ -136,7 +137,7 @@ export default function LoginPage() {
               }}
             >
               <LogIn size={15} />
-              Sign In
+              Masuk
             </button>
             <button
               type="button"
@@ -158,7 +159,7 @@ export default function LoginPage() {
               }}
             >
               <UserPlus size={15} />
-              Create Account
+              Bikin Akun
             </button>
           </div>
 
@@ -186,13 +187,13 @@ export default function LoginPage() {
             {mode === 'register' && (
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '6px' }}>
-                  Full Name (Optional)
+                  Nama Lengkap (Bebas / Opsional)
                 </label>
                 <div style={{ position: 'relative' }}>
                   <User size={16} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                   <input
                     type="text"
-                    placeholder="e.g. John Doe"
+                    placeholder="misal: Fikri Ghifari"
                     value={nama}
                     onChange={(e) => setNama(e.target.value)}
                     style={{
@@ -219,7 +220,7 @@ export default function LoginPage() {
                 <input
                   type="text"
                   required
-                  placeholder="Enter your username"
+                  placeholder="Ketik username kamu"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   style={{
@@ -245,7 +246,7 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
-                  placeholder="Enter your password"
+                  placeholder="Ketik password kamu"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
@@ -277,12 +278,52 @@ export default function LoginPage() {
                     padding: '4px',
                     transition: 'color 0.2s ease'
                   }}
-                  title={showPassword ? 'Hide password' : 'Show password'}
+                  title={showPassword ? 'Sembunyikan password' : 'Lihat password'}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
+
+            {mode === 'register' && (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#b0b8c1' }}>
+                    Telegram Chat ID <span style={{ color: '#00FFF5', fontWeight: 400 }}>(Opsional)</span>
+                  </label>
+                  <a
+                    href="https://t.me/Semestara_Bot"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ fontSize: '11px', color: '#00FFF5', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '3px' }}
+                  >
+                    Buka @Semestara_Bot ↗
+                  </a>
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <Send size={16} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <input
+                    type="text"
+                    placeholder="Contoh: 8025609014 (untuk notifikasi deadline)"
+                    value={telegramChatId}
+                    onChange={(e) => setTelegramChatId(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px 10px 38px',
+                      background: 'rgba(34, 40, 49, 0.9)',
+                      border: '1px solid rgba(0, 173, 181, 0.3)',
+                      color: '#EEEEEE',
+                      fontSize: '13px',
+                      outline: 'none',
+                      borderRadius: '8px'
+                    }}
+                  />
+                </div>
+                <span style={{ fontSize: '10px', color: '#8892b0', marginTop: '4px', display: 'block' }}>
+                  Bisa diisi nanti kapan saja di menu Pengaturan.
+                </span>
+              </div>
+            )}
 
             <button
               type="submit"
@@ -299,7 +340,7 @@ export default function LoginPage() {
                 cursor: loading ? 'not-allowed' : 'pointer'
               }}
             >
-              {loading ? 'Processing...' : mode === 'login' ? 'Sign In Now' : 'Create Account'}
+              {loading ? 'Bentar ya...' : mode === 'login' ? 'Gas Masuk' : 'Bikin Akun Sekarang'}
             </button>
           </form>
 
@@ -308,7 +349,7 @@ export default function LoginPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '2px 0' }}>
               <div style={{ flex: 1, height: '1px', background: 'rgba(0, 173, 181, 0.25)' }} />
               <span style={{ fontSize: '10px', color: '#b0b8c1', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>
-                Instant Demo Access
+                Akses Demo Cepat
               </span>
               <div style={{ flex: 1, height: '1px', background: 'rgba(0, 173, 181, 0.25)' }} />
             </div>
@@ -325,12 +366,12 @@ export default function LoginPage() {
                 try {
                   const res = await handleLogin('demo', 'demo123');
                   if (res?.user) {
-                    toast.success(`Welcome to Demo Mode, ${res.user.nama || 'Demo User'}!`);
+                    toast.success(`Halo ${res.user.nama || 'Sobat Semestara'}, selamat datang!`);
                   } else {
-                    setErrorMsg('Failed to sign in demo account.');
+                    setErrorMsg('Gagal masuk ke akun demo nih.');
                   }
                 } catch (err) {
-                  setErrorMsg(err.message || 'Authentication error.');
+                  setErrorMsg(err.message || 'Ada kendala pas mau masuk.');
                 } finally {
                   setLoading(false);
                 }
@@ -371,7 +412,7 @@ export default function LoginPage() {
           </div>
 
           <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(0, 173, 181, 0.2)', fontSize: '11px', color: '#b0b8c1', textAlign: 'center' }}>
-            🔒 100% Private Data &bull; No Email Required &bull; Stored Securely
+            🔒 100% Privasi Aman &bull; Nggak Butuh Email &bull; Tersimpan Aman
           </div>
         </div>
 
@@ -398,18 +439,18 @@ export default function LoginPage() {
             }}>
               <Sparkles size={13} color="#00FFF5" />
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#00FFF5', letterSpacing: '0.04em' }}>
-                🌿 YOUR MENTAL HEALTH MATTERS
+                🌿 KESEHATAN MENTALMU ITU PENTING
               </span>
             </div>
 
             {/* Main Headline */}
             <h2 style={{ fontSize: '26px', fontWeight: 800, color: '#EEEEEE', lineHeight: 1.3, marginBottom: '12px' }}>
-              Understand Your Feelings, <br />
-              <span className="text-gradient-teal">Own Your Semester.</span>
+              Pahami Isi Hatimu, <br />
+              <span className="text-gradient-teal">Taklukin Semester Ini.</span>
             </h2>
 
             <p style={{ fontSize: '13px', color: '#b0b8c1', lineHeight: 1.6, marginBottom: '22px' }}>
-              Your safe, private space to track how you're feeling, see how your workload affects your mood, and keep your mind clear throughout the semester.
+              Tempat aman & privat buat pantau perasaanmu, lihat gimana tugas kuliah ngaruh ke mood, dan bikin pikiran tetap plong sepanjang semester.
             </p>
 
             {/* Feature Highlights Grid */}
@@ -428,10 +469,10 @@ export default function LoginPage() {
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE', marginBottom: '2px' }}>
-                    Spot Your Stress Patterns
+                    Kenali Pola Stres Kamu
                   </div>
                   <div style={{ fontSize: '11px', color: '#b0b8c1', lineHeight: 1.4 }}>
-                    Find out exactly when your stress peaks—whether it's during midterms, finals, or when assignments start piling up.
+                    Cari tahu kapan rasa capek atau stresmu lagi numpuk—apakah pas musim UTS, UAS, atau pas tugas lagi bejibun.
                   </div>
                 </div>
               </div>
@@ -450,10 +491,10 @@ export default function LoginPage() {
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE', marginBottom: '2px' }}>
-                    Brain Dump & Coping Tools
+                    Ruang Curhat & Latihan Rileks
                   </div>
                   <div style={{ fontSize: '11px', color: '#b0b8c1', lineHeight: 1.4 }}>
-                    Let go of overwhelming thoughts safely here, and try out the 4-7-8 breathing technique whenever you need a quick mental reset.
+                    Keluarin unek-unek yang bikin pusing di sini dengan aman, plus cobain teknik napas 4-7-8 kalau butuh rehat sejenak.
                   </div>
                 </div>
               </div>
@@ -472,10 +513,10 @@ export default function LoginPage() {
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE', marginBottom: '2px' }}>
-                    100% Safe & Private
+                    100% Aman & Khusus Buat Kamu
                   </div>
                   <div style={{ fontSize: '11px', color: '#b0b8c1', lineHeight: 1.4 }}>
-                    For your eyes only. We never share or report your data to the campus administration or anyone else. This space is purely yours.
+                    Cuma kamu yang bisa lihat. Datamu nggak bakal pernah dibagikan ke pihak kampus atau orang lain. Tempat ini murni punyamu.
                   </div>
                 </div>
               </div>
@@ -491,7 +532,7 @@ export default function LoginPage() {
             borderRadius: '8px'
           }}>
             <p style={{ fontSize: '12px', fontStyle: 'italic', color: '#EEEEEE', margin: 0, lineHeight: 1.5 }}>
-              "Acknowledging how you feel isn't a weakness—it's the smartest way to get through every semester with a clear head and a strong mind."
+              "Jujur sama perasaan sendiri itu bukan tanda lemah—justru cara paling keren biar bisa lewatin tiap semester dengan kepala dingin dan hati tenang."
             </p>
           </div>
 

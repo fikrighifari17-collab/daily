@@ -82,7 +82,7 @@ function MainLayout() {
         borderTop: '1px solid var(--border-glass)',
         marginTop: '8px'
       }}>
-        Personal Emotion Calendar &copy; {new Date().getFullYear()} &bull; 100% Private Student Data
+        I hope this makes things a little easier for you.
       </footer>
     </div>
   );

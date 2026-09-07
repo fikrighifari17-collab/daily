@@ -6,11 +6,11 @@ import { useToast } from '../context/ToastContext';
 import { isVideoUrl, compressImageFile } from '../utils/mediaUtils';
 
 const getMoodInfo = (percent) => {
-  if (percent <= 20) return { label: 'Very Bad', desc: 'Severe stress / Overwhelmed', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.18)', score: 1 };
-  if (percent <= 40) return { label: 'Bad / Anxious', desc: 'Quite heavy burden', color: '#f97316', bg: 'rgba(249, 115, 22, 0.18)', score: 2 };
-  if (percent <= 60) return { label: 'Neutral', desc: 'Stable / Neutral', color: '#eab308', bg: 'rgba(234, 179, 8, 0.18)', score: 3 };
-  if (percent <= 80) return { label: 'Good / Calm', desc: 'Positive & productive', color: '#00ADB5', bg: 'rgba(0, 173, 181, 0.18)', score: 4 };
-  return { label: 'Very Good', desc: 'Very energetic & joyful', color: '#10b981', bg: 'rgba(16, 185, 129, 0.18)', score: 5 };
+  if (percent <= 20) return { label: 'Lagi Kacau / Drop', desc: 'Stres berat / Overwhelmed banget', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.18)', score: 1 };
+  if (percent <= 40) return { label: 'Stres / Berat', desc: 'Beban pikiran lumayan numpuk', color: '#f97316', bg: 'rgba(249, 115, 22, 0.18)', score: 2 };
+  if (percent <= 60) return { label: 'Biasa Aja / Datar', desc: 'Lempeng, stabil, santai', color: '#eab308', bg: 'rgba(234, 179, 8, 0.18)', score: 3 };
+  if (percent <= 80) return { label: 'Tenang / Adem', desc: 'Positif, lega, & produktif', color: '#00ADB5', bg: 'rgba(0, 173, 181, 0.18)', score: 4 };
+  return { label: 'Semangat / Happy', desc: 'Full energi & ceria banget', color: '#10b981', bg: 'rgba(16, 185, 129, 0.18)', score: 5 };
 };
 
 const formatSeconds = (sec) => {
@@ -29,7 +29,7 @@ export default function MoodCheckin({ onSuccess }) {
   const [catatan, setCatatan] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState([]);
   const [newTagInput, setNewTagInput] = useState('');
-  
+
   // Real voice recording states
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -169,8 +169,8 @@ export default function MoodCheckin({ onSuccess }) {
 
     } catch (err) {
       console.error("Microphone access error:", err);
-      setVoiceNoteError("Failed to access microphone. Please allow microphone permissions in your browser.");
-      toast.error("Failed to access microphone. Please check your browser permissions.");
+      setVoiceNoteError("Gagal akses mikrofon. Coba izinkan akses mikrofon di browsermu ya.");
+      toast.error("Gagal akses mikrofon. Cek izin browser kamu ya.");
     }
   };
 
@@ -218,7 +218,7 @@ export default function MoodCheckin({ onSuccess }) {
 
     // Check size limit: 30MB
     if (file.size > 30 * 1024 * 1024) {
-      toast.error('File size too large (max 30MB). Please choose a shorter video or smaller photo.');
+      toast.error('Ukuran file kegedean (maks 30MB). Pilih video yang lebih pendek atau foto yang lebih kecil ya.');
       return;
     }
 
@@ -226,18 +226,18 @@ export default function MoodCheckin({ onSuccess }) {
       if (file.type.startsWith('image/')) {
         const compressed = await compressImageFile(file, 1200, 0.8);
         setPhotoUrl(compressed);
-        toast.success('Photo compressed and attached successfully!');
+        toast.success('Foto berhasil dikompres dan dilampirkan!');
       } else {
         const reader = new FileReader();
         reader.onloadend = () => {
           setPhotoUrl(reader.result);
-          toast.success('Video attached successfully!');
+          toast.success('Video berhasil dilampirkan!');
         };
         reader.readAsDataURL(file);
       }
     } catch (err) {
       console.error('File process error:', err);
-      toast.error('Failed to process selected file.');
+      toast.error('Gagal memproses file yang dipilih.');
     }
   };
 
@@ -269,7 +269,7 @@ export default function MoodCheckin({ onSuccess }) {
       }
     } catch (err) {
       console.error("Camera access error:", err);
-      setCameraError("Failed to access camera. Please allow camera permissions in your browser.");
+      setCameraError("Gagal buka kamera. Pastikan kamu sudah kasih izin akses kamera di browsermu ya.");
     }
   };
 
@@ -281,7 +281,7 @@ export default function MoodCheckin({ onSuccess }) {
     if (videoRecorderRef.current && videoRecorderRef.current.state !== 'inactive') {
       try {
         videoRecorderRef.current.stop();
-      } catch (e) {}
+      } catch (e) { }
     }
     setIsRecordingVideo(false);
     setVideoRecordingSeconds(0);
@@ -308,7 +308,7 @@ export default function MoodCheckin({ onSuccess }) {
     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
     setPhotoUrl(dataUrl);
     stopCamera();
-    toast.success('Photo snapshot captured!');
+    toast.success('Foto berhasil dijepret!');
   };
 
   const startVideoRecording = () => {
@@ -345,7 +345,7 @@ export default function MoodCheckin({ onSuccess }) {
         const reader = new FileReader();
         reader.onloadend = () => {
           setPhotoUrl(reader.result);
-          toast.success('Video clip recorded and saved!');
+          toast.success('Klip video berhasil direkam dan disimpan!');
           stopCamera();
         };
         reader.readAsDataURL(blob);
@@ -366,7 +366,7 @@ export default function MoodCheckin({ onSuccess }) {
       }, 1000);
     } catch (err) {
       console.error("Video record error:", err);
-      toast.error("Failed to start video recording on this device.");
+      toast.error("Gagal merekam video di perangkat ini.");
     }
   };
 
@@ -410,8 +410,8 @@ export default function MoodCheckin({ onSuccess }) {
         photoUrl: photoUrl
       });
 
-      toast.success('Emotion check-in entry saved successfully!');
-      setMessage({ type: 'success', text: 'Mood entry saved successfully!' });
+      toast.success('Catatan mood berhasil disimpan!');
+      setMessage({ type: 'success', text: 'Catatan mood berhasil disimpan!' });
       setTimeout(() => setMessage(null), 3000);
 
       setCatatan('');
@@ -420,8 +420,8 @@ export default function MoodCheckin({ onSuccess }) {
       setPhotoUrl(null);
       if (onSuccess) onSuccess();
     } catch (err) {
-      toast.error('Failed to save mood entry.');
-      setMessage({ type: 'error', text: 'Failed to save mood entry.' });
+      toast.error('Gagal menyimpan catatan mood.');
+      setMessage({ type: 'error', text: 'Gagal menyimpan catatan mood.' });
       setTimeout(() => setMessage(null), 3000);
     } finally {
       setIsSubmitting(false);
@@ -432,10 +432,10 @@ export default function MoodCheckin({ onSuccess }) {
     <div className="glass-panel mood-checkin-card">
       <div style={{ marginBottom: '16px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span>Today's Mood Check-in</span>
+          <span>Catat Mood Hari Ini</span>
         </h2>
         <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-          How are you feeling right now? This data is stored privately for you.
+          Gimana perasaanmu sekarang? Catatan ini tersimpan rahasia & aman cuma buat kamu.
         </p>
       </div>
 
@@ -458,14 +458,14 @@ export default function MoodCheckin({ onSuccess }) {
       )}
 
       <form onSubmit={handleSubmit}>
-        
+
         {/* Continuous Slider Track Bar (0% - 100%) */}
         <div className="mood-slider-panel">
           <div className="mood-slider-header">
             <div className="mood-slider-info">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
                 <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  Mood Level:
+                  Level Mood:
                 </label>
                 <span style={{
                   background: currentMoodInfo.bg,
@@ -507,7 +507,7 @@ export default function MoodCheckin({ onSuccess }) {
               type="text"
               value={userLabel}
               onChange={(e) => setUserLabel(e.target.value)}
-              placeholder={`Custom emotion name (default: ${currentMoodInfo.label})...`}
+              placeholder={`Beri nama perasaanmu (bawaan: ${currentMoodInfo.label})...`}
               className="mood-name-input"
               style={{
                 background: 'rgba(0, 0, 0, 0.45)',
@@ -520,7 +520,7 @@ export default function MoodCheckin({ onSuccess }) {
                 borderRadius: '0px',
                 boxShadow: `0 0 8px ${currentMoodInfo.color}22`
               }}
-              title="Type your custom emotion name"
+              title="Tulis sebutan perasaanmu secara bebas"
             />
           </div>
 
@@ -553,9 +553,9 @@ export default function MoodCheckin({ onSuccess }) {
 
           {/* Labels for 0% and 100% bounds */}
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 600 }}>
-            <span>0% (Very Bad)</span>
+            <span>0% (Lagi Drop)</span>
             <span>50%</span>
-            <span>100% (Very Good)</span>
+            <span>100% (Happy Banget)</span>
           </div>
         </div>
 
@@ -563,7 +563,7 @@ export default function MoodCheckin({ onSuccess }) {
         <div className="mood-datetime-grid">
           <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-              Date:
+              Tanggal:
             </label>
             <input
               type="date"
@@ -577,7 +577,7 @@ export default function MoodCheckin({ onSuccess }) {
 
           <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-              Check-in Time:
+              Waktu Catat:
             </label>
             <div style={{
               display: 'flex',
@@ -596,7 +596,7 @@ export default function MoodCheckin({ onSuccess }) {
               <Clock size={16} color="#00FFF5" style={{ flexShrink: 0 }} />
               <span>{timeFormatted}</span>
               <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 400, marginLeft: 'auto', whiteSpace: 'nowrap' }}>
-                (Automatic Real-time)
+                (Otomatis Real-time)
               </span>
             </div>
           </div>
@@ -605,7 +605,7 @@ export default function MoodCheckin({ onSuccess }) {
         {/* Tags Selection */}
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
-            Trigger / Context Tags (Select relevant):
+            Tag Pemicu / Konteks (Pilih yang relevan):
           </label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 8px', marginBottom: '10px' }}>
             {tags.map((t) => {
@@ -644,7 +644,7 @@ export default function MoodCheckin({ onSuccess }) {
               type="text"
               className="glass-input"
               style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '0px', flex: 1, minWidth: 0 }}
-              placeholder="+ Add custom tag..."
+              placeholder="+ Tambah tag sendiri..."
               value={newTagInput}
               onChange={(e) => setNewTagInput(e.target.value)}
             />
@@ -655,7 +655,7 @@ export default function MoodCheckin({ onSuccess }) {
               style={{ padding: '8px 14px', fontSize: '12px', borderRadius: '0px', flexShrink: 0 }}
             >
               <Plus size={14} />
-              Add
+              Tambah
             </button>
           </div>
         </div>
@@ -663,12 +663,12 @@ export default function MoodCheckin({ onSuccess }) {
         {/* Note / Journal */}
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
-            Emotion Notes (Optional):
+            Catatan Hati / Jurnal (Opsional):
           </label>
           <textarea
             className="glass-input"
             rows={3}
-            placeholder="Write what is making you feel this way (e.g., assignment pileup, professor, sleep schedule)..."
+            placeholder="Ceritain apa yang lagi bikin kamu ngerasa gini (misal: tugas numpuk, dosen killer, kurang tidur)..."
             value={catatan}
             onChange={(e) => setCatatan(e.target.value)}
             style={{ resize: 'vertical', borderRadius: '0px', width: '100%', boxSizing: 'border-box' }}
@@ -678,7 +678,7 @@ export default function MoodCheckin({ onSuccess }) {
         {/* Photo & Video Attachment Section */}
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
-            Photo & Video / Mood Atmosphere Attachment (Optional):
+            Lampiran Foto & Video / Suasana Mood (Opsional):
           </label>
 
           {photoUrl ? (
@@ -693,7 +693,7 @@ export default function MoodCheckin({ onSuccess }) {
                   />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#00FFF5', fontWeight: 700, padding: '2px 4px' }}>
                     <Video size={13} />
-                    <span>Video Clip Attached</span>
+                    <span>Klip Video Terlampir</span>
                   </div>
                 </div>
               ) : (
@@ -725,7 +725,7 @@ export default function MoodCheckin({ onSuccess }) {
                 }}
               >
                 <X size={14} />
-                {isVideoUrl(photoUrl) ? 'Remove Video' : 'Remove Photo'}
+                {isVideoUrl(photoUrl) ? 'Hapus Video' : 'Hapus Foto'}
               </button>
             </div>
           ) : (
@@ -755,10 +755,10 @@ export default function MoodCheckin({ onSuccess }) {
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE' }}>
-                    Capture Atmosphere / Moment (Photo & Video)
+                    Abadikan Momen & Suasana (Foto & Video)
                   </div>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Capture photo, short video clip, or choose from device gallery
+                    Jepret foto langsung, rekam video pendek, atau pilih dari galeri HP/laptop
                   </div>
                 </div>
               </div>
@@ -773,7 +773,7 @@ export default function MoodCheckin({ onSuccess }) {
                   style={{ fontSize: '12px', padding: '9px 12px', justifyContent: 'center' }}
                 >
                   <Camera size={15} />
-                  <span>Capture Photo</span>
+                  <span>Jepret Foto</span>
                 </button>
 
                 {/* Live Video Recorder Button */}
@@ -791,7 +791,7 @@ export default function MoodCheckin({ onSuccess }) {
                   }}
                 >
                   <Video size={15} color="#ef4444" />
-                  <span>Record Video</span>
+                  <span>Rekam Video</span>
                 </button>
 
                 {/* File Upload Button */}
@@ -800,7 +800,7 @@ export default function MoodCheckin({ onSuccess }) {
                   style={{ fontSize: '12px', padding: '9px 12px', justifyContent: 'center', cursor: 'pointer' }}
                 >
                   <Upload size={15} color="#00FFF5" />
-                  <span>Choose Media</span>
+                  <span>Pilih Berkas</span>
                   <input
                     type="file"
                     accept="image/*,video/*"
@@ -821,7 +821,7 @@ export default function MoodCheckin({ onSuccess }) {
                 paddingTop: '6px',
                 borderTop: '1px dashed rgba(255, 255, 255, 0.08)'
               }}>
-                <span>Direct phone camera:</span>
+                <span>Kamera langsung HP:</span>
                 <label style={{
                   color: '#00FFF5',
                   cursor: 'pointer',
@@ -835,7 +835,7 @@ export default function MoodCheckin({ onSuccess }) {
                   gap: '4px'
                 }}>
                   <Camera size={12} />
-                  Snap Photo
+                  Jepret Foto
                   <input
                     type="file"
                     accept="image/*"
@@ -857,7 +857,7 @@ export default function MoodCheckin({ onSuccess }) {
                   gap: '4px'
                 }}>
                   <Video size={12} />
-                  Record Video
+                  Rekam Video
                   <input
                     type="file"
                     accept="video/*"
@@ -910,12 +910,12 @@ export default function MoodCheckin({ onSuccess }) {
                   {cameraMode === 'video' ? (
                     <>
                       <Video size={16} color="#ef4444" />
-                      <span>Record Video Clip</span>
+                      <span>Rekam Klip Video</span>
                     </>
                   ) : (
                     <>
                       <Camera size={16} color="#00FFF5" />
-                      <span>Live Photo Camera</span>
+                      <span>Kamera Foto Langsung</span>
                     </>
                   )}
                 </h3>
@@ -930,7 +930,7 @@ export default function MoodCheckin({ onSuccess }) {
                     cursor: isRecordingVideo ? 'not-allowed' : 'pointer',
                     padding: '4px'
                   }}
-                  title="Close camera"
+                  title="Tutup kamera"
                 >
                   <X size={20} />
                 </button>
@@ -960,7 +960,7 @@ export default function MoodCheckin({ onSuccess }) {
                     }}
                   >
                     <Camera size={14} />
-                    <span>Photo Mode</span>
+                    <span>Mode Foto</span>
                   </button>
                   <button
                     type="button"
@@ -983,7 +983,7 @@ export default function MoodCheckin({ onSuccess }) {
                     }}
                   >
                     <Video size={14} />
-                    <span>Video Mode</span>
+                    <span>Mode Video</span>
                   </button>
                 </div>
               )}
@@ -1007,7 +1007,7 @@ export default function MoodCheckin({ onSuccess }) {
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <label className="glass-button" style={{ fontSize: '11px', padding: '6px 10px', cursor: 'pointer', flex: 1, justifyContent: 'center' }}>
                       <Camera size={13} />
-                      Native Photo
+                      Foto Bawaan HP
                       <input
                         type="file"
                         accept="image/*"
@@ -1021,7 +1021,7 @@ export default function MoodCheckin({ onSuccess }) {
                     </label>
                     <label className="glass-button" style={{ fontSize: '11px', padding: '6px 10px', cursor: 'pointer', flex: 1, justifyContent: 'center' }}>
                       <Video size={13} color="#ef4444" />
-                      Native Video
+                      Video Bawaan HP
                       <input
                         type="file"
                         accept="video/*"
@@ -1065,7 +1065,7 @@ export default function MoodCheckin({ onSuccess }) {
                       border: '1px solid rgba(0, 173, 181, 0.3)',
                       whiteSpace: 'nowrap'
                     }}>
-                      Point camera to your surroundings
+                      Arahkan kamera ke sekelilingmu atau ekspresimu
                     </div>
                   )}
 
@@ -1103,7 +1103,7 @@ export default function MoodCheckin({ onSuccess }) {
                       border: '1px solid rgba(239, 68, 68, 0.3)',
                       whiteSpace: 'nowrap'
                     }}>
-                      Click "Start Recording" (max 60s)
+                      Klik "Mulai Merekam" (maks 60 dtk)
                     </div>
                   )}
                 </div>
@@ -1124,7 +1124,7 @@ export default function MoodCheckin({ onSuccess }) {
                     opacity: isRecordingVideo ? 0.5 : 1
                   }}
                 >
-                  Cancel
+                  Batal
                 </button>
 
                 {!cameraError && cameraMode === 'photo' && (
@@ -1135,7 +1135,7 @@ export default function MoodCheckin({ onSuccess }) {
                     style={{ fontSize: '13px', padding: '8px 16px', flex: 1.5, justifyContent: 'center' }}
                   >
                     <Camera size={15} />
-                    Take Snapshot
+                    Jepret Sekarang
                   </button>
                 )}
 
@@ -1156,7 +1156,7 @@ export default function MoodCheckin({ onSuccess }) {
                     }}
                   >
                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'white' }} />
-                    Start Recording
+                    Mulai Merekam
                   </button>
                 )}
 
@@ -1178,7 +1178,7 @@ export default function MoodCheckin({ onSuccess }) {
                     }}
                   >
                     <Square size={13} fill="white" />
-                    Stop & Save
+                    Stop & Simpan
                   </button>
                 )}
               </div>
@@ -1233,20 +1233,20 @@ export default function MoodCheckin({ onSuccess }) {
                   {isRecording ? (
                     <>
                       <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }} />
-                      <span>Recording Voice Note... ({formatSeconds(recordingSeconds)})</span>
+                      <span>Lagi Rekam Suara Curhat... ({formatSeconds(recordingSeconds)})</span>
                     </>
                   ) : voiceNoteData ? (
-                    <span style={{ color: '#00FFF5' }}>Voice Note Attached ({formatSeconds(voiceNoteDuration || recordingSeconds)})</span>
+                    <span style={{ color: '#00FFF5' }}>Rekaman Suara Terlampir ({formatSeconds(voiceNoteDuration || recordingSeconds)})</span>
                   ) : (
-                    <span>Voice Note Reflection</span>
+                    <span>Rekaman Suara / Curhat Santai</span>
                   )}
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
                   {isRecording
-                    ? 'Speak clearly. Tap "Stop Recording" when finished.'
+                    ? 'Ceritain aja santai. Tekan "Stop Rekaman" kalau sudah beres.'
                     : voiceNoteData
-                    ? 'Voice reflection saved. Tap Play to listen or Re-record.'
-                    : 'Record up to 10 minutes of voice reflection using microphone'}
+                      ? 'Curhatanmu tersimpan. Klik Putar buat dengerin atau Rekam Ulang.'
+                      : 'Bisa rekam curhat sampai 10 menit langsung pakai mikrofon'}
                 </div>
               </div>
             </div>
@@ -1274,7 +1274,7 @@ export default function MoodCheckin({ onSuccess }) {
                   }}
                 >
                   <Square size={13} fill="#ffffff" />
-                  <span>Stop Recording ({formatSeconds(recordingSeconds)})</span>
+                  <span>Stop Rekaman ({formatSeconds(recordingSeconds)})</span>
                 </button>
               ) : voiceNoteData ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
@@ -1285,17 +1285,17 @@ export default function MoodCheckin({ onSuccess }) {
                     style={{ fontSize: '12px', padding: '8px 14px', borderRadius: '0px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flex: 1 }}
                   >
                     {isPlayingVoice ? <Pause size={14} /> : <Play size={14} />}
-                    <span>{isPlayingVoice ? 'Pause' : 'Play Audio'}</span>
+                    <span>{isPlayingVoice ? 'Jeda' : 'Putar Suara'}</span>
                   </button>
                   <button
                     type="button"
                     onClick={handleRemoveVoiceNote}
                     className="glass-button"
                     style={{ fontSize: '12px', padding: '8px 12px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)', borderRadius: '0px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flex: 1 }}
-                    title="Delete and record again"
+                    title="Hapus dan rekam ulang"
                   >
                     <Trash2 size={13} />
-                    <span>Re-record</span>
+                    <span>Rekam Ulang</span>
                   </button>
                 </div>
               ) : (
@@ -1306,7 +1306,7 @@ export default function MoodCheckin({ onSuccess }) {
                   style={{ fontSize: '12px', padding: '9px 16px', borderRadius: '0px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%' }}
                 >
                   <Mic size={14} />
-                  <span>Start Recording</span>
+                  <span>Mulai Rekam Suara</span>
                 </button>
               )}
             </div>
@@ -1331,7 +1331,7 @@ export default function MoodCheckin({ onSuccess }) {
           className="glass-button glass-button-primary"
           style={{ width: '100%', padding: '14px', justifyContent: 'center', fontSize: '14px', fontWeight: 700, borderRadius: '0px' }}
         >
-          {isSubmitting ? 'Saving...' : 'Save Emotion Check-in'}
+          {isSubmitting ? 'Menyimpan...' : 'Simpan Catatan Mood'}
         </button>
 
       </form>

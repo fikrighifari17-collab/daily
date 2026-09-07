@@ -11,7 +11,7 @@ export default async function handler(req: any, res: any) {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, nama: true, username: true, avatar: true, pinLock: true, createdAt: true }
+        select: { id: true, nama: true, username: true, avatar: true, pinLock: true, telegramChatId: true, createdAt: true }
       });
       if (!user) return res.status(404).json({ error: 'User not found' });
       return res.status(200).json(user);
@@ -27,7 +27,7 @@ export default async function handler(req: any, res: any) {
         try { body = JSON.parse(body); } catch {}
       }
 
-      const { nama, username, avatar, currentPassword, newPassword } = body || {};
+      const { nama, username, avatar, telegramChatId, currentPassword, newPassword } = body || {};
 
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (!user) return res.status(404).json({ error: 'User not found' });
@@ -40,6 +40,10 @@ export default async function handler(req: any, res: any) {
 
       if (avatar !== undefined) {
         updateData.avatar = avatar; // base64 or URL
+      }
+
+      if (telegramChatId !== undefined) {
+        updateData.telegramChatId = telegramChatId ? String(telegramChatId).trim() : null;
       }
 
       if (username && username.trim().toLowerCase() !== user.username) {
@@ -72,7 +76,7 @@ export default async function handler(req: any, res: any) {
       const updatedUser = await prisma.user.update({
         where: { id: userId },
         data: updateData,
-        select: { id: true, nama: true, username: true, avatar: true, pinLock: true, createdAt: true }
+        select: { id: true, nama: true, username: true, avatar: true, pinLock: true, telegramChatId: true, createdAt: true }
       });
 
       const secret = getJwtSecret();

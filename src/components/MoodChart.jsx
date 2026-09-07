@@ -30,7 +30,7 @@ export default function MoodChart({ moods = [], schedules = [] }) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateKey = d.toISOString().split('T')[0];
-      const displayDate = d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' });
+      const displayDate = d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
       map[dateKey] = {
         dateKey,
         displayDate,
@@ -76,19 +76,19 @@ export default function MoodChart({ moods = [], schedules = [] }) {
         <div>
           <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Activity size={19} color="#00ADB5" />
-            <span>Daily Emotion Tracking & Academic Load</span>
+            <span>Grafik Emosi Harian & Beban Kuliah</span>
           </h3>
           <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-            History of daily emotion percentages and academic schedules
+            Pantauan fluktuasi mood harian disandingkan dengan jadwal kuliah
           </p>
         </div>
 
         {/* Filter buttons */}
         <div style={{ display: 'flex', gap: '6px' }}>
           {[
-            { id: '7', label: 'Last 7 Days' },
-            { id: '14', label: '14 Days' },
-            { id: '30', label: '30 Days' }
+            { id: '7', label: '7 Hari Terakhir' },
+            { id: '14', label: '14 Hari' },
+            { id: '30', label: '30 Hari' }
           ].map((item) => (
             <button
               key={item.id}
@@ -144,7 +144,7 @@ export default function MoodChart({ moods = [], schedules = [] }) {
                     </span>
                   ) : (
                     <span style={{ fontSize: '11px', color: 'var(--text-muted)', padding: '2px 8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0px' }}>
-                      Not Checked In
+                      Belum Catat Mood
                     </span>
                   )}
                 </div>

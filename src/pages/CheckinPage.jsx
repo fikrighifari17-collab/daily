@@ -7,16 +7,16 @@ import { useToast } from '../context/ToastContext';
 import { isVideoUrl } from '../utils/mediaUtils';
 
 const MOOD_PERCENT = { 1: '20%', 2: '40%', 3: '60%', 4: '80%', 5: '100%' };
-const MOOD_LABELS = { 1: 'Very Bad', 2: 'Bad / Stressed', 3: 'Neutral', 4: 'Good / Calm', 5: 'Very Good' };
+const MOOD_LABELS = { 1: 'Lagi Kacau / Drop', 2: 'Stres / Berat Banget', 3: 'Biasa Aja / Datar', 4: 'Tenang / Adem', 5: 'Semangat / Happy Banget' };
 const MOOD_COLORS = { 1: '#ef4444', 2: '#f97316', 3: '#eab308', 4: '#00ADB5', 5: '#10b981' };
 
 const formatWaktuToJam = (waktuStr) => {
-  if (!waktuStr) return '08:00 AM';
+  if (!waktuStr) return '08:00 WIB';
   const lower = waktuStr.toLowerCase().trim();
-  if (lower === 'pagi' || lower === 'morning') return '08:00 AM';
-  if (lower === 'siang' || lower === 'afternoon') return '01:00 PM';
-  if (lower === 'sore' || lower === 'evening') return '04:30 PM';
-  if (lower === 'malam' || lower === 'night') return '08:00 PM';
+  if (lower === 'pagi' || lower === 'morning') return '08:00 WIB';
+  if (lower === 'siang' || lower === 'afternoon') return '13:00 WIB';
+  if (lower === 'sore' || lower === 'evening') return '16:30 WIB';
+  if (lower === 'malam' || lower === 'night') return '20:00 WIB';
   return waktuStr;
 };
 
@@ -111,10 +111,10 @@ export default function CheckinPage() {
             </div>
             <div>
               <h2 className="mobile-text-sm" style={{ fontSize: '18px', fontWeight: 800, color: '#EEEEEE', margin: 0, lineHeight: 1.2 }}>
-                Emotion Journal
+                Riwayat Mood & Jurnal Hati
               </h2>
               <p className="mobile-hide" style={{ fontSize: '11px', color: '#b0b8c1', margin: '2px 0 0 0' }}>
-                Review mood chronology, trigger notes, and photo attachments over time.
+                Pantau perjalanan emosimu dari hari ke hari, lengkap dengan catatan dan berkas lampirannya.
               </p>
             </div>
           </div>
@@ -125,7 +125,7 @@ export default function CheckinPage() {
             style={{ fontSize: '12px', padding: '7px 14px', borderRadius: '0px', gap: '6px', fontWeight: 700 }}
           >
             <PlusCircle size={15} color="#ffffff" />
-            <span>+ Check-in</span>
+            <span>+ Catat Mood</span>
           </NavLink>
 
         </div>
@@ -137,15 +137,15 @@ export default function CheckinPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <History size={15} color="#00ADB5" />
             <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#EEEEEE', margin: 0 }}>
-              Saved Mood Entries
+              Daftar Catatan Mood
             </h3>
             <p className="mobile-hide" style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 0 4px' }}>
-              • Chronological order
+              • Urut berdasarkan waktu
             </p>
           </div>
 
           <div style={{ fontSize: '11px', color: '#00FFF5', background: 'rgba(0, 173, 181, 0.15)', padding: '2px 8px', border: '1px solid rgba(0, 173, 181, 0.3)' }}>
-            {filteredMoods.length} of {moods.length} entries
+            {filteredMoods.length} dari {moods.length} catatan
           </div>
         </div>
 
@@ -159,7 +159,7 @@ export default function CheckinPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search notes, date, or time..."
+                placeholder="Cari catatan, tanggal, atau waktu..."
                 style={{
                   width: '100%',
                   background: 'rgba(0, 0, 0, 0.35)',
@@ -212,7 +212,7 @@ export default function CheckinPage() {
                 onClick={resetFilters}
                 className="glass-button"
                 style={{ fontSize: '11px', padding: '6px 9px', color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.3)', borderRadius: '0px', flexShrink: 0 }}
-                title="Reset all filters"
+                title="Reset semua filter"
               >
                 <RotateCcw size={12} />
                 <span className="mobile-hide">Reset</span>
@@ -268,12 +268,12 @@ export default function CheckinPage() {
                 cursor: 'pointer'
               }}
             >
-              <option value="ALL">All Moods</option>
-              <option value="5">5 - Very Good (100%)</option>
-              <option value="4">4 - Good / Calm (80%)</option>
-              <option value="3">3 - Neutral (60%)</option>
-              <option value="2">2 - Bad / Stressed (40%)</option>
-              <option value="1">1 - Very Bad (20%)</option>
+              <option value="ALL">Semua Mood</option>
+              <option value="5">5 - Happy Banget (100%)</option>
+              <option value="4">4 - Tenang / Adem (80%)</option>
+              <option value="3">3 - Biasa Aja / Datar (60%)</option>
+              <option value="2">2 - Stres / Berat (40%)</option>
+              <option value="1">1 - Lagi Drop (20%)</option>
             </select>
 
             {/* Tag Filter */}
@@ -292,7 +292,7 @@ export default function CheckinPage() {
                 cursor: 'pointer'
               }}
             >
-              <option value="ALL">All Trigger Tags</option>
+              <option value="ALL">Semua Tag Pemicu</option>
               {tags && tags.map((t) => (
                 <option key={t.id} value={t.id}>{t.nama}</option>
               ))}
@@ -314,11 +314,11 @@ export default function CheckinPage() {
                 cursor: 'pointer'
               }}
             >
-              <option value="ALL">All Attachments</option>
-              <option value="PHOTO">Has Photo</option>
-              <option value="VIDEO">Has Video</option>
-              <option value="VOICE">Has Voice Note</option>
-              <option value="NOTE">Has Text Note</option>
+              <option value="ALL">Semua Lampiran</option>
+              <option value="PHOTO">Ada Foto</option>
+              <option value="VIDEO">Ada Video</option>
+              <option value="VOICE">Ada Rekaman Suara</option>
+              <option value="NOTE">Ada Catatan Teks</option>
             </select>
 
             {/* Sort Order */}
@@ -337,15 +337,15 @@ export default function CheckinPage() {
                 cursor: 'pointer'
               }}
             >
-              <option value="DESC">Newest First</option>
-              <option value="ASC">Oldest First</option>
+              <option value="DESC">Paling Baru</option>
+              <option value="ASC">Paling Lama</option>
             </select>
           </div>
         </div>
 
         {filteredMoods.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)', fontSize: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-            <span>{isFilterActive ? 'No mood entries match the selected filters.' : 'No mood check-in data recorded yet.'}</span>
+            <span>{isFilterActive ? 'Nggak ada catatan mood yang cocok sama filter yang kamu pilih.' : 'Belum ada catatan riwayat mood nih.'}</span>
             {isFilterActive ? (
               <button onClick={resetFilters} className="glass-button" style={{ fontSize: '11px', padding: '6px 14px', color: '#00FFF5' }}>
                 <RotateCcw size={13} />
@@ -354,7 +354,7 @@ export default function CheckinPage() {
             ) : (
               <NavLink to="/checkin/new" className="glass-button glass-button-primary" style={{ fontSize: '12px', padding: '7px 16px' }}>
                 <PlusCircle size={14} />
-                Start Check-in Now
+                Mulai Catat Mood Sekarang
               </NavLink>
             )}
           </div>
@@ -422,10 +422,10 @@ export default function CheckinPage() {
                       onClick={() => setEntryToDelete(m)}
                       className="glass-button"
                       style={{ padding: '3px 8px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)', fontSize: '10px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '0px' }}
-                      title="Delete this entry"
+                      title="Hapus catatan ini"
                     >
                       <Trash2 size={12} />
-                      <span className="mobile-hide">Delete</span>
+                      <span className="mobile-hide">Hapus</span>
                     </button>
                   </div>
 
@@ -452,7 +452,7 @@ export default function CheckinPage() {
                             maxWidth: '280px',
                             overflow: 'hidden'
                           }}
-                          title="Click to play video clip"
+                          title="Klik untuk memutar klip video"
                         >
                           <video
                             src={m.photoUrl}
@@ -500,7 +500,7 @@ export default function CheckinPage() {
                             border: '1px solid rgba(0, 173, 181, 0.4)'
                           }}>
                             <Video size={12} color="#00FFF5" />
-                            Play Video
+                            Putar Video
                           </div>
                         </div>
                       ) : (
@@ -516,7 +516,7 @@ export default function CheckinPage() {
                             maxWidth: '280px',
                             overflow: 'hidden'
                           }}
-                          title="Click to view full size photo"
+                          title="Klik untuk melihat foto ukuran penuh"
                         >
                           <img
                             src={m.photoUrl}
@@ -544,7 +544,7 @@ export default function CheckinPage() {
                             border: '1px solid rgba(0, 173, 181, 0.4)'
                           }}>
                             <ImageIcon size={12} />
-                            View Photo
+                            Lihat Foto
                           </div>
                         </div>
                       )}
@@ -565,7 +565,7 @@ export default function CheckinPage() {
                         }}>
                           <div style={{ fontSize: '11px', color: '#00FFF5', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
                             <Volume2 size={13} />
-                            <span>Voice Reflection Recording</span>
+                            <span>Rekaman Suara Curhat</span>
                           </div>
                           <audio
                             controls
@@ -582,7 +582,7 @@ export default function CheckinPage() {
                       ) : (
                         <div style={{ fontSize: '11px', color: '#00FFF5', display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(0, 173, 181, 0.15)', padding: '4px 10px', borderRadius: '0px', border: '1px solid rgba(0, 173, 181, 0.3)', width: 'fit-content' }}>
                           <Volume2 size={13} />
-                          <span>Voice Note Attached</span>
+                          <span>Rekaman Suara Terlampir</span>
                         </div>
                       )}
                     </div>
@@ -676,7 +676,7 @@ export default function CheckinPage() {
                 borderRadius: '0px',
                 cursor: 'pointer'
               }}
-              title="Close"
+              title="Tutup"
             >
               <X size={18} />
             </button>
@@ -739,10 +739,10 @@ export default function CheckinPage() {
               </div>
               <div>
                 <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#EEEEEE', margin: 0 }}>
-                  Confirm Deletion (Step 2/2)
+                  Konfirmasi Hapus Catatan
                 </h4>
                 <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
-                  Are you sure you want to permanently delete this mood check-in?
+                  Yakin mau menghapus catatan mood ini secara permanen?
                 </p>
               </div>
             </div>
@@ -757,8 +757,8 @@ export default function CheckinPage() {
               flexDirection: 'column',
               gap: '4px'
             }}>
-              <div><strong style={{ color: 'var(--text-muted)' }}>Date & Time:</strong> {entryToDelete.tanggal} • {entryToDelete.waktu || '08:00 AM'}</div>
-              <div><strong style={{ color: 'var(--text-muted)' }}>Mood Score:</strong> {entryToDelete.moodScore} / 5 ({MOOD_LABELS[entryToDelete.moodScore] || 'Mood'})</div>
+              <div><strong style={{ color: 'var(--text-muted)' }}>Tanggal & Waktu:</strong> {entryToDelete.tanggal} • {entryToDelete.waktu || '08:00 WIB'}</div>
+              <div><strong style={{ color: 'var(--text-muted)' }}>Skor Mood:</strong> {entryToDelete.moodScore} / 5 ({MOOD_LABELS[entryToDelete.moodScore] || 'Mood'})</div>
               {entryToDelete.catatan && (
                 <div style={{ color: '#00FFF5', marginTop: '2px', fontStyle: 'italic', wordBreak: 'break-word' }}>
                   "{entryToDelete.catatan}"
@@ -767,7 +767,7 @@ export default function CheckinPage() {
             </div>
 
             <p style={{ fontSize: '11px', color: '#f87171', margin: 0 }}>
-              * This action is permanent and cannot be undone.
+              * Tindakan ini permanen dan nggak bisa dibatalkan ya.
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '4px' }}>
@@ -777,14 +777,14 @@ export default function CheckinPage() {
                 className="glass-button"
                 style={{ fontSize: '13px', padding: '8px 16px' }}
               >
-                Cancel
+                Batal
               </button>
               <button
                 type="button"
                 onClick={() => {
                   removeMoodEntry(entryToDelete.id);
                   setEntryToDelete(null);
-                  toast.info('Emotion check-in entry deleted successfully.');
+                  toast.info('Catatan mood berhasil dihapus.');
                 }}
                 className="glass-button"
                 style={{
@@ -796,7 +796,7 @@ export default function CheckinPage() {
                   fontWeight: 700
                 }}
               >
-                Yes, Delete Entry
+                Ya, Hapus Catatan
               </button>
             </div>
           </div>

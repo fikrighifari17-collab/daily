@@ -17,42 +17,43 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  const { username, password, nama } = body || {};
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password are required' });
-  }
-
-  const cleanUsername = String(username).trim().toLowerCase();
-  if (cleanUsername.length < 3 || cleanUsername.length > 30) {
-    return res.status(400).json({ error: 'Username harus memiliki panjang antara 3 hingga 30 karakter' });
-  }
-
-  if (String(password).length < 6) {
-    return res.status(400).json({ error: 'Password minimal 6 karakter' });
-  }
-
-  try {
-    const existing = await prisma.user.findUnique({ where: { username: cleanUsername } });
-    if (existing) {
-      return res.status(400).json({ error: 'Username is already taken, please choose another' });
+    const { username, password, nama, telegramChatId } = body || {};
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({
-      data: {
-        username: cleanUsername,
-        nama: nama ? String(nama).trim().slice(0, 50) : cleanUsername,
-        password: hashedPassword
+    const cleanUsername = String(username).trim().toLowerCase();
+    if (cleanUsername.length < 3 || cleanUsername.length > 30) {
+      return res.status(400).json({ error: 'Username harus memiliki panjang antara 3 hingga 30 karakter' });
+    }
+
+    if (String(password).length < 6) {
+      return res.status(400).json({ error: 'Password minimal 6 karakter' });
+    }
+
+    try {
+      const existing = await prisma.user.findUnique({ where: { username: cleanUsername } });
+      if (existing) {
+        return res.status(400).json({ error: 'Username is already taken, please choose another' });
       }
-    });
 
-    const secret = getJwtSecret();
-    const token = jwt.sign({ userId: user.id, username: user.username }, secret, { expiresIn: '30d' });
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const user = await prisma.user.create({
+        data: {
+          username: cleanUsername,
+          nama: nama ? String(nama).trim().slice(0, 50) : cleanUsername,
+          password: hashedPassword,
+          telegramChatId: telegramChatId ? String(telegramChatId).trim() : null
+        }
+      });
 
-    return res.status(201).json({
-      token,
-      user: { id: user.id, nama: user.nama, username: user.username, pinLock: user.pinLock, avatar: user.avatar }
-    });
+      const secret = getJwtSecret();
+      const token = jwt.sign({ userId: user.id, username: user.username }, secret, { expiresIn: '30d' });
+
+      return res.status(201).json({
+        token,
+        user: { id: user.id, nama: user.nama, username: user.username, pinLock: user.pinLock, avatar: user.avatar, telegramChatId: user.telegramChatId }
+      });
   } catch (err: any) {
     console.error('Register error:', err);
     return res.status(500).json({ error: err.message || 'Server error' });

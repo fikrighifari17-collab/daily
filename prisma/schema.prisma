@@ -16,6 +16,7 @@ model User {
   avatar           String?
   createdAt        DateTime         @default(now())
   username         String           @unique
+  telegramChatId   String?
   brainDumps       BrainDump[]
   copingStrategies CopingStrategy[]
   moodEntries      MoodEntry[]

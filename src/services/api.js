@@ -56,18 +56,27 @@ function setLocal(key, value) {
 }
 
 // API Functions
-export async function registerUser(username, password, nama) {
+export async function registerUser(username, password, nama, telegramChatId = null) {
   const cleanUsername = String(username).trim().toLowerCase();
+  const cleanTg = telegramChatId ? String(telegramChatId).trim() : null;
   try {
     const res = await fetch(`${BASE_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: cleanUsername, password, nama: nama ? String(nama).trim() : cleanUsername })
+      body: JSON.stringify({
+        username: cleanUsername,
+        password,
+        nama: nama ? String(nama).trim() : cleanUsername,
+        telegramChatId: cleanTg
+      })
     });
     if (res.ok) {
       const data = await res.json();
       if (data.token) localStorage.setItem("token", data.token);
-      if (data.user) localStorage.setItem("daily_user_info", JSON.stringify(data.user));
+      if (data.user) {
+        localStorage.setItem("daily_user_info", JSON.stringify(data.user));
+        if (cleanTg) localStorage.setItem('telegram_chat_id', cleanTg);
+      }
       return data;
     } else if (res.status === 400) {
       const err = await res.json().catch(() => ({}));
@@ -84,7 +93,7 @@ export async function registerUser(username, password, nama) {
   const users = getLocal('daily_registered_users_v1', []);
   let user = users.find(u => u.username === cleanUsername);
   if (!user) {
-    user = { id: Date.now(), username: cleanUsername, password, nama: nama ? String(nama).trim() : cleanUsername, pinLock: null };
+    user = { id: Date.now(), username: cleanUsername, password, nama: nama ? String(nama).trim() : cleanUsername, pinLock: null, telegramChatId: cleanTg };
     users.push(user);
     setLocal('daily_registered_users_v1', users);
   }
@@ -92,6 +101,7 @@ export async function registerUser(username, password, nama) {
   const token = "jwt-local-token-" + Date.now();
   localStorage.setItem("token", token);
   localStorage.setItem("daily_user_info", JSON.stringify(safeUser));
+  if (cleanTg) localStorage.setItem('telegram_chat_id', cleanTg);
   setLocal(STORAGE_KEYS.USER, safeUser);
   return { token, user: safeUser };
 }

@@ -31,8 +31,8 @@ export function AuthProvider({ children }) {
     return res;
   };
 
-  const handleRegister = async (username, password, nama) => {
-    const res = await registerUser(username, password, nama);
+  const handleRegister = async (username, password, nama, telegramChatId = null) => {
+    const res = await registerUser(username, password, nama, telegramChatId);
     if (res?.user) {
       setUser(res.user);
     }
