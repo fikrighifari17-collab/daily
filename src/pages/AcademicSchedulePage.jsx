@@ -93,7 +93,10 @@ export default function AcademicSchedulePage() {
   const [sks, setSks] = useState('3');
   const [warna, setWarna] = useState('#00ADB5');
   const [link, setLink] = useState('');
+  const [targetPertemuan, setTargetPertemuan] = useState('16');
+  const [minKehadiranPercent, setMinKehadiranPercent] = useState('75');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const courseFormRef = useRef(null);
 
   // Filter state - initialized to today's realtime day
   const [selectedDayFilter, setSelectedDayFilter] = useState(() => {
@@ -160,6 +163,61 @@ export default function AcademicSchedulePage() {
     }
   }, [courseToDelete, isModalOpen, selectedCourseForMaterials, selectedCourseForAttendanceDetail, excusedTargetCourse]);
 
+  // Keyboard navigation logic: ESC to close, ENTER to submit
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // ESC: Close currently active modal
+      if (e.key === 'Escape') {
+        if (excusedTargetCourse) {
+          e.preventDefault();
+          setExcusedTargetCourse(null);
+          return;
+        }
+        if (courseToDelete) {
+          e.preventDefault();
+          setCourseToDelete(null);
+          return;
+        }
+        if (isModalOpen) {
+          e.preventDefault();
+          setIsModalOpen(false);
+          return;
+        }
+        if (selectedCourseForAttendanceDetail) {
+          e.preventDefault();
+          setSelectedCourseForAttendanceDetail(null);
+          return;
+        }
+        if (selectedCourseForMaterials) {
+          e.preventDefault();
+          setSelectedCourseForMaterials(null);
+          return;
+        }
+      }
+
+      // ENTER: Submit course form when add/edit modal is open
+      if (e.key === 'Enter' && isModalOpen) {
+        const tag = document.activeElement?.tagName;
+        if (tag === 'BUTTON' || tag === 'TEXTAREA') {
+          return;
+        }
+        e.preventDefault();
+        if (courseFormRef.current) {
+          if (typeof courseFormRef.current.requestSubmit === 'function') {
+            courseFormRef.current.requestSubmit();
+          } else {
+            courseFormRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isModalOpen, courseToDelete, selectedCourseForMaterials, selectedCourseForAttendanceDetail, excusedTargetCourse]);
+
   // Today's day name in English
   const todayName = currentTime.toLocaleDateString('en-US', { weekday: 'long' });
 
@@ -175,6 +233,8 @@ export default function AcademicSchedulePage() {
     setSks('3');
     setWarna('#00ADB5');
     setLink('');
+    setTargetPertemuan('16');
+    setMinKehadiranPercent('75');
     setIsModalOpen(true);
   };
 
@@ -190,6 +250,9 @@ export default function AcademicSchedulePage() {
     setSks(String(c.sks || '3'));
     setWarna(c.warna || '#00ADB5');
     setLink(c.link || '');
+    const att = c.attendance || {};
+    setTargetPertemuan(String(att.target || '16'));
+    setMinKehadiranPercent(String(att.minPercent || '75'));
     setIsModalOpen(true);
   };
 
@@ -214,13 +277,29 @@ export default function AcademicSchedulePage() {
         link: link.trim()
       };
 
+      const numTarget = Number(targetPertemuan) || 16;
+      const numMinPercent = Number(minKehadiranPercent) || 75;
+
       if (editingCourseId) {
-        await updateAcademicCourse(editingCourseId, payload);
+        const existing = courses.find(item => item.id === editingCourseId);
+        const existingAtt = existing?.attendance || {};
+        const updatedAtt = {
+          ...existingAtt,
+          target: numTarget,
+          minPercent: numMinPercent
+        };
+        await updateAcademicCourse(editingCourseId, { ...payload, attendance: updatedAtt });
         toast.success(`Jadwal '${payload.mataKuliah}' berhasil diperbarui!`);
       } else {
         await addAcademicCourse({
           ...payload,
-          attendance: { present: 0, absent: 0, excused: 0, target: 16 }
+          attendance: {
+            present: 0,
+            absent: 0,
+            excused: 0,
+            target: numTarget,
+            minPercent: numMinPercent
+          }
         });
         toast.success(`Jadwal '${payload.mataKuliah}' berhasil ditambahkan ke hari ${getDayFull(hari)}!`);
       }
@@ -840,13 +919,14 @@ export default function AcademicSchedulePage() {
 
             // Attendance calculations
             const att = c.attendance || { present: 0, absent: 0, excused: 0, target: 16 };
-            const targetMeetings = att.target || 16;
+            const targetMeetings = Number(att.target) || 16;
+            const minAttendancePercent = Number(att.minPercent) || 75;
             const totalRecorded = (att.present || 0) + (att.absent || 0) + (att.excused || 0);
             // Progress toward semester target meetings (0% if present is 0, so bar stays empty/not full green)
             const attendanceProgressPct = targetMeetings > 0 ? Math.round(((att.present || 0) / targetMeetings) * 100) : 0;
             // Attendance rate from recorded sessions
             const attendanceRatePct = totalRecorded > 0 ? Math.round(((att.present || 0) / totalRecorded) * 100) : 0;
-            const isAttendanceWarning = totalRecorded >= 3 && attendanceRatePct < 75;
+            const isAttendanceWarning = totalRecorded >= 3 && attendanceRatePct < minAttendancePercent;
 
             // Linked tasks matching course name
             const linkedTasks = (schedules || []).filter(s =>
@@ -974,7 +1054,7 @@ export default function AcademicSchedulePage() {
                         title={c.link}
                       >
                         <ExternalLink size={11} />
-                        <span>Buka Link Kuliah / Zoom</span>
+                        <span>Buka Link Zoom/Gmeet</span>
                       </a>
                     )}
 
@@ -1022,7 +1102,7 @@ export default function AcademicSchedulePage() {
                       {isAttendanceWarning && (
                         <span style={{ fontSize: '9px', fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(239, 68, 68, 0.15)', padding: '1px 5px' }}>
                           <AlertTriangle size={10} />
-                          <span>Batas &lt; 75%</span>
+                          <span>Batas &lt; {minAttendancePercent}%</span>
                         </span>
                       )}
 
@@ -1064,7 +1144,7 @@ export default function AcademicSchedulePage() {
                       style={{
                         width: `${Math.min(100, attendanceProgressPct)}%`,
                         height: '100%',
-                        background: isAttendanceWarning ? '#ef4444' : attendanceProgressPct >= 75 ? '#10b981' : '#00ADB5',
+                        background: isAttendanceWarning ? '#ef4444' : attendanceProgressPct >= minAttendancePercent ? '#10b981' : '#00ADB5',
                         transition: 'width 0.3s ease'
                       }}
                     />
@@ -1145,9 +1225,9 @@ export default function AcademicSchedulePage() {
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Presentation size={13} color="#f97316" />
+                          <FileText size={13} color="#00FFF5" />
                           <span style={{ fontSize: '11px', fontWeight: 700, color: '#EEEEEE' }}>
-                            Materi & PPT Dosen:
+                            Materi Perkuliahan:
                           </span>
                           <span style={{
                             fontSize: '9px',
@@ -1181,10 +1261,10 @@ export default function AcademicSchedulePage() {
                             alignItems: 'center',
                             gap: '4px'
                           }}
-                          title="Buka daftar file, PPT, dan filter per pertemuan"
+                          title="Buka daftar file materi dan filter per pertemuan"
                         >
                           <FolderOpen size={11} />
-                          <span>Kelola / Filter PPT</span>
+                          <span>Kelola File</span>
                         </button>
                       </div>
 
@@ -1219,7 +1299,7 @@ export default function AcademicSchedulePage() {
                         </div>
                       ) : (
                         <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                          Belum ada PPT/Word. Klik untuk unggah materi per pertemuan.
+                          Belum ada file materi. Simpan slide, modul, atau link referensi di sini.
                         </div>
                       )}
                     </div>
@@ -1292,7 +1372,7 @@ export default function AcademicSchedulePage() {
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleSubmitCourse} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <form ref={courseFormRef} onSubmit={handleSubmitCourse} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
                   Nama Mata Kuliah *
@@ -1357,7 +1437,7 @@ export default function AcademicSchedulePage() {
                     className="glass-input"
                     value={jamMulai}
                     onChange={(e) => setJamMulai(e.target.value)}
-                    style={{ borderRadius: '0px' }}
+                    style={{ borderRadius: '6px' }}
                   />
                 </div>
 
@@ -1370,8 +1450,47 @@ export default function AcademicSchedulePage() {
                     className="glass-input"
                     value={jamSelesai}
                     onChange={(e) => setJamSelesai(e.target.value)}
-                    style={{ borderRadius: '0px' }}
+                    style={{ borderRadius: '6px' }}
                   />
+                </div>
+              </div>
+
+              {/* Target Pertemuan & Minimal Kehadiran Kuliah */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Target Total Pertemuan
+                  </label>
+                  <select
+                    value={targetPertemuan}
+                    onChange={(e) => setTargetPertemuan(e.target.value)}
+                    className="glass-input"
+                    style={{ borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    <option value="16" style={{ background: '#222831', color: '#EEEEEE' }}>16 Pertemuan (Standar)</option>
+                    <option value="14" style={{ background: '#222831', color: '#EEEEEE' }}>14 Pertemuan</option>
+                    <option value="12" style={{ background: '#222831', color: '#EEEEEE' }}>12 Pertemuan</option>
+                    <option value="10" style={{ background: '#222831', color: '#EEEEEE' }}>10 Pertemuan</option>
+                    <option value="8" style={{ background: '#222831', color: '#EEEEEE' }}>8 Pertemuan</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Minimal Hadir / Absen (Syarat UAS)
+                  </label>
+                  <select
+                    value={minKehadiranPercent}
+                    onChange={(e) => setMinKehadiranPercent(e.target.value)}
+                    className="glass-input"
+                    style={{ borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    <option value="75" style={{ background: '#222831', color: '#EEEEEE' }}>Min. 75% ({Math.ceil((Number(targetPertemuan) || 16) * 0.75)}x Hadir / Maks. {Math.max(0, (Number(targetPertemuan) || 16) - Math.ceil((Number(targetPertemuan) || 16) * 0.75))}x Alfa)</option>
+                    <option value="80" style={{ background: '#222831', color: '#EEEEEE' }}>Min. 80% ({Math.ceil((Number(targetPertemuan) || 16) * 0.8)}x Hadir / Maks. {Math.max(0, (Number(targetPertemuan) || 16) - Math.ceil((Number(targetPertemuan) || 16) * 0.8))}x Alfa)</option>
+                    <option value="85" style={{ background: '#222831', color: '#EEEEEE' }}>Min. 85% ({Math.ceil((Number(targetPertemuan) || 16) * 0.85)}x Hadir / Maks. {Math.max(0, (Number(targetPertemuan) || 16) - Math.ceil((Number(targetPertemuan) || 16) * 0.85))}x Alfa)</option>
+                    <option value="70" style={{ background: '#222831', color: '#EEEEEE' }}>Min. 70% ({Math.ceil((Number(targetPertemuan) || 16) * 0.7)}x Hadir / Maks. {Math.max(0, (Number(targetPertemuan) || 16) - Math.ceil((Number(targetPertemuan) || 16) * 0.7))}x Alfa)</option>
+                    <option value="100" style={{ background: '#222831', color: '#EEEEEE' }}>Wajib 100% ({targetPertemuan}x Hadir / Maks. 0x Alfa)</option>
+                  </select>
                 </div>
               </div>
 
@@ -1385,7 +1504,7 @@ export default function AcademicSchedulePage() {
                   placeholder="Contoh: Ruang 304, Lab AI, Online Zoom"
                   value={ruangan}
                   onChange={(e) => setRuangan(e.target.value)}
-                  style={{ borderRadius: '0px' }}
+                  style={{ borderRadius: '6px' }}
                 />
               </div>
 
@@ -1399,23 +1518,23 @@ export default function AcademicSchedulePage() {
                   placeholder="Contoh: Pak Budi, Bu Sri"
                   value={dosen}
                   onChange={(e) => setDosen(e.target.value)}
-                  style={{ borderRadius: '0px' }}
+                  style={{ borderRadius: '6px' }}
                 />
               </div>
 
-              {/* Online Class / LMS / Zoom Link */}
+              {/* Online Class / Zoom / Gmeet Link */}
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                  Link Kelas Online / LMS / Zoom / Drive (Opsional)
+                  Link Zoom/Gmeet (Opsional)
                 </label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <input
                     type="url"
                     className="glass-input"
-                    placeholder="https://classroom.google.com/..."
+                    placeholder="https://zoom.us/j/... atau https://meet.google.com/..."
                     value={link}
                     onChange={(e) => setLink(e.target.value)}
-                    style={{ borderRadius: '0px', paddingLeft: '30px' }}
+                    style={{ borderRadius: '6px', paddingLeft: '30px' }}
                   />
                   <LinkIcon size={14} style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }} />
                 </div>
@@ -1639,12 +1758,12 @@ export default function AcademicSchedulePage() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#f97316'
+                    color: '#00FFF5'
                   }}>
-                    <Presentation size={18} />
+                    <FileText size={18} />
                   </div>
                   <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#EEEEEE', margin: 0 }}>
-                    Materi & PPT Kuliah: {selectedCourseForMaterials.mataKuliah}
+                    Materi Perkuliahan: {selectedCourseForMaterials.mataKuliah}
                   </h3>
                   <span style={{
                     fontSize: '10px',
@@ -1711,7 +1830,7 @@ export default function AcademicSchedulePage() {
                 }}
               >
                 <Plus size={14} />
-                <span>{isAddMaterialOpen ? 'Tutup Form Upload' : '+ Tambah File / PPT Dosen'}</span>
+                <span>{isAddMaterialOpen ? 'Tutup Form Upload' : '+ Tambah File Materi'}</span>
               </button>
             </div>
 
@@ -1732,7 +1851,7 @@ export default function AcademicSchedulePage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid rgba(0, 173, 181, 0.2)', paddingBottom: '8px' }}>
                   <Upload size={16} color="#00FFF5" />
                   <span style={{ fontSize: '13px', fontWeight: 700, color: '#00FFF5' }}>
-                    Unggah File Materi Kuliah (Word / PPT / PDF)
+                    Unggah File Materi Kuliah (Slide / Modul / Dokumen)
                   </span>
                 </div>
 
@@ -2028,7 +2147,7 @@ export default function AcademicSchedulePage() {
                     <FolderOpen size={32} color="#b0b8c1" style={{ opacity: 0.6 }} />
                     <div style={{ fontSize: '13px', fontWeight: 600, color: '#EEEEEE' }}>
                       {materialPertemuanFilter === 'ALL'
-                        ? 'Belum ada file materi atau PPT yang ditambahkan untuk mata kuliah ini.'
+                        ? 'Belum ada file materi yang ditambahkan untuk mata kuliah ini.'
                         : `Belum ada file materi untuk Pertemuan ${materialPertemuanFilter}.`}
                     </div>
                     <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, maxWidth: '420px' }}>
@@ -2279,11 +2398,13 @@ export default function AcademicSchedulePage() {
               const progressPct = target > 0 ? Math.round((presentCount / target) * 100) : 0;
               const ratePct = totalRecorded > 0 ? Math.round((presentCount / totalRecorded) * 100) : 0;
 
-              // Academic regulations: minimum 75% attendance for UAS (max 25% absences, e.g. 4 meetings out of 16)
-              const maxAbsentAllowed = Math.floor(target * 0.25);
+              // Academic regulations: dynamic minimum attendance required for UAS
+              const minPercent = Number(att.minPercent) || 75;
+              const minRequiredPresent = Math.ceil(target * (minPercent / 100));
+              const maxAbsentAllowed = Math.max(0, target - minRequiredPresent);
               const remainingAbsentQuota = Math.max(0, maxAbsentAllowed - absentCount);
               const isUasEligible = absentCount <= maxAbsentAllowed;
-              const isWarning = absentCount > maxAbsentAllowed || (totalRecorded >= 3 && ratePct < 75);
+              const isWarning = absentCount > maxAbsentAllowed || (totalRecorded >= 3 && ratePct < minPercent);
 
               // Materials list for checking PPT/Word availability per meeting
               const courseMaterials = course.materials || course.attendance?.materials || [];
@@ -2351,7 +2472,7 @@ export default function AcademicSchedulePage() {
                       </div>
                       {/* Mini bar */}
                       <div style={{ width: '100%', height: '4px', background: 'rgba(255, 255, 255, 0.1)', marginTop: '6px', overflow: 'hidden' }}>
-                        <div style={{ width: `${Math.min(100, progressPct)}%`, height: '100%', background: progressPct >= 75 ? '#10b981' : '#00ADB5' }} />
+                        <div style={{ width: `${Math.min(100, progressPct)}%`, height: '100%', background: progressPct >= minPercent ? '#10b981' : '#00ADB5' }} />
                       </div>
                       <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px' }}>
                         {target - presentCount} pertemuan tersisa
@@ -2371,7 +2492,7 @@ export default function AcademicSchedulePage() {
 
                     {/* Card 3: Status Syarat UAS */}
                     <div style={{ padding: '10px 12px', background: isUasEligible ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.1)', border: `1px solid ${isUasEligible ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.35)'}` }}>
-                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Syarat Ikut UAS (Min. 75%)</div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Syarat Ikut UAS (Min. {minPercent}%)</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
                         {isUasEligible ? (
                           <span style={{ fontSize: '12px', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -2384,7 +2505,7 @@ export default function AcademicSchedulePage() {
                         )}
                       </div>
                       <div style={{ fontSize: '9px', color: isUasEligible ? '#EEEEEE' : '#ef4444', marginTop: '4px' }}>
-                        Sisa kuota alfa: <strong>{remainingAbsentQuota}x</strong> (Maks {maxAbsentAllowed}x)
+                        Sisa kuota alfa: <strong>{remainingAbsentQuota}x</strong> (Maks {maxAbsentAllowed}x) &bull; Min. {minRequiredPresent}x hadir
                       </div>
                     </div>
 
@@ -2552,8 +2673,8 @@ export default function AcademicSchedulePage() {
                                 style={{ fontSize: '9px', padding: '1px 6px', color: '#00FFF5', borderColor: 'rgba(0, 255, 245, 0.35)', display: 'flex', alignItems: 'center', gap: '3px' }}
                                 title="Buka file PPT / materi untuk pertemuan ini"
                               >
-                                <Presentation size={10} />
-                                <span>{matsForSession.length} PPT/Materi</span>
+                                <FileText size={10} />
+                                <span>{matsForSession.length} Materi</span>
                               </button>
                             )}
                           </div>

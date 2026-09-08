@@ -79,7 +79,7 @@ export default function Dashboard() {
             {greeting}, <span className="text-gradient-teal">{user?.nama || 'Sobat'}!</span>
           </h2>
           <p className="dashboard-hero-desc mobile-hide">
-            Pantau mood harian, atur ritme tugas kuliah, dan jalani hari dengan hati lebih tenang.
+            Selaraskan kondisi emosional dengan target kuliah agar keseharian berjalan lebih optimal dan tenang.
           </p>
         </div>
 
