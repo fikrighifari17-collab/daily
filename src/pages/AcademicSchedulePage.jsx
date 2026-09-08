@@ -577,13 +577,16 @@ export default function AcademicSchedulePage() {
     }
   };
 
-  // Filtered courses
-  const filteredCourses = selectedDayFilter === 'ALL'
-    ? courses
-    : courses.filter(c => normalizeDay(c.hari) === normalizeDay(selectedDayFilter));
+  // Filtered courses (Memoized for instant rendering)
+  const filteredCourses = useMemo(() => {
+    if (selectedDayFilter === 'ALL') return courses;
+    return courses.filter(c => normalizeDay(c.hari) === normalizeDay(selectedDayFilter));
+  }, [courses, selectedDayFilter]);
 
-  // Total SKS calculation
-  const totalSks = courses.reduce((sum, c) => sum + (Number(c.sks) || 0), 0);
+  // Total SKS calculation (Memoized)
+  const totalSks = useMemo(() => {
+    return courses.reduce((sum, c) => sum + (Number(c.sks) || 0), 0);
+  }, [courses]);
 
   // Helper function to evaluate live class status
   const getLiveClassStatus = (c) => {

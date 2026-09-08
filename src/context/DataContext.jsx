@@ -16,8 +16,15 @@ export function DataProvider({ children }) {
   const [brainDumps, setBrainDumps] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const reloadData = useCallback(async () => {
-    setLoading(true);
+  const isDifferent = (prev, next) => {
+    if (prev === next) return false;
+    if (!prev || !next) return true;
+    if (prev.length !== next.length) return true;
+    return JSON.stringify(prev) !== JSON.stringify(next);
+  };
+
+  const reloadData = useCallback(async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     try {
       if (!user) {
         setMoods([]);
@@ -37,16 +44,18 @@ export function DataProvider({ children }) {
         api.getCopingStrategies(),
         api.getBrainDumps()
       ]);
-      setMoods(m || []);
-      setSchedules(s || []);
-      setCourses(cList || []);
-      setTags(t || []);
-      setCopingList(c || []);
-      setBrainDumps(b || []);
+
+      // Hanya ubah state jika data benar-benar berbeda (mencegah lag / re-render sia-sia)
+      setMoods(prev => isDifferent(prev, m) ? (m || []) : prev);
+      setSchedules(prev => isDifferent(prev, s) ? (s || []) : prev);
+      setCourses(prev => isDifferent(prev, cList) ? (cList || []) : prev);
+      setTags(prev => isDifferent(prev, t) ? (t || []) : prev);
+      setCopingList(prev => isDifferent(prev, c) ? (c || []) : prev);
+      setBrainDumps(prev => isDifferent(prev, b) ? (b || []) : prev);
     } catch (err) {
       console.error("Error loading application data", err);
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   }, [user]);
 
@@ -54,13 +63,13 @@ export function DataProvider({ children }) {
     reloadData();
   }, [reloadData]);
 
-  // Auto-sync multi-perangkat (Laptop <-> HP): Refetch saat window difokuskan, tab aktif, atau interval 15 detik
+  // Auto-sync multi-perangkat (Laptop <-> HP): Silent background sync saat window difokuskan atau interval 15 detik
   useEffect(() => {
     if (!user) return;
 
     const handleSync = () => {
       if (document.visibilityState === 'visible') {
-        reloadData();
+        reloadData(true);
       }
     };
 
@@ -69,7 +78,7 @@ export function DataProvider({ children }) {
 
     const syncInterval = setInterval(() => {
       if (document.visibilityState === 'visible') {
-        reloadData();
+        reloadData(true);
       }
     }, 15000);
 

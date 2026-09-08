@@ -61,7 +61,7 @@ export default function MoodCheckin({ onSuccess }) {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 1000);
+    }, 60000);
     return () => clearInterval(timer);
   }, []);
 

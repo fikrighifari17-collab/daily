@@ -4,69 +4,80 @@
 
 Aplikasi self-tracking mood dan pengorganisir jadwal akademik pribadi mahasiswa yang terintegrasi secara privat. Aplikasi ini membantu mahasiswa menjaga keseimbangan kesehatan mental dan performa akademik tanpa pelaporan ke pihak ketiga manapun.
 
-- **URL Deployment Live:** `https://daily-pink-gamma.vercel.app/`
-- **Repositori:** `https://github.com/fikrighifari17-collab/daily`
-- **Arsitektur:** Full-stack di Vercel (React + Serverless Functions) + Supabase PostgreSQL + Telegram Bot Service
+| | |
+|---|---|
+| **URL Deployment** | `https://daily-pink-gamma.vercel.app/` |
+| **Repositori** | `https://github.com/fikrighifari17-collab/daily` |
+| **Arsitektur** | Full-stack di Vercel (React + Serverless Functions) + Supabase PostgreSQL + Telegram Bot Service |
+
+---
+
+## Daftar Isi
+
+1. [Ringkasan Progres & Fitur](#ringkasan-progres--fitur-yang-telah-diimplementasikan)
+2. [Tech Stack](#tech-stack-saat-ini)
+3. [Struktur Folder Proyek](#struktur-folder-proyek)
+4. [Skema Database](#skema-database-terpasang-supabase-postgresql)
+5. [Daftar Endpoint API](#daftar-endpoint-api-vercel)
+6. [Prinsip Keamanan & Privasi](#prinsip-keamanan--privasi)
 
 ---
 
 ## Ringkasan Progres & Fitur yang Telah Diimplementasikan
 
-Berikut adalah daftar lengkap fitur, arsitektur, dan perbaikan yang sudah selesai dibangun sejauh ini:
-
 ### 1. Fondasi Backend, Serverless, & Database Supabase
-- **Vercel Serverless Functions:** Seluruh route backend aktif di folder `api/` (`/api/auth/*`, `/api/academic-courses`, `/api/schedule`, `/api/mood`, `/api/cron/reminders`, `/api/health`).
-- **Shared Helpers Relocation:** Helper backend (`prisma.ts`, `auth.ts`, `telegram.ts`) dipusatkan di root `lib/` dengan import ESM `.js` eksplisit dan konfigurasi `tsconfig.json` tersendiri, mencegah konflik route Vercel.
-- **Supabase Transaction Pooler (Port 6543):** Koneksi database PostgreSQL menggunakan Transaction Mode Pooler (`aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1`), menyelesaikan problem connection dropped pada serverless Vercel.
-- **Node.js 24 Platform Alignment:** Spesifikasi engine `"engines": { "node": "24.x" }` di `package.json` untuk kompatibilitas jangka panjang Vercel.
-- **Health Check Monitoring:** Endpoint `/api/health` aktif untuk memverifikasi uptime backend dan konektivitas Supabase secara realtime.
+- **Vercel Serverless Functions** — seluruh route backend aktif di folder `api/` (`/api/auth/*`, `/api/academic-courses`, `/api/schedule`, `/api/mood`, `/api/cron/reminders`, `/api/health`).
+- **Shared Helpers Relocation** — helper backend (`prisma.ts`, `auth.ts`, `telegram.ts`) dipusatkan di root `lib/` dengan import ESM `.js` eksplisit dan konfigurasi `tsconfig.json` tersendiri, mencegah konflik route Vercel.
+- **Supabase Transaction Pooler (Port 6543)** — koneksi database PostgreSQL menggunakan Transaction Mode Pooler (`aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1`), menyelesaikan masalah *connection dropped* pada serverless Vercel.
+- **Node.js 24 Platform Alignment** — spesifikasi engine `"engines": { "node": "24.x" }` di `package.json` untuk kompatibilitas jangka panjang dengan Vercel.
+- **Health Check Monitoring** — endpoint `/api/health` aktif untuk memverifikasi uptime backend dan konektivitas Supabase secara realtime.
 
 ### 2. Autentikasi & Akun Multi-User
-- **JWT & Password Security:** Sistem registrasi & login menggunakan hashing `bcryptjs` dan token `jsonwebtoken`.
-- **Akun Aktif di Cloud:** Pengguna terdaftar di Supabase (`demo`, `katerine`, `haerin`, `fikritest`).
-- **Keamanan Profil:** Penyimpanan Telegram Chat ID per user untuk pengiriman pengingat personal.
+- **JWT & Password Security** — sistem registrasi & login menggunakan hashing `bcryptjs` dan token `jsonwebtoken`.
+- **Akun Aktif di Cloud** — pengguna terdaftar di Supabase (`demo`, `katerine`, `haerin`, `fikritest`).
+- **Keamanan Profil** — penyimpanan Telegram Chat ID per user untuk pengiriman pengingat personal.
 
 ### 3. Modul Jadwal Kuliah Mingguan (Academic Schedule)
-- **Data Matkul Lengkap:** Menyimpan nama mata kuliah, nama dosen, hari, jam mulai/selesai, ruangan, bobot SKS, kode warna visual, link kelas (Zoom/GMeet/LMS), presensi, dan materi kuliah.
-- **Live Class Indicator:** Status kelas realtime yang terupdate otomatis:
-  - `LAGI KULIAH • Sisa X menit` (saat jam kuliah berlangsung).
-  - `Mulai X menit lagi` (ketika kelas akan dimulai dalam waktu dekat).
-  - `Kuliah Sudah Selesai` (setelah jam selesai).
-- **Manajemen Presensi 16 Pertemuan:**
+- **Data Matkul Lengkap** — nama mata kuliah, nama dosen, hari, jam mulai/selesai, ruangan, bobot SKS, kode warna visual, link kelas (Zoom/GMeet/LMS), presensi, dan materi kuliah.
+- **Live Class Indicator** — status kelas realtime yang terupdate otomatis:
+  - `LAGI KULIAH • Sisa X menit` — saat jam kuliah berlangsung.
+  - `Mulai X menit lagi` — ketika kelas akan dimulai dalam waktu dekat.
+  - `Kuliah Sudah Selesai` — setelah jam selesai.
+- **Manajemen Presensi 16 Pertemuan**
   - Tracking kehadiran per sesi (Hadir, Izin, Alpa, Pending) dengan alasan izin opsional.
   - Perhitungan persentase kehadiran semester dan deteksi dini jika kehadiran di bawah 75%.
   - Tombol aksi cepat *"Tandai Semua Hadir"*.
-- **Manajemen Materi & PPT Dosen:**
+- **Manajemen Materi & PPT Dosen**
   - Penyimpanan file materi (PDF, PPT, Word) dan tautan eksternal per pertemuan (Pertemuan 1–16).
-  - Fitur filter materi per nomor pertemuan dan per tipe file, serta tombol download langsung.
-- **Ekspor Kalender:** Integrasi ekspor ke format `.ics` untuk sinkronisasi ke Google Calendar, Outlook, atau Apple Calendar.
+  - Filter materi per nomor pertemuan dan per tipe file, serta tombol download langsung.
+- **Ekspor Kalender** — integrasi ekspor ke format `.ics` untuk sinkronisasi ke Google Calendar, Outlook, atau Apple Calendar.
 
 ### 4. Modul Tugas & Deadline Akademik (Schedule / Tasks)
-- **Pencatatan Tugas:** Kategori tugas, UTS, UAS, kuis, presentasi, dan kegiatan belajar.
-- **Kalkulasi Tenggat:** Penghitungan sisa hari, indikator prioritas tinggi/sedang/rendah, dan filter status (Belum Selesai vs Selesai).
-- **Attachment Storage Terisolasi:** Penyimpanan lampiran file/dokumen tugas menggunakan IndexedDB browser yang aman dan hemat kuota transfer cloud.
+- **Pencatatan Tugas** — kategori tugas, UTS, UAS, kuis, presentasi, dan kegiatan belajar.
+- **Kalkulasi Tenggat** — penghitungan sisa hari, indikator prioritas tinggi/sedang/rendah, dan filter status (Belum Selesai vs Selesai).
+- **Attachment Storage Terisolasi** — penyimpanan lampiran file/dokumen tugas menggunakan IndexedDB browser yang aman dan hemat kuota transfer cloud.
 
 ### 5. Modul Kalender Emosi & Check-in Mood Harian
-- **Check-in Mood Komprehensif:** Pilihan skor emosi (1-5), waktu pencatatan (pagi, siang, sore, malam), catatan refleksi, rekaman audio voice note, dan lampiran foto.
-- **Tag Pemicu Emosi:** Pengelompokan pemicu emosi (Akademik, Tugas, Teman, Keluarga, Finansial, Tidur, dll.).
-- **Visualisasi Kalender Emosi:** Kalender visual berwarna untuk melihat tren fluktuasi emosi bulanan yang dikorelasikan dengan hari-hari sibuk perkuliahan.
-- **Coping Strategies & Brain Dump:** Kotak pencatatan cepat pembuang beban pikiran dan kumpulan strategi menenangkan diri.
+- **Check-in Mood Komprehensif** — skor emosi (1–5), waktu pencatatan (pagi, siang, sore, malam), catatan refleksi, rekaman audio voice note, dan lampiran foto.
+- **Tag Pemicu Emosi** — pengelompokan pemicu emosi (Akademik, Tugas, Teman, Keluarga, Finansial, Tidur, dll.).
+- **Visualisasi Kalender Emosi** — kalender visual berwarna untuk melihat tren fluktuasi emosi bulanan yang dikorelasikan dengan hari-hari sibuk perkuliahan.
+- **Coping Strategies & Brain Dump** — kotak pencatatan cepat pembuang beban pikiran dan kumpulan strategi menenangkan diri.
 
 ### 6. Notifikasi Telegram Bot Terintegrasi (@SemestaraBot)
-- **Tugas Baru & Tugas Selesai:** Bot otomatis mengirim pesan konfirmasi ke Telegram pengguna saat tugas baru ditambahkan atau diselesaikan.
-- **Pengingat Kelas (30 Menit Sebelum Mulai):** Deteksi otomatis jadwal kuliah hari ini yang mengirim pengingat ke Telegram 30 menit sebelum kelas dimulai.
-- **Vercel Cron Reminder (`/api/cron/reminders`):**
+- **Tugas Baru & Tugas Selesai** — bot otomatis mengirim pesan konfirmasi ke Telegram pengguna saat tugas baru ditambahkan atau diselesaikan.
+- **Pengingat Kelas (30 Menit Sebelum Mulai)** — deteksi otomatis jadwal kuliah hari ini yang mengirim pengingat ke Telegram 30 menit sebelum kelas dimulai.
+- **Vercel Cron Reminder (`/api/cron/reminders`)**
   - Pengingat otomatis untuk tugas yang mendekati deadline (tenggat dalam 24 jam).
   - Pengingat tugas yang terlewat (overdue) agar mahasiswa tidak ketinggalan pengumpulan.
 
 ### 7. Sinkronisasi Real-Time Multi-Perangkat (HP & Laptop)
-- **Auto-Sync Lintas Perangkat:**
-  - `window.focus` & `visibilitychange`: Laptop otomatis menyinkronkan data terbaru dari Supabase begitu jendela atau tab dibuka.
+- **Auto-Sync Lintas Perangkat**
+  - `window.focus` & `visibilitychange` — laptop otomatis menyinkronkan data terbaru dari Supabase begitu jendela atau tab dibuka.
   - Polling latar belakang berkala setiap 15 detik agar perubahan yang dimasukkan dari HP otomatis tampil di laptop tanpa refresh manual.
-- **Tombol "Sinkron" Manual:** Tombol 1-klik di toolbar filter Jadwal Kuliah untuk memicu sinkronisasi instan kapan saja.
-- **Normalisasi Nama Hari (`normalizeDay`):** Penyeragaman format hari bahasa Indonesia (`Senin`, `Rabu`) dan bahasa Inggris (`Monday`, `Wednesday`) sehingga data tidak pernah hilang pada filter tab hari.
-- **Header Anti-Cache Realtime:** Penerapan header `Cache-Control: no-store, no-cache` di backend dan parameter query unik `?_t=...` di frontend untuk mencegah cache usang browser.
-- **Desain Responsif & Perbaikan Mobile Menu Drawer:** Penataan ulang stacking context `z-index` (drawer `110`, backdrop `105`) memastikan menu burger di layar HP berfungsi lancar dan tidak membeku.
+- **Tombol "Sinkron" Manual** — tombol satu klik di toolbar filter Jadwal Kuliah untuk memicu sinkronisasi instan kapan saja.
+- **Normalisasi Nama Hari (`normalizeDay`)** — penyeragaman format hari bahasa Indonesia (`Senin`, `Rabu`) dan bahasa Inggris (`Monday`, `Wednesday`) sehingga data tidak pernah hilang pada filter tab hari.
+- **Header Anti-Cache Realtime** — penerapan header `Cache-Control: no-store, no-cache` di backend dan parameter query unik `?_t=...` di frontend untuk mencegah cache usang browser.
+- **Desain Responsif & Perbaikan Mobile Menu Drawer** — penataan ulang stacking context `z-index` (drawer `110`, backdrop `105`) memastikan menu burger di layar HP berfungsi lancar dan tidak membeku.
 
 ---
 
@@ -121,12 +132,12 @@ daily/
 │   │   ├── DataContext.jsx       # State data global & listener auto-sync 15s
 │   │   └── ToastContext.jsx      # Notifikasi pop-up toast
 │   ├── pages/
-│   │   ├── Dashboard.jsx         # Ringkasan mood harian & kelas hari ini
-│   │   ├── AcademicSchedulePage.jsx # Jadwal kuliah, presensi, materi, & tombol sync
-│   │   ├── SchedulePage.jsx      # Tugas & deadline, lampiran, filter prioritas
-│   │   ├── CheckinPage.jsx       # Riwayat & analitik emosi
-│   │   ├── SettingsPage.jsx      # Profil, set Telegram ID, export data, tema
-│   │   └── LoginPage.jsx         # Halaman masuk & registrasi
+│   │   ├── Dashboard.jsx             # Ringkasan mood harian & kelas hari ini
+│   │   ├── AcademicSchedulePage.jsx  # Jadwal kuliah, presensi, materi, & tombol sync
+│   │   ├── SchedulePage.jsx          # Tugas & deadline, lampiran, filter prioritas
+│   │   ├── CheckinPage.jsx           # Riwayat & analitik emosi
+│   │   ├── SettingsPage.jsx          # Profil, set Telegram ID, export data, tema
+│   │   └── LoginPage.jsx             # Halaman masuk & registrasi
 │   ├── services/
 │   │   ├── api.js                # Client API calls dengan anti-cache headers
 │   │   └── telegramService.js    # Client-side trigger notifikasi Telegram
@@ -158,21 +169,21 @@ generator client {
 }
 
 model User {
-  id             Int       @id @default(autoincrement())
-  username       String    @unique
-  nama           String
-  email          String?   @unique
-  password       String
-  pinLock        String?
-  telegramChatId String?
-  createdAt      DateTime  @default(now())
+  id               Int       @id @default(autoincrement())
+  username         String    @unique
+  nama             String
+  email            String?   @unique
+  password         String
+  pinLock          String?
+  telegramChatId   String?
+  createdAt        DateTime  @default(now())
 
-  moodEntries     MoodEntry[]
-  schedules       Schedule[]
-  academicCourses AcademicCourse[]
-  tags            Tag[]
+  moodEntries      MoodEntry[]
+  schedules        Schedule[]
+  academicCourses  AcademicCourse[]
+  tags             Tag[]
   copingStrategies CopingStrategy[]
-  brainDumps      BrainDump[]
+  brainDumps       BrainDump[]
 }
 
 model AcademicCourse {
@@ -194,11 +205,11 @@ model AcademicCourse {
 }
 
 model Schedule {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  judul     String
-  jenis     String   // tugas, uts, uas, presentasi, belajar
-  tanggal   DateTime @db.Date
+  id      Int      @id @default(autoincrement())
+  userId  Int
+  judul   String
+  jenis   String   // tugas, uts, uas, presentasi, belajar
+  tanggal DateTime @db.Date
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -271,13 +282,13 @@ model BrainDump {
 | `/api/schedule` | GET / POST | Ambil daftar tugas & deadline / tambah tugas baru |
 | `/api/schedule?id=:id` | PUT / DELETE | Update status selesai tugas / hapus tugas |
 | `/api/mood` | GET / POST | Ambil riwayat mood / simpan check-in emosi |
-| `/api/cron/reminders` | GET | Cron job otomatis untuk pengingat deadline <24 jam & overdue |
+| `/api/cron/reminders` | GET | Cron job otomatis untuk pengingat deadline < 24 jam & overdue |
 
 ---
 
 ## Prinsip Keamanan & Privasi
 
-1. **Privasi Absolut:** Data bersifat pribadi mahasiswa, tidak terhubung dan tidak dilaporkan ke sistem kampus.
-2. **Validasi JWT Ketat:** Setiap operasi data mewajibkan verifikasi token JWT valid yang terikat langsung ke `userId`.
-3. **Database Cloud Terisolasi:** Menggunakan Supabase dengan otentikasi role aman dan parameter koneksi terkontrol.
-4. **Isolasi File Lampiran Tugas:** Dokumen/file tugas disimpan secara lokal pada IndexedDB perangkat pengguna untuk menjaga kerahasiaan dan privasi dokumen akademik.
+1. **Privasi Absolut** — data bersifat pribadi mahasiswa, tidak terhubung dan tidak dilaporkan ke sistem kampus.
+2. **Validasi JWT Ketat** — setiap operasi data mewajibkan verifikasi token JWT valid yang terikat langsung ke `userId`.
+3. **Database Cloud Terisolasi** — menggunakan Supabase dengan otentikasi role aman dan parameter koneksi terkontrol.
+4. **Isolasi File Lampiran Tugas** — dokumen/file tugas disimpan secara lokal pada IndexedDB perangkat pengguna untuk menjaga kerahasiaan dan privasi dokumen akademik.
