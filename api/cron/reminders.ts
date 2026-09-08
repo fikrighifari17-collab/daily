@@ -1,10 +1,10 @@
-import prisma from '../lib/prisma';
+import prisma from '../lib/prisma.js';
 import {
   notifyServerClassReminder,
   notifyServerDeadlineReminder,
   notifyServerOverdueTaskReminder,
   notifyServerImpendingDeadlineReminder
-} from '../lib/telegram';
+} from '../lib/telegram.js';
 
 function parseScheduleMeta(s: any) {
   let title = s?.judul || 'Tanpa Judul';
@@ -142,9 +142,9 @@ export default async function handler(req: any, res: any) {
           const parsed = parseScheduleMeta(schedule);
           if (parsed.progress === 100) continue;
 
-          const taskDate = typeof schedule.tanggal === 'string'
-            ? schedule.tanggal.split('T')[0]
-            : new Date(schedule.tanggal).toISOString().split('T')[0];
+          const taskDate = (schedule.tanggal instanceof Date)
+            ? schedule.tanggal.toISOString().split('T')[0]
+            : String(schedule.tanggal).split('T')[0];
 
           // 1. Deadline Hari Ini
           if (taskDate === wibDateStr) {

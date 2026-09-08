@@ -1,5 +1,5 @@
-import prisma from './lib/prisma';
-import { verifyToken } from './lib/auth';
+import prisma from './lib/prisma.js';
+import { verifyToken } from './lib/auth.js';
 
 export const config = {
   api: {
@@ -51,7 +51,7 @@ export default async function handler(req: any, res: any) {
 
       // Kirim notifikasi Telegram secara asinkron
       try {
-        const { notifyServerNewTask } = await import('./lib/telegram');
+        const { notifyServerNewTask } = await import('./lib/telegram.js');
         const user = await prisma.user.findUnique({
           where: { id: userId },
           select: { telegramChatId: true, nama: true, username: true }
