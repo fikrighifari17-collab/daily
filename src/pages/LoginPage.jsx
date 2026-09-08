@@ -234,6 +234,8 @@ export default function LoginPage() {
                   placeholder="Ketik username kamu"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                  data-lpignore="true"
                   style={{
                     width: '100%',
                     padding: mode === 'register' ? '8px 12px 8px 36px' : '10px 14px 10px 38px',
@@ -260,6 +262,8 @@ export default function LoginPage() {
                   placeholder="Ketik password kamu"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete={mode === 'register' ? 'new-password' : 'off'}
+                  data-lpignore="true"
                   style={{
                     width: '100%',
                     padding: mode === 'register' ? '8px 40px 8px 36px' : '10px 42px 10px 38px',
