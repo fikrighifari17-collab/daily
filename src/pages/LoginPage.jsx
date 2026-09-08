@@ -82,29 +82,35 @@ export default function LoginPage() {
         
         {/* ================= LEFT COLUMN: LOGIN / REGISTER FORM ================= */}
         <div className="login-left-column" style={{
-          background: 'rgba(34, 40, 49, 0.85)'
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          background: 'rgba(34, 40, 49, 0.85)',
+          width: '100%',
+          height: '100%'
         }}>
-          <div style={{ width: '100%', maxWidth: '440px' }}>
+          <div style={{ width: '100%', maxWidth: '440px', margin: '0 auto' }}>
             {/* Logo & Title */}
-          <div style={{ marginBottom: mode === 'register' ? 'clamp(6px, 1.2vh, 10px)' : 'clamp(10px, 2vh, 18px)' }}>
+          <div style={{ marginBottom: mode === 'register' ? '14px' : '22px' }}>
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: mode === 'register' ? '34px' : '44px',
-              height: mode === 'register' ? '34px' : '44px',
+              width: mode === 'register' ? '38px' : '44px',
+              height: mode === 'register' ? '38px' : '44px',
               borderRadius: '8px',
               background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.3), rgba(0, 255, 245, 0.15))',
               border: '1px solid rgba(0, 173, 181, 0.5)',
-              marginBottom: mode === 'register' ? '4px' : '8px',
+              marginBottom: mode === 'register' ? '6px' : '10px',
               boxShadow: '0 8px 20px rgba(0, 173, 181, 0.3)'
             }}>
-              <SemestaraLogo size={mode === 'register' ? 20 : 28} idPrefix="login-head" />
+              <SemestaraLogo size={mode === 'register' ? 24 : 28} idPrefix="login-head" />
             </div>
-            <h1 style={{ fontSize: mode === 'register' ? 'clamp(18px, 2.5vh, 22px)' : 'clamp(21px, 3vh, 26px)', fontWeight: 800, color: '#EEEEEE', margin: '0 0 2px 0', letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontSize: mode === 'register' ? '22px' : '26px', fontWeight: 800, color: '#EEEEEE', margin: '0 0 3px 0', letterSpacing: '-0.02em' }}>
               Semest<span className="text-gradient-teal">ara</span>
             </h1>
-            <p style={{ fontSize: 'clamp(10.5px, 1.3vh, 12px)', color: '#b0b8c1', margin: 0 }}>
+            <p style={{ fontSize: mode === 'register' ? '12px' : '13px', color: '#b0b8c1', margin: 0, lineHeight: 1.4 }}>
               {mode === 'login'
                 ? 'Yuk masuk, seimbangin mood sama ritme kuliahmu'
                 : 'Bikin akun yuk, biar bisa pantau kabar hatimu tiap hari'}
@@ -118,7 +124,7 @@ export default function LoginPage() {
             gap: '4px',
             background: 'rgba(0, 0, 0, 0.4)',
             padding: '3px',
-            marginBottom: mode === 'register' ? 'clamp(6px, 1.2vh, 10px)' : 'clamp(10px, 1.8vh, 16px)',
+            marginBottom: mode === 'register' ? '12px' : '18px',
             border: '1px solid rgba(0, 173, 181, 0.25)',
             borderRadius: '8px'
           }}>
@@ -126,8 +132,8 @@ export default function LoginPage() {
               type="button"
               onClick={() => { setMode('login'); setErrorMsg(''); }}
               style={{
-                padding: 'clamp(6px, 1vh, 8px) 12px',
-                fontSize: '12px',
+                padding: mode === 'register' ? '8px 12px' : '9px 12px',
+                fontSize: '12.5px',
                 fontWeight: mode === 'login' ? 700 : 500,
                 background: mode === 'login' ? 'linear-gradient(135deg, #00ADB5, #00888f)' : 'transparent',
                 color: mode === 'login' ? '#ffffff' : '#b0b8c1',
@@ -148,8 +154,8 @@ export default function LoginPage() {
               type="button"
               onClick={() => { setMode('register'); setErrorMsg(''); }}
               style={{
-                padding: 'clamp(6px, 1vh, 8px) 12px',
-                fontSize: '12px',
+                padding: mode === 'register' ? '8px 12px' : '9px 12px',
+                fontSize: '12.5px',
                 fontWeight: mode === 'register' ? 700 : 500,
                 background: mode === 'register' ? 'linear-gradient(135deg, #00ADB5, #00888f)' : 'transparent',
                 color: mode === 'register' ? '#ffffff' : '#b0b8c1',
@@ -188,14 +194,14 @@ export default function LoginPage() {
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: mode === 'register' ? 'clamp(5px, 0.9vh, 8px)' : 'clamp(8px, 1.4vh, 12px)' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: mode === 'register' ? '10px' : '14px' }}>
             {mode === 'register' && (
               <div>
-                <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 600, color: '#b0b8c1', marginBottom: '2px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#b0b8c1', marginBottom: '4px' }}>
                   Nama Lengkap (Bebas / Opsional)
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <User size={14} color="#00ADB5" style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <User size={15} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                   <input
                     type="text"
                     placeholder="misal: Anonim"
@@ -203,13 +209,13 @@ export default function LoginPage() {
                     onChange={(e) => setNama(e.target.value)}
                     style={{
                       width: '100%',
-                      padding: 'clamp(5px, 0.8vh, 7px) 10px clamp(5px, 0.8vh, 7px) 34px',
+                      padding: '8px 12px 8px 36px',
                       background: 'rgba(34, 40, 49, 0.9)',
                       border: '1px solid rgba(0, 173, 181, 0.3)',
                       color: '#EEEEEE',
-                      fontSize: '11.5px',
+                      fontSize: '12.5px',
                       outline: 'none',
-                      borderRadius: '6px'
+                      borderRadius: '8px'
                     }}
                   />
                 </div>
@@ -217,11 +223,11 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 600, color: '#b0b8c1', marginBottom: '2px' }}>
+              <label style={{ display: 'block', fontSize: mode === 'register' ? '11px' : '12px', fontWeight: 600, color: '#b0b8c1', marginBottom: '4px' }}>
                 Username
               </label>
               <div style={{ position: 'relative' }}>
-                <User size={14} color="#00ADB5" style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)' }} />
+                <User size={15} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type="text"
                   required
@@ -230,24 +236,24 @@ export default function LoginPage() {
                   onChange={(e) => setUsername(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: mode === 'register' ? 'clamp(5px, 0.8vh, 7px) 10px clamp(5px, 0.8vh, 7px) 34px' : 'clamp(7px, 1.1vh, 9px) 12px clamp(7px, 1.1vh, 9px) 36px',
+                    padding: mode === 'register' ? '8px 12px 8px 36px' : '10px 14px 10px 38px',
                     background: 'rgba(34, 40, 49, 0.9)',
                     border: '1px solid rgba(0, 173, 181, 0.3)',
                     color: '#EEEEEE',
-                    fontSize: mode === 'register' ? '11.5px' : '12.5px',
+                    fontSize: mode === 'register' ? '12.5px' : '13px',
                     outline: 'none',
-                    borderRadius: '6px'
+                    borderRadius: '8px'
                   }}
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '10.5px', fontWeight: 600, color: '#b0b8c1', marginBottom: '2px' }}>
+              <label style={{ display: 'block', fontSize: mode === 'register' ? '11px' : '12px', fontWeight: 600, color: '#b0b8c1', marginBottom: '4px' }}>
                 Password
               </label>
               <div style={{ position: 'relative' }}>
-                <Lock size={14} color="#00ADB5" style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)' }} />
+                <Lock size={15} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
@@ -256,13 +262,13 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: mode === 'register' ? 'clamp(5px, 0.8vh, 7px) 36px clamp(5px, 0.8vh, 7px) 34px' : 'clamp(7px, 1.1vh, 9px) 38px clamp(7px, 1.1vh, 9px) 36px',
+                    padding: mode === 'register' ? '8px 40px 8px 36px' : '10px 42px 10px 38px',
                     background: 'rgba(34, 40, 49, 0.9)',
                     border: '1px solid rgba(0, 173, 181, 0.3)',
                     color: '#EEEEEE',
-                    fontSize: mode === 'register' ? '11.5px' : '12.5px',
+                    fontSize: mode === 'register' ? '12.5px' : '13px',
                     outline: 'none',
-                    borderRadius: '6px'
+                    borderRadius: '8px'
                   }}
                 />
                 <button
@@ -270,7 +276,7 @@ export default function LoginPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   style={{
                     position: 'absolute',
-                    right: '10px',
+                    right: '11px',
                     top: '50%',
                     transform: 'translateY(-50%)',
                     background: 'transparent',
@@ -285,28 +291,28 @@ export default function LoginPage() {
                   }}
                   title={showPassword ? 'Sembunyikan password' : 'Lihat password'}
                 >
-                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
             </div>
 
             {mode === 'register' && (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-                  <label style={{ fontSize: '10.5px', fontWeight: 600, color: '#b0b8c1' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#b0b8c1' }}>
                     Telegram Chat ID <span style={{ color: '#00FFF5', fontWeight: 400 }}>(Opsional)</span>
                   </label>
                   <a
                     href="https://t.me/Semestara_Bot"
                     target="_blank"
                     rel="noreferrer"
-                    style={{ fontSize: '10px', color: '#00FFF5', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '2px' }}
+                    style={{ fontSize: '10.5px', color: '#00FFF5', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '2px' }}
                   >
                     Buka @Semestara_Bot ↗
                   </a>
                 </div>
                 <div style={{ position: 'relative' }}>
-                  <Send size={14} color="#00ADB5" style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <Send size={15} color="#00ADB5" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                   <input
                     type="text"
                     placeholder="Contoh: 123456789 (untuk notifikasi deadline)"
@@ -314,17 +320,17 @@ export default function LoginPage() {
                     onChange={(e) => setTelegramChatId(e.target.value)}
                     style={{
                       width: '100%',
-                      padding: 'clamp(5px, 0.8vh, 7px) 10px clamp(5px, 0.8vh, 7px) 34px',
+                      padding: '8px 12px 8px 36px',
                       background: 'rgba(34, 40, 49, 0.9)',
                       border: '1px solid rgba(0, 173, 181, 0.3)',
                       color: '#EEEEEE',
-                      fontSize: '11.5px',
+                      fontSize: '12.5px',
                       outline: 'none',
-                      borderRadius: '6px'
+                      borderRadius: '8px'
                     }}
                   />
                 </div>
-                <span style={{ fontSize: '9.5px', color: '#8892b0', marginTop: '1px', display: 'block' }}>
+                <span style={{ fontSize: '10px', color: '#8892b0', marginTop: '2px', display: 'block' }}>
                   Bisa diisi nanti kapan saja di menu Pengaturan.
                 </span>
               </div>
@@ -335,12 +341,12 @@ export default function LoginPage() {
               disabled={loading}
               className="glass-button glass-button-primary"
               style={{
-                marginTop: mode === 'register' ? '3px' : '6px',
-                padding: mode === 'register' ? 'clamp(7px, 1.1vh, 9px)' : 'clamp(8px, 1.3vh, 11px)',
-                fontSize: mode === 'register' ? '12px' : '13px',
+                marginTop: mode === 'register' ? '6px' : '10px',
+                padding: mode === 'register' ? '10px' : '12px',
+                fontSize: mode === 'register' ? '13px' : '14px',
                 fontWeight: 700,
                 justifyContent: 'center',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 opacity: loading ? 0.7 : 1,
                 cursor: loading ? 'not-allowed' : 'pointer'
               }}
@@ -351,10 +357,10 @@ export default function LoginPage() {
 
           {/* Footer message placed right under form */}
           <div style={{
-            marginTop: mode === 'register' ? 'clamp(6px, 1vh, 10px)' : 'clamp(10px, 1.8vh, 16px)',
-            paddingTop: mode === 'register' ? 'clamp(4px, 0.8vh, 8px)' : 'clamp(6px, 1vh, 10px)',
+            marginTop: mode === 'register' ? '14px' : '22px',
+            paddingTop: mode === 'register' ? '10px' : '16px',
             borderTop: '1px solid rgba(0, 173, 181, 0.15)',
-            fontSize: '10.5px',
+            fontSize: '11px',
             color: '#7a848f',
             textAlign: 'center',
             letterSpacing: '0.02em'
