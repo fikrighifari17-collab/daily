@@ -140,8 +140,27 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // DELETE: Remove course
+  // DELETE: Remove course (Single or Bulk)
   if (req.method === 'DELETE') {
+    let bodyIds: any = req.body;
+    if (typeof bodyIds === 'string') {
+      try { bodyIds = JSON.parse(bodyIds); } catch {}
+    }
+    const idsList = bodyIds?.ids || (req.query?.ids ? String(req.query.ids).split(',').map(Number) : null);
+
+    if (Array.isArray(idsList) && idsList.length > 0) {
+      const validIds = idsList.map(Number).filter(n => !isNaN(n));
+      try {
+        const deleted = await prisma.academicCourse.deleteMany({
+          where: { id: { in: validIds }, userId }
+        });
+        return res.status(200).json({ success: true, count: deleted.count });
+      } catch (err: any) {
+        console.error('Bulk delete academic courses error:', err);
+        return res.status(500).json({ error: err.message });
+      }
+    }
+
     if (isNaN(courseId)) return res.status(400).json({ error: 'Invalid course ID' });
     try {
       const deleted = await prisma.academicCourse.deleteMany({

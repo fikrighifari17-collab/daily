@@ -75,9 +75,15 @@ const COLOR_OPTIONS = [
 ];
 
 export default function AcademicSchedulePage() {
-  const { courses, schedules, reloadData, addAcademicCourse, updateAcademicCourse, removeAcademicCourse } = useData();
+  const { courses, schedules, reloadData, addAcademicCourse, updateAcademicCourse, removeAcademicCourse, removeAcademicCourses } = useData();
   const { toast } = useToast();
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Multi-select & Bulk Deletion State
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedCourseIds, setSelectedCourseIds] = useState([]);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 
   // Pop-up Modal State (used for both Add and Edit)
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -154,20 +160,31 @@ export default function AcademicSchedulePage() {
 
   // Lock body scroll when any modal is open
   useEffect(() => {
-    if (courseToDelete || isModalOpen || selectedCourseForMaterials || selectedCourseForAttendanceDetail || excusedTargetCourse) {
+    if (courseToDelete || isModalOpen || selectedCourseForMaterials || selectedCourseForAttendanceDetail || excusedTargetCourse || isBulkDeleteModalOpen) {
       const orig = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       return () => {
         document.body.style.overflow = orig;
       };
     }
-  }, [courseToDelete, isModalOpen, selectedCourseForMaterials, selectedCourseForAttendanceDetail, excusedTargetCourse]);
+  }, [courseToDelete, isModalOpen, selectedCourseForMaterials, selectedCourseForAttendanceDetail, excusedTargetCourse, isBulkDeleteModalOpen]);
 
   // Keyboard navigation logic: ESC to close, ENTER to submit
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // ESC: Close currently active modal
+      // ESC: Close currently active modal or exit select mode
       if (e.key === 'Escape') {
+        if (isBulkDeleteModalOpen) {
+          e.preventDefault();
+          setIsBulkDeleteModalOpen(false);
+          return;
+        }
+        if (isSelectMode) {
+          e.preventDefault();
+          setIsSelectMode(false);
+          setSelectedCourseIds([]);
+          return;
+        }
         if (excusedTargetCourse) {
           e.preventDefault();
           setExcusedTargetCourse(null);
@@ -216,7 +233,7 @@ export default function AcademicSchedulePage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isModalOpen, courseToDelete, selectedCourseForMaterials, selectedCourseForAttendanceDetail, excusedTargetCourse]);
+  }, [isModalOpen, courseToDelete, selectedCourseForMaterials, selectedCourseForAttendanceDetail, excusedTargetCourse, isBulkDeleteModalOpen, isSelectMode]);
 
   // Today's day name in English
   const todayName = currentTime.toLocaleDateString('en-US', { weekday: 'long' });
@@ -667,6 +684,42 @@ export default function AcademicSchedulePage() {
     return courses.reduce((sum, c) => sum + (Number(c.sks) || 0), 0);
   }, [courses]);
 
+  // Toggle selection for a course in multi-select mode
+  const handleToggleSelectCourse = (courseId) => {
+    setSelectedCourseIds(prev =>
+      prev.includes(courseId) ? prev.filter(id => id !== courseId) : [...prev, courseId]
+    );
+  };
+
+  // Toggle Select All courses in current filter
+  const handleToggleSelectAll = () => {
+    const visibleIds = filteredCourses.map(c => c.id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedCourseIds.includes(id));
+    if (allSelected) {
+      setSelectedCourseIds(prev => prev.filter(id => !visibleIds.includes(id)));
+    } else {
+      setSelectedCourseIds(prev => Array.from(new Set([...prev, ...visibleIds])));
+    }
+  };
+
+  // Execute bulk deletion
+  const handleConfirmBulkDelete = async () => {
+    if (selectedCourseIds.length === 0) return;
+    setIsDeletingBulk(true);
+    const count = selectedCourseIds.length;
+    try {
+      await removeAcademicCourses(selectedCourseIds);
+      toast.success(`${count} jadwal kuliah berhasil dihapus.`);
+      setIsBulkDeleteModalOpen(false);
+      setSelectedCourseIds([]);
+      setIsSelectMode(false);
+    } catch (err) {
+      toast.error('Gagal menghapus jadwal kuliah terpilih.');
+    } finally {
+      setIsDeletingBulk(false);
+    }
+  };
+
   // Helper function to evaluate live class status
   const getLiveClassStatus = (c) => {
     if (normalizeDay(c.hari) !== normalizeDay(todayName)) return null;
@@ -836,6 +889,33 @@ export default function AcademicSchedulePage() {
 
             <button
               type="button"
+              onClick={() => {
+                setIsSelectMode(prev => {
+                  if (prev) setSelectedCourseIds([]);
+                  return !prev;
+                });
+              }}
+              className={`glass-button ${isSelectMode ? 'glass-button-primary' : ''}`}
+              style={{
+                fontSize: '11px',
+                padding: '4px 10px',
+                borderRadius: '0px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                borderColor: isSelectMode ? '#00FFF5' : 'rgba(0, 173, 181, 0.35)',
+                color: isSelectMode ? '#111111' : '#b0b8c1',
+                background: isSelectMode ? '#00FFF5' : undefined,
+                fontWeight: isSelectMode ? 700 : 500
+              }}
+              title={isSelectMode ? 'Keluar dari mode pilih banyak' : 'Pilih beberapa jadwal sekaligus untuk dihapus'}
+            >
+              <CheckSquare size={12} />
+              <span>{isSelectMode ? 'Batal Pilih' : 'Pilih Banyak'}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handleOpenAddModal}
               className="glass-button"
               style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '5px', borderColor: 'rgba(0, 173, 181, 0.4)', color: '#00FFF5' }}
@@ -933,14 +1013,26 @@ export default function AcademicSchedulePage() {
               s.judul && s.judul.toLowerCase().includes(c.mataKuliah.toLowerCase())
             );
 
+            const isCardSelected = selectedCourseIds.includes(c.id);
+
             return (
               <div
                 key={c.id}
-                className="glass-panel glass-panel-hover"
+                onClick={() => {
+                  if (isSelectMode) {
+                    handleToggleSelectCourse(c.id);
+                  }
+                }}
+                className={`glass-panel ${isSelectMode ? '' : 'glass-panel-hover'}`}
                 style={{
                   padding: '14px 16px',
                   borderRadius: '0px',
                   borderLeft: `4px solid ${c.warna || '#00ADB5'}`,
+                  borderColor: isCardSelected ? '#00FFF5' : undefined,
+                  boxShadow: isCardSelected ? '0 0 16px rgba(0, 255, 245, 0.25)' : undefined,
+                  background: isCardSelected ? 'rgba(0, 255, 245, 0.07)' : undefined,
+                  cursor: isSelectMode ? 'pointer' : 'default',
+                  transition: 'all 0.2s ease',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
@@ -951,38 +1043,66 @@ export default function AcademicSchedulePage() {
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   {/* Header Row: Title & Action Buttons */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <h4 style={{
-                        fontSize: '15px',
-                        fontWeight: 700,
-                        color: '#EEEEEE',
-                        margin: 0,
-                        lineHeight: 1.35,
-                        wordBreak: 'break-word'
-                      }}>
-                        {c.mataKuliah}
-                      </h4>
-                      {/* Day & SKS Badges always consistently below title */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
-                        <span style={{
-                          fontSize: '9px',
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flex: 1, minWidth: 0 }}>
+                      {isSelectMode && (
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleSelectCourse(c.id);
+                          }}
+                          style={{
+                            width: '20px',
+                            height: '20px',
+                            border: isCardSelected ? '2px solid #00FFF5' : '1px solid rgba(255, 255, 255, 0.4)',
+                            background: isCardSelected ? '#00FFF5' : 'rgba(0, 0, 0, 0.5)',
+                            color: isCardSelected ? '#111111' : 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                            borderRadius: '0px',
+                            marginTop: '1px',
+                            transition: 'all 0.15s ease'
+                          }}
+                          title={isCardSelected ? 'Batalkan pilihan' : 'Pilih jadwal ini'}
+                        >
+                          <Check size={14} strokeWidth={3} />
+                        </div>
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h4 style={{
+                          fontSize: '15px',
                           fontWeight: 700,
-                          padding: '2px 6px',
-                          background: `${c.warna || '#00ADB5'}22`,
-                          color: c.warna || '#00FFF5',
-                          border: `1px solid ${c.warna || '#00ADB5'}55`
+                          color: isCardSelected ? '#00FFF5' : '#EEEEEE',
+                          margin: 0,
+                          lineHeight: 1.35,
+                          wordBreak: 'break-word'
                         }}>
-                          {getDayFull(c.hari).toUpperCase()} {isToday ? '• HARI INI' : ''}
-                        </span>
-                        <span style={{
-                          fontSize: '9px',
-                          padding: '2px 6px',
-                          background: 'rgba(255,255,255,0.06)',
-                          color: 'var(--text-secondary)',
-                          border: '1px solid rgba(255,255,255,0.1)'
-                        }}>
-                          {c.sks} SKS
-                        </span>
+                          {c.mataKuliah}
+                        </h4>
+                        {/* Day & SKS Badges always consistently below title */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
+                          <span style={{
+                            fontSize: '9px',
+                            fontWeight: 700,
+                            padding: '2px 6px',
+                            background: `${c.warna || '#00ADB5'}22`,
+                            color: c.warna || '#00FFF5',
+                            border: `1px solid ${c.warna || '#00ADB5'}55`
+                          }}>
+                            {getDayFull(c.hari).toUpperCase()} {isToday ? '• HARI INI' : ''}
+                          </span>
+                          <span style={{
+                            fontSize: '9px',
+                            padding: '2px 6px',
+                            background: 'rgba(255,255,255,0.06)',
+                            color: 'var(--text-secondary)',
+                            border: '1px solid rgba(255,255,255,0.1)'
+                          }}>
+                            {c.sks} SKS
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -990,7 +1110,10 @@ export default function AcademicSchedulePage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
                       <button
                         type="button"
-                        onClick={() => handleOpenEditModal(c)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEditModal(c);
+                        }}
                         className="glass-button"
                         style={{ padding: '4px 8px', color: '#00FFF5', borderColor: 'rgba(0, 173, 181, 0.3)', fontSize: '11px', background: 'rgba(0, 173, 181, 0.08)', borderRadius: '0px' }}
                         title="Edit jadwal kuliah"
@@ -1000,7 +1123,10 @@ export default function AcademicSchedulePage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setCourseToDelete(c)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCourseToDelete(c);
+                        }}
                         className="glass-button"
                         style={{ padding: '4px 8px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)', fontSize: '11px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '0px' }}
                         title="Hapus jadwal mata kuliah ini"
@@ -2958,6 +3084,247 @@ export default function AcademicSchedulePage() {
                 style={{ fontSize: '11px', padding: '5px 14px', borderRadius: '0px', color: '#111111', background: '#f59e0b', borderColor: '#f59e0b', fontWeight: 700 }}
               >
                 Simpan Izin
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* FLOATING BULK ACTION BAR */}
+      {isSelectMode && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            width: 'calc(100% - 32px)',
+            maxWidth: '640px',
+            background: 'rgba(21, 26, 33, 0.95)',
+            border: '1px solid #00FFF5',
+            boxShadow: '0 10px 35px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 255, 245, 0.25)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            padding: '12px 18px',
+            borderRadius: '0px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            flexWrap: 'wrap'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '28px',
+              height: '28px',
+              background: selectedCourseIds.length > 0 ? '#00FFF5' : 'rgba(255, 255, 255, 0.1)',
+              color: selectedCourseIds.length > 0 ? '#111111' : '#888888',
+              fontWeight: 800,
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              {selectedCourseIds.length}
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE' }}>
+                {selectedCourseIds.length > 0
+                  ? `${selectedCourseIds.length} jadwal dipilih`
+                  : 'Pilih jadwal untuk dihapus'}
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                {filteredCourses.length} jadwal di tab {selectedDayFilter === 'ALL' ? 'Semua' : getDayFull(selectedDayFilter)}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={handleToggleSelectAll}
+              className="glass-button"
+              style={{
+                fontSize: '11px',
+                padding: '6px 12px',
+                borderRadius: '0px',
+                color: '#b0b8c1',
+                borderColor: 'rgba(255, 255, 255, 0.2)'
+              }}
+            >
+              {filteredCourses.length > 0 && filteredCourses.every(c => selectedCourseIds.includes(c.id))
+                ? 'Batalkan Semua'
+                : 'Pilih Semua'}
+            </button>
+
+            <button
+              type="button"
+              disabled={selectedCourseIds.length === 0}
+              onClick={() => setIsBulkDeleteModalOpen(true)}
+              className="glass-button"
+              style={{
+                fontSize: '11px',
+                padding: '6px 14px',
+                borderRadius: '0px',
+                color: '#ffffff',
+                background: selectedCourseIds.length > 0 ? '#ef4444' : 'rgba(239, 68, 68, 0.2)',
+                borderColor: selectedCourseIds.length > 0 ? '#ef4444' : 'rgba(239, 68, 68, 0.3)',
+                fontWeight: 700,
+                cursor: selectedCourseIds.length > 0 ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                opacity: selectedCourseIds.length > 0 ? 1 : 0.5
+              }}
+            >
+              <Trash2 size={13} />
+              <span>Hapus ({selectedCourseIds.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsSelectMode(false);
+                setSelectedCourseIds([]);
+              }}
+              className="glass-button"
+              style={{
+                fontSize: '11px',
+                padding: '6px 12px',
+                borderRadius: '0px',
+                color: '#888888'
+              }}
+            >
+              Selesai
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* POP-UP MODAL: Bulk Delete Confirmation */}
+      {isBulkDeleteModalOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          onClick={() => !isDeletingBulk && setIsBulkDeleteModalOpen(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999999,
+            padding: '16px'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#1b2028',
+              border: '1px solid rgba(239, 68, 68, 0.5)',
+              padding: '22px',
+              maxWidth: '480px',
+              width: '100%',
+              borderRadius: '0px',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.95), 0 0 25px rgba(239, 68, 68, 0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '0px',
+                background: 'rgba(239, 68, 68, 0.18)',
+                border: '1px solid rgba(239, 68, 68, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ef4444',
+                flexShrink: 0
+              }}>
+                <AlertCircle size={22} />
+              </div>
+              <div>
+                <h4 style={{ fontSize: '16px', fontWeight: 700, color: '#EEEEEE', margin: 0 }}>
+                  Hapus {selectedCourseIds.length} Jadwal Kuliah Sekaligus?
+                </h4>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+                  Tindakan ini akan menghapus jadwal terpilih beserta materi dan presensinya.
+                </p>
+              </div>
+            </div>
+
+            {/* List of courses to be deleted */}
+            <div style={{
+              maxHeight: '180px',
+              overflowY: 'auto',
+              background: 'rgba(0, 0, 0, 0.35)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '8px 12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px'
+            }}>
+              {courses.filter(c => selectedCourseIds.includes(c.id)).map((c, idx) => (
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '4px' }}>
+                  <span style={{ color: '#EEEEEE', fontWeight: 600 }}>
+                    {idx + 1}. {c.mataKuliah}
+                  </span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                    {getDayShort(c.hari)} ({c.jamMulai || '08:00'} - {c.jamSelesai || '10:30'})
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <p style={{ fontSize: '11px', color: '#f87171', margin: 0 }}>
+              * Jadwal yang dihapus tidak dapat dikembalikan secara otomatis.
+            </p>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '4px' }}>
+              <button
+                type="button"
+                disabled={isDeletingBulk}
+                onClick={() => setIsBulkDeleteModalOpen(false)}
+                className="glass-button"
+                style={{ fontSize: '12px', padding: '8px 16px', borderRadius: '0px' }}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingBulk}
+                onClick={handleConfirmBulkDelete}
+                className="glass-button"
+                style={{
+                  fontSize: '12px',
+                  padding: '8px 18px',
+                  background: '#ef4444',
+                  color: 'white',
+                  borderColor: '#ef4444',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  borderRadius: '0px',
+                  cursor: isDeletingBulk ? 'not-allowed' : 'pointer',
+                  opacity: isDeletingBulk ? 0.7 : 1
+                }}
+              >
+                <Trash2 size={14} />
+                <span>{isDeletingBulk ? 'Menghapus...' : `Ya, Hapus ${selectedCourseIds.length} Jadwal`}</span>
               </button>
             </div>
           </div>

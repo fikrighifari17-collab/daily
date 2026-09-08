@@ -462,6 +462,28 @@ export async function deleteAcademicCourse(id) {
   return { success: true };
 }
 
+export async function bulkDeleteAcademicCourses(ids) {
+  if (!Array.isArray(ids) || ids.length === 0) return { success: true };
+  try {
+    const res = await fetch(`${BASE_URL}/academic-courses`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", ...authHeader() },
+      body: JSON.stringify({ ids })
+    });
+    if (res.ok) {
+      const list = getLocal(STORAGE_KEYS.COURSES, []).filter(c => !ids.includes(c.id));
+      setLocal(STORAGE_KEYS.COURSES, list);
+      return await res.json();
+    }
+  } catch (e) {
+    console.warn("Using offline fallback for bulkDeleteAcademicCourses", e);
+  }
+
+  const list = getLocal(STORAGE_KEYS.COURSES, []).filter(c => !ids.includes(c.id));
+  setLocal(STORAGE_KEYS.COURSES, list);
+  return { success: true };
+}
+
 export async function getTags() {
   try {
     const res = await fetch(`${BASE_URL}/tags`, { headers: authHeader() });

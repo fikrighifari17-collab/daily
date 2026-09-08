@@ -288,6 +288,14 @@ export function DataProvider({ children }) {
     reloadData(true);
   };
 
+  const removeAcademicCourses = async (ids) => {
+    if (!Array.isArray(ids) || ids.length === 0) return;
+    // Optimistic bulk delete: instantly remove selected courses from screen
+    setCourses(prev => prev.filter(c => !ids.includes(c.id)));
+    await api.bulkDeleteAcademicCourses(ids);
+    reloadData(true);
+  };
+
   const createTag = async (nama) => {
     const res = await api.addTag(nama);
     if (res) {
@@ -334,6 +342,7 @@ export function DataProvider({ children }) {
         addAcademicCourse,
         updateAcademicCourse,
         removeAcademicCourse,
+        removeAcademicCourses,
         createTag,
         createCopingStrategy,
         createBrainDump
