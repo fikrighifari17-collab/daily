@@ -57,33 +57,35 @@ function MainLayout() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', padding: '8px' }}>
+    <div className="app-shell">
       <Navbar />
 
-      <main style={{ flex: 1 }}>
-        <Suspense fallback={<PageFallback />}>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/checkin" element={<CheckinPage />} />
-            <Route path="/checkin/new" element={<NewCheckinPage />} />
-            <Route path="/academic-schedule" element={<AcademicSchedulePage />} />
-            <Route path="/schedule" element={<SchedulePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
-      </main>
+      <main className="app-main-content">
+        <div style={{ flex: 1 }}>
+          <Suspense fallback={<PageFallback />}>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/checkin" element={<CheckinPage />} />
+              <Route path="/checkin/new" element={<NewCheckinPage />} />
+              <Route path="/academic-schedule" element={<AcademicSchedulePage />} />
+              <Route path="/schedule" element={<SchedulePage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        </div>
 
-      <footer style={{
-        textAlign: 'center',
-        padding: '8px',
-        fontSize: '11px',
-        color: 'var(--text-muted)',
-        borderTop: '1px solid var(--border-glass)',
-        marginTop: '8px'
-      }}>
-        I hope this makes things a little easier for you.
-      </footer>
+        <footer style={{
+          textAlign: 'center',
+          padding: '16px 8px 12px 8px',
+          fontSize: '11px',
+          color: 'var(--text-muted)',
+          borderTop: '1px solid var(--border-glass)',
+          marginTop: '16px'
+        }}>
+          I hope this makes things a little easier for you.
+        </footer>
+      </main>
     </div>
   );
 }
