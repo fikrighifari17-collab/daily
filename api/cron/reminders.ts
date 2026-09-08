@@ -1,10 +1,10 @@
-import prisma from '../lib/prisma.js';
+import prisma from '../../lib/prisma.js';
 import {
   notifyServerClassReminder,
   notifyServerDeadlineReminder,
   notifyServerOverdueTaskReminder,
   notifyServerImpendingDeadlineReminder
-} from '../lib/telegram.js';
+} from '../../lib/telegram.js';
 
 function parseScheduleMeta(s: any) {
   let title = s?.judul || 'Tanpa Judul';

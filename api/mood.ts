@@ -1,5 +1,5 @@
-import prisma from './lib/prisma.js';
-import { verifyToken } from './lib/auth.js';
+import prisma from '../lib/prisma.js';
+import { verifyToken } from '../lib/auth.js';
 
 export default async function handler(req: any, res: any) {
   const userId = verifyToken(req);

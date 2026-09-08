@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import prisma from '../lib/prisma.js';
-import { getJwtSecret } from '../lib/auth.js';
+import prisma from '../../lib/prisma.js';
+import { getJwtSecret } from '../../lib/auth.js';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
