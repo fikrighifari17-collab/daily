@@ -11,7 +11,8 @@ export const serializeScheduleJudul = ({
   progress = 0,
   subtasks = [],
   notes = '',
-  attachments = []
+  attachments = [],
+  reminderBefore = null
 }) => {
   let cleanTitle = String(title || '').trim();
   // Strip any old [Meta:...] if passed
@@ -37,6 +38,9 @@ export const serializeScheduleJudul = ({
   const cleanProgress = Math.max(0, Math.min(100, Math.round(Number(progress) || 0)));
   if (cleanProgress > 0) {
     meta.progress = cleanProgress;
+  }
+  if (reminderBefore && !isNaN(Number(reminderBefore)) && Number(reminderBefore) > 0) {
+    meta.reminderBefore = Number(reminderBefore);
   }
   if (Array.isArray(subtasks) && subtasks.length > 0) {
     meta.subtasks = subtasks
@@ -82,6 +86,7 @@ export const parseScheduleItem = (s) => {
   let subtasks = [];
   let notes = '';
   let attachments = [];
+  let reminderBefore = null;
 
   // 1. Extract [Meta:...] safely using indexOf and lastIndexOf to prevent nested bracket truncation
   const metaPrefix = '[Meta:';
@@ -95,6 +100,9 @@ export const parseScheduleItem = (s) => {
         const parsedMeta = JSON.parse(jsonCandidate);
         if (typeof parsedMeta.progress === 'number') {
           progress = Math.max(0, Math.min(100, Math.round(parsedMeta.progress)));
+        }
+        if (parsedMeta.reminderBefore && !isNaN(Number(parsedMeta.reminderBefore))) {
+          reminderBefore = Number(parsedMeta.reminderBefore);
         }
         if (Array.isArray(parsedMeta.subtasks)) {
           subtasks = parsedMeta.subtasks.map((st, idx) => ({
@@ -151,6 +159,7 @@ export const parseScheduleItem = (s) => {
     progress,
     subtasks,
     notes,
-    attachments
+    attachments,
+    reminderBefore
   };
 };

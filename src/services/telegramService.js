@@ -198,3 +198,46 @@ Halo <b>${userName}</b>, ini Semestara!!! ⚠️
 
   return await sendTelegramMessage(message, customChatId);
 }
+
+export async function notifyOverdueTaskReminder(task, customChatId = null, customUserName = null) {
+  if (!isTelegramNotificationEnabled()) return;
+  const userName = customUserName || getUserDisplayName();
+  const deadlineStr = task.tanggal ? new Date(task.tanggal).toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }) : 'Sebelumnya';
+
+  const message = `
+Halo <b>${userName}</b>, ini Semestara!!! ⚠️
+
+⏰ <b>PERINGATAN: TUGAS MELEWATI DEADLINE</b>
+━━━━━━━━━━━━━━━━━━━━
+📝 <b>Tugas:</b> ${task.judul || 'Tanpa Judul'}
+📂 <b>Kategori:</b> ${task.jenis || 'Tugas'}
+📅 <b>Tenggat:</b> ${deadlineStr} (Sudah Lewat)
+━━━━━━━━━━━━━━━━━━━━
+<i>Tugas ini belum ditandai selesai di Semestara. Segera cek dan selesaikan atau perbarui status tugasmu di aplikasi ya! Jangan biarkan tugasmu makin menumpuk. Tetap fokus! 🔥</i>
+`.trim();
+
+  return await sendTelegramMessage(message, customChatId);
+}
+
+export async function notifyImpendingDeadlineReminder(task, minutesBefore, customChatId = null, customUserName = null) {
+  if (!isTelegramNotificationEnabled()) return;
+  const userName = customUserName || getUserDisplayName();
+  const sisaWaktuStr = minutesBefore >= 60 ? `${Math.round(minutesBefore / 60)} jam` : `${minutesBefore} menit`;
+  const jamDeadline = task.deadlineTime || '23:59';
+  const taskTitle = task.cleanTitle || task.judul || 'Tanpa Judul';
+
+  const message = `
+Halo <b>${userName}</b>, Semestara mau ngingetin nih! ⌛
+
+Tugas "<b>${taskTitle}</b>" (<i>${task.jenis || 'Tugas'}</i>) tenggat waktunya tinggal <b>${sisaWaktuStr}</b> lagi (pukul <b>${jamDeadline}</b> WIB).
+
+Yuk rapikan draft terakhir atau submit tugasmu sekarang biar nggak buru-buru di menit terakhir. Kamu pasti bisa beresin ini! Semangat terus ya! ✨👏
+`.trim();
+
+  return await sendTelegramMessage(message, customChatId);
+}

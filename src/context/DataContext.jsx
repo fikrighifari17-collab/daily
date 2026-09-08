@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import * as api from '../services/api';
 import { useAuth } from './AuthContext';
-import { notifyNewTask, notifyTaskCompleted, notifyClassReminder, notifyDeadlineReminder } from '../services/telegramService';
+import { notifyNewTask, notifyTaskCompleted, notifyClassReminder, notifyDeadlineReminder, notifyOverdueTaskReminder, notifyImpendingDeadlineReminder } from '../services/telegramService';
+import { parseScheduleItem } from '../utils/scheduleUtils';
 
 const DataContext = createContext();
 
@@ -109,6 +110,51 @@ export function DataProvider({ children }) {
               if (!localStorage.getItem(sentDeadlineKey)) {
                 localStorage.setItem(sentDeadlineKey, 'true');
                 notifyDeadlineReminder(s, user?.telegramChatId, displayName);
+              }
+            }
+          });
+        }
+
+        // 3. Pengingat Tugas yang Sudah Melewati Tenggat Waktu & Belum Selesai (Overdue)
+        if (schedules && schedules.length > 0) {
+          schedules.forEach((s) => {
+            if (s.selesai || s.progress === 100) return;
+            const taskDate = typeof s.tanggal === 'string' ? s.tanggal.split('T')[0] : new Date(s.tanggal).toISOString().split('T')[0];
+            // Jika tanggal tugas < hari ini (sudah lewat tenggat)
+            if (taskDate < todayDateStr) {
+              const sentOverdueKey = `tg_sent_overdue_${s.id}_${todayDateStr}`;
+              if (!localStorage.getItem(sentOverdueKey)) {
+                localStorage.setItem(sentOverdueKey, 'true');
+                notifyOverdueTaskReminder(s, user?.telegramChatId, displayName);
+              }
+            }
+          });
+        }
+
+        // 4. Pengingat Tugas Menjelang Deadline (30 Menit / 1 Jam / 2 Jam Sebelumnya sesuai pilihan tugas)
+        if (schedules && schedules.length > 0) {
+          schedules.forEach((s) => {
+            if (s.selesai) return;
+            const parsed = parseScheduleItem(s);
+            if (parsed.progress === 100 || !parsed.reminderBefore) return;
+
+            const targetMinutes = parseInt(parsed.reminderBefore, 10);
+            if (!targetMinutes || isNaN(targetMinutes)) return;
+
+            const taskDate = typeof s.tanggal === 'string' ? s.tanggal.split('T')[0] : new Date(s.tanggal).toISOString().split('T')[0];
+            if (taskDate !== todayDateStr) return;
+
+            const deadlineTimeStr = parsed.deadlineTime || '23:59';
+            const [hStr, mStr] = deadlineTimeStr.split(':');
+            const deadlineMinutes = parseInt(hStr, 10) * 60 + parseInt(mStr || '0', 10);
+            const diffMinutes = deadlineMinutes - nowMinutes;
+
+            // Trigger jika dalam rentang toleransi [targetMinutes - 10, targetMinutes]
+            if (diffMinutes > 0 && diffMinutes <= targetMinutes && diffMinutes >= (targetMinutes - 10)) {
+              const sentImpendingKey = `tg_sent_impending_${s.id}_${targetMinutes}_${todayDateStr}`;
+              if (!localStorage.getItem(sentImpendingKey)) {
+                localStorage.setItem(sentImpendingKey, 'true');
+                notifyImpendingDeadlineReminder(parsed, targetMinutes, user?.telegramChatId, displayName);
               }
             }
           });

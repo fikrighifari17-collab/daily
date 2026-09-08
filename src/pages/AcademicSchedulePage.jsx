@@ -36,7 +36,6 @@ import {
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
-import { exportCoursesToICS, getGoogleCalendarUrl } from '../utils/calendarExport';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -69,9 +68,6 @@ export default function AcademicSchedulePage() {
   // Pop-up Modal State (used for both Add and Edit)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourseId, setEditingCourseId] = useState(null);
-
-  // Google Calendar Sync Modal State
-  const [isGCalModalOpen, setIsGCalModalOpen] = useState(false);
 
   // Form states
   const [mataKuliah, setMataKuliah] = useState('');
@@ -141,14 +137,14 @@ export default function AcademicSchedulePage() {
 
   // Lock body scroll when any modal is open
   useEffect(() => {
-    if (courseToDelete || isModalOpen || isGCalModalOpen || selectedCourseForMaterials || selectedCourseForAttendanceDetail || excusedTargetCourse) {
+    if (courseToDelete || isModalOpen || selectedCourseForMaterials || selectedCourseForAttendanceDetail || excusedTargetCourse) {
       const orig = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       return () => {
         document.body.style.overflow = orig;
       };
     }
-  }, [courseToDelete, isModalOpen, isGCalModalOpen, selectedCourseForMaterials, selectedCourseForAttendanceDetail, excusedTargetCourse]);
+  }, [courseToDelete, isModalOpen, selectedCourseForMaterials, selectedCourseForAttendanceDetail, excusedTargetCourse]);
 
   // Today's day name in English
   const todayName = currentTime.toLocaleDateString('en-US', { weekday: 'long' });
@@ -567,30 +563,6 @@ export default function AcademicSchedulePage() {
     }
   };
 
-  // Export to Calendar (.ics) - Sync all directly
-  const handleExportCalendar = () => {
-    try {
-      exportCoursesToICS(courses);
-      toast.success('File kalender (.ics) berhasil diunduh! Buka di HP untuk langsung menambahkan semua jadwal.');
-    } catch (err) {
-      toast.error(err.message || 'Gagal mengekspor kalender.');
-    }
-  };
-
-  // Open all courses in Google Calendar web/intent tabs at once
-  const handleOpenAllInGCal = () => {
-    if (!courses || courses.length === 0) {
-      toast.error('Belum ada jadwal kuliah.');
-      return;
-    }
-    courses.forEach((c, idx) => {
-      setTimeout(() => {
-        window.open(getGoogleCalendarUrl(c), '_blank');
-      }, idx * 300);
-    });
-    toast.success(`Membuka ${courses.length} jadwal kuliah di Google Calendar...`);
-  };
-
   // Filtered courses
   const filteredCourses = selectedDayFilter === 'ALL'
     ? courses
@@ -714,26 +686,6 @@ export default function AcademicSchedulePage() {
                 <div style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total SKS</div>
               </div>
             </div>
-
-            {/* Export Calendar Button */}
-            <button
-              type="button"
-              onClick={handleExportCalendar}
-              className="glass-button"
-              style={{ 
-                fontSize: '11px', 
-                padding: '6px 12px', 
-                borderRadius: '0px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '5px', 
-                whiteSpace: 'nowrap' 
-              }}
-              title="Unduh file .ics untuk disinkronkan ke Google Calendar atau kalender HP"
-            >
-              <Download size={13} color="#00FFF5" />
-              <span>Ekspor Kalender (.ics)</span>
-            </button>
           </div>
         </div>
       </div>
@@ -961,21 +913,8 @@ export default function AcademicSchedulePage() {
                     </div>
                   </div>
 
-                  {/* Quick Link Button & Linked Tasks Pill & Direct Google Calendar Link */}
+                  {/* Quick Link Button & Linked Tasks Pill */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
-                    {/* Direct Add to Google Calendar HP */}
-                    <a
-                      href={getGoogleCalendarUrl(c)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="glass-button"
-                      style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '0px', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)', background: 'rgba(16, 185, 129, 0.08)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
-                      title="Buka langsung di aplikasi Google Calendar HP"
-                    >
-                      <Calendar size={11} />
-                      <span>Simpan ke Google Calendar</span>
-                    </a>
-
                     {c.link && (
                       <a
                         href={c.link}
@@ -1593,190 +1532,6 @@ export default function AcademicSchedulePage() {
                 }}
               >
                 Ya, Hapus Matkul
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* POP-UP MODAL: Sync to Google Calendar HP (Cara 1) */}
-      {isGCalModalOpen && typeof document !== 'undefined' && createPortal(
-        <div
-          onClick={() => setIsGCalModalOpen(false)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999999,
-            padding: '16px'
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: '#1c222b',
-              border: '1px solid rgba(16, 185, 129, 0.4)',
-              padding: '22px',
-              maxWidth: '540px',
-              width: '100%',
-              borderRadius: '0px',
-              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.95)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '14px',
-              maxHeight: '90vh',
-              overflowY: 'auto'
-            }}
-          >
-            {/* Modal Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '28px', height: '28px', background: 'rgba(16, 185, 129, 0.2)', border: '1px solid #10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
-                  <Calendar size={16} />
-                </div>
-                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#EEEEEE', margin: 0 }}>
-                  Sambungkan ke Google Calendar HP
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsGCalModalOpen(false)}
-                className="glass-button"
-                style={{ padding: '4px 8px', borderRadius: '0px' }}
-              >
-                <X size={15} />
-              </button>
-            </div>
-
-            {/* OPSI 1: MASUKKAN SEMUA SEKALIGUS */}
-            <div style={{
-              padding: '14px 16px',
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(0, 173, 181, 0.12) 100%)',
-              border: '1px solid rgba(16, 185, 129, 0.4)',
-              borderRadius: '0px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles size={16} color="#10b981" />
-                <span style={{ fontSize: '13px', fontWeight: 800, color: '#EEEEEE', letterSpacing: '-0.01em' }}>
-                  Opsi 1: Masukkan Semua Jadwal Sekaligus (1 Klik untuk HP)
-                </span>
-              </div>
-              <p style={{ fontSize: '11px', color: '#b0b8c1', margin: 0, lineHeight: 1.5 }}>
-                Di ponsel Android atau iPhone, tombol ini akan <strong>langsung membuka Google Calendar</strong> dan menampilkan jendela <em>"Tambahkan semua {courses.length} acara ke kalender?"</em>. Anda cukup menekan <strong>"Tambahkan Semua / Add All"</strong>.
-              </p>
-
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={handleExportCalendar}
-                  className="glass-button glass-button-primary"
-                  style={{
-                    fontSize: '12px',
-                    padding: '8px 16px',
-                    borderRadius: '0px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontWeight: 700,
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                    borderColor: '#10b981'
-                  }}
-                >
-                  <Download size={14} />
-                  <span>⚡ Masukkan Semua Jadwal Sekaligus ke Kalender HP</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleOpenAllInGCal}
-                  className="glass-button"
-                  style={{
-                    fontSize: '11px',
-                    padding: '8px 12px',
-                    borderRadius: '0px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    borderColor: 'rgba(0, 173, 181, 0.4)',
-                    color: '#00FFF5'
-                  }}
-                  title="Buka semua mata kuliah di tab Google Calendar secara bersamaan"
-                >
-                  <Layers size={13} />
-                  <span>Buka Semua Tab Google Calendar ({courses.length})</span>
-                </button>
-              </div>
-            </div>
-
-            {/* OPSI 2: PILIH SATU PER SATU */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                  Opsi 2: Atau Masukkan Satu per Satu ke Google Calendar:
-                </div>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{courses.length} Mata Kuliah</span>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '250px', overflowY: 'auto', paddingRight: '4px' }}>
-                {courses.map((c) => (
-                  <div
-                    key={c.id}
-                    style={{
-                      padding: '10px 12px',
-                      background: 'rgba(0, 0, 0, 0.35)',
-                      border: '1px solid rgba(255, 255, 255, 0.06)',
-                      borderLeft: `3px solid ${c.warna || '#00ADB5'}`,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      gap: '8px',
-                      flexWrap: 'wrap'
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE' }}>{c.mataKuliah}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        {c.hari}, {c.jamMulai} - {c.jamSelesai} &bull; {c.ruangan}
-                      </div>
-                    </div>
-
-                    <a
-                      href={getGoogleCalendarUrl(c)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="glass-button"
-                      style={{ fontSize: '11px', padding: '6px 12px', borderRadius: '0px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)' }}
-                    >
-                      <ExternalLink size={12} />
-                      <span>Buka di Google Calendar HP</span>
-                    </a>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '10px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-              <button
-                type="button"
-                onClick={() => setIsGCalModalOpen(false)}
-                className="glass-button"
-                style={{ fontSize: '12px', padding: '6px 16px', borderRadius: '0px' }}
-              >
-                Tutup
               </button>
             </div>
           </div>

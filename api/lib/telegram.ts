@@ -1,9 +1,7 @@
-// Server-side Telegram Bot helper
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8921487742:AAHhTul_2PYhlZBxlYmDa9-BtM0q8FVKoTc';
-const DEFAULT_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '8025609014';
 
 export async function sendServerTelegramMessage(text: string, customChatId?: string | null) {
-  const chatId = customChatId || DEFAULT_CHAT_ID;
+  const chatId = customChatId || process.env.TELEGRAM_CHAT_ID || null;
   if (!chatId || !BOT_TOKEN) return { ok: false, error: 'Missing token or chatId' };
 
   try {
@@ -92,3 +90,50 @@ Halo <b>${greetingName}</b>, ini Semestara!!! ⚠️
 
   return await sendServerTelegramMessage(message, customChatId);
 }
+
+export async function notifyServerOverdueTaskReminder(task: any, customChatId?: string | null, userName?: string | null) {
+  const greetingName = userName || 'Sobat Semestara';
+  const deadlineStr = task.tanggal ? new Date(task.tanggal).toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }) : 'Sebelumnya';
+
+  const message = `
+Halo <b>${greetingName}</b>, ini Semestara!!! ⚠️
+
+⏰ <b>PERINGATAN: TUGAS MELEWATI DEADLINE</b>
+━━━━━━━━━━━━━━━━━━━━
+📝 <b>Tugas:</b> ${task.judul || 'Tanpa Judul'}
+📂 <b>Kategori:</b> ${task.jenis || 'Tugas'}
+📅 <b>Tenggat:</b> ${deadlineStr} (Sudah Lewat)
+━━━━━━━━━━━━━━━━━━━━
+<i>Tugas ini belum ditandai selesai di Semestara. Segera cek dan selesaikan atau perbarui status tugasmu di aplikasi ya! Jangan biarkan tugasmu makin menumpuk. Tetap fokus! 🔥</i>
+`.trim();
+
+  return await sendServerTelegramMessage(message, customChatId);
+}
+
+export async function notifyServerImpendingDeadlineReminder(
+  task: any,
+  minutesBefore: number,
+  customChatId?: string | null,
+  userName?: string | null
+) {
+  const greetingName = userName || 'Sobat Semestara';
+  const sisaWaktuStr = minutesBefore >= 60 ? `${Math.round(minutesBefore / 60)} jam` : `${minutesBefore} menit`;
+  const jamDeadline = task.deadlineTime || '23:59';
+  const taskTitle = task.cleanTitle || task.judul || 'Tanpa Judul';
+
+  const message = `
+Halo <b>${greetingName}</b>, Semestara mau ngingetin nih! ⌛
+
+Tugas "<b>${taskTitle}</b>" (<i>${task.jenis || 'Tugas'}</i>) tenggat waktunya tinggal <b>${sisaWaktuStr}</b> lagi (pukul <b>${jamDeadline}</b> WIB).
+
+Yuk rapikan draft terakhir atau submit tugasmu sekarang biar nggak buru-buru di menit terakhir. Kamu pasti bisa beresin ini! Semangat terus ya! ✨👏
+`.trim();
+
+  return await sendServerTelegramMessage(message, customChatId);
+}
+

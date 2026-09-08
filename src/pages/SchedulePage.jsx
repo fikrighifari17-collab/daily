@@ -7,6 +7,7 @@ import {
   Trash2,
   BookOpen,
   Clock,
+  Bell,
   AlertCircle,
   CheckSquare,
   X,
@@ -56,6 +57,7 @@ export default function SchedulePage() {
   const [tanggalMulai, setTanggalMulai] = useState(new Date().toISOString().split('T')[0]);
   const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0]);
   const [jamTenggat, setJamTenggat] = useState('23:59');
+  const [addReminderBefore, setAddReminderBefore] = useState('');
   const [addSubtasks, setAddSubtasks] = useState([]);
   const [newAddSubtaskInput, setNewAddSubtaskInput] = useState('');
   const [addNotes, setAddNotes] = useState('');
@@ -72,6 +74,7 @@ export default function SchedulePage() {
   const [editTanggalMulai, setEditTanggalMulai] = useState('');
   const [editTanggal, setEditTanggal] = useState('');
   const [editJamTenggat, setEditJamTenggat] = useState('23:59');
+  const [editReminderBefore, setEditReminderBefore] = useState('');
   const [editProgress, setEditProgress] = useState(0);
   const [editSubtasks, setEditSubtasks] = useState([]);
   const [newEditSubtaskInput, setNewEditSubtaskInput] = useState('');
@@ -130,6 +133,7 @@ export default function SchedulePage() {
       typeof s.tanggal === 'string' ? s.tanggal.split('T')[0] : new Date(s.tanggal).toISOString().split('T')[0]
     );
     setEditJamTenggat(parsed.deadlineTime || '23:59');
+    setEditReminderBefore(parsed.reminderBefore ? String(parsed.reminderBefore) : '');
     setEditProgress(typeof parsed.progress === 'number' ? parsed.progress : 0);
     setEditSubtasks(parsed.subtasks ? JSON.parse(JSON.stringify(parsed.subtasks)) : []);
     setNewEditSubtaskInput('');
@@ -395,13 +399,15 @@ export default function SchedulePage() {
         progress: 0,
         subtasks: addSubtasks,
         notes: addNotes.trim(),
-        attachments: addAttachments
+        attachments: addAttachments,
+        reminderBefore: addReminderBefore || null
       });
 
       await addScheduleItem({ judul: fullJudul, jenis: cleanJenis, tanggal });
       toast.success('Jadwal tugas berhasil disimpan!');
       setJudul('');
       setJenis('');
+      setAddReminderBefore('');
       setAddSubtasks([]);
       setNewAddSubtaskInput('');
       setAddNotes('');
@@ -434,7 +440,8 @@ export default function SchedulePage() {
         progress: editProgress,
         subtasks: editSubtasks,
         notes: editNotes.trim(),
-        attachments: editAttachments
+        attachments: editAttachments,
+        reminderBefore: editReminderBefore || null
       });
 
       await updateScheduleItem(editingSchedule.id, {
@@ -468,7 +475,8 @@ export default function SchedulePage() {
       progress: newProgress,
       subtasks: updatedSubtasks,
       notes: parsed.notes,
-      attachments: parsed.attachments || []
+      attachments: parsed.attachments || [],
+      reminderBefore: parsed.reminderBefore || null
     });
 
     try {
@@ -532,7 +540,8 @@ export default function SchedulePage() {
       progress: autoProgress,
       subtasks: updatedSubtasks,
       notes: parsed.notes,
-      attachments: parsed.attachments || []
+      attachments: parsed.attachments || [],
+      reminderBefore: parsed.reminderBefore || null
     });
 
     try {
@@ -875,6 +884,12 @@ export default function SchedulePage() {
           </span>
           {parsed.startTime && (
             <span>Mulai: {parsed.startTime}</span>
+          )}
+          {parsed.reminderBefore && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: '#00FFF5', background: 'rgba(0, 173, 181, 0.15)', padding: '1px 6px', border: '1px solid rgba(0, 173, 181, 0.3)', borderRadius: '0px', fontSize: '10px' }}>
+              <Bell size={10} />
+              Pengingat Tele: {parsed.reminderBefore >= 60 ? `${Math.round(parsed.reminderBefore / 60)} Jam` : `${parsed.reminderBefore} Mnt`} sebelumnya
+            </span>
           )}
           {parsed.notes && (
             <span style={{ color: '#b0b8c1', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -1752,6 +1767,25 @@ export default function SchedulePage() {
                 />
               </div>
 
+              {/* Pengingat Telegram Sebelum Deadline */}
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  <Bell size={13} color="#00FFF5" />
+                  <span>Pengingat Telegram Sebelum Deadline:</span>
+                </label>
+                <select
+                  className="glass-input"
+                  value={editReminderBefore}
+                  onChange={(e) => setEditReminderBefore(e.target.value)}
+                  style={{ borderRadius: '0px', width: '100%', background: '#222831', color: '#EEEEEE' }}
+                >
+                  <option value="">Tidak ada pengingat khusus (Hanya hari-H)</option>
+                  <option value="30">⏱️ 30 Menit sebelum deadline</option>
+                  <option value="60">⏱️ 1 Jam sebelum deadline</option>
+                  <option value="120">⏱️ 2 Jam sebelum deadline</option>
+                </select>
+              </div>
+
               {/* Catatan Tambahan (Notes) */}
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
@@ -2109,6 +2143,25 @@ export default function SchedulePage() {
                   style={{ borderRadius: '0px', width: '100%' }}
                   required
                 />
+              </div>
+
+              {/* Pengingat Telegram Sebelum Deadline */}
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  <Bell size={13} color="#00FFF5" />
+                  <span>Pengingat Telegram Sebelum Deadline:</span>
+                </label>
+                <select
+                  className="glass-input"
+                  value={addReminderBefore}
+                  onChange={(e) => setAddReminderBefore(e.target.value)}
+                  style={{ borderRadius: '0px', width: '100%', background: '#222831', color: '#EEEEEE' }}
+                >
+                  <option value="">Tidak ada pengingat khusus (Hanya hari-H)</option>
+                  <option value="30">⏱️ 30 Menit sebelum deadline</option>
+                  <option value="60">⏱️ 1 Jam sebelum deadline</option>
+                  <option value="120">⏱️ 2 Jam sebelum deadline</option>
+                </select>
               </div>
 
               {/* Optional Initial Checklist */}
