@@ -8,6 +8,7 @@ export default async function handler(req: any, res: any) {
   // GET: Fetch all courses for user
   if (req.method === 'GET') {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       const courses = await prisma.academicCourse.findMany({
         where: { userId },
         orderBy: { id: 'asc' }

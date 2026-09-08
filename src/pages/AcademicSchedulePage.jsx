@@ -49,8 +49,21 @@ const DAY_LABELS = {
   Sunday: { short: 'Min', full: 'Minggu' }
 };
 
-const getDayShort = (day) => DAY_LABELS[day]?.short || day?.slice(0, 3);
-const getDayFull = (day) => DAY_LABELS[day]?.full || day;
+export const normalizeDay = (day) => {
+  if (!day) return 'Monday';
+  const d = String(day).trim().toLowerCase();
+  if (d === 'senin' || d === 'monday' || d === 'mon' || d === 'sen') return 'Monday';
+  if (d === 'selasa' || d === 'tuesday' || d === 'tue' || d === 'sel') return 'Tuesday';
+  if (d === 'rabu' || d === 'wednesday' || d === 'wed' || d === 'rab') return 'Wednesday';
+  if (d === 'kamis' || d === 'thursday' || d === 'thu' || d === 'kam') return 'Thursday';
+  if (d === 'jumat' || d === "jum'at" || d === 'friday' || d === 'fri' || d === 'jum') return 'Friday';
+  if (d === 'sabtu' || d === 'saturday' || d === 'sat' || d === 'sab') return 'Saturday';
+  if (d === 'minggu' || d === 'sunday' || d === 'sun' || d === 'min') return 'Sunday';
+  return day;
+};
+
+const getDayShort = (day) => DAY_LABELS[normalizeDay(day)]?.short || day?.slice(0, 3);
+const getDayFull = (day) => DAY_LABELS[normalizeDay(day)]?.full || day;
 
 const COLOR_OPTIONS = [
   { name: 'Cyan / Teal', value: '#00ADB5' },
@@ -62,8 +75,9 @@ const COLOR_OPTIONS = [
 ];
 
 export default function AcademicSchedulePage() {
-  const { courses, schedules, addAcademicCourse, updateAcademicCourse, removeAcademicCourse } = useData();
+  const { courses, schedules, reloadData, addAcademicCourse, updateAcademicCourse, removeAcademicCourse } = useData();
   const { toast } = useToast();
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Pop-up Modal State (used for both Add and Edit)
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -566,14 +580,14 @@ export default function AcademicSchedulePage() {
   // Filtered courses
   const filteredCourses = selectedDayFilter === 'ALL'
     ? courses
-    : courses.filter(c => c.hari === selectedDayFilter);
+    : courses.filter(c => normalizeDay(c.hari) === normalizeDay(selectedDayFilter));
 
   // Total SKS calculation
   const totalSks = courses.reduce((sum, c) => sum + (Number(c.sks) || 0), 0);
 
   // Helper function to evaluate live class status
   const getLiveClassStatus = (c) => {
-    if (c.hari !== todayName) return null;
+    if (normalizeDay(c.hari) !== normalizeDay(todayName)) return null;
 
     const [startH, startM] = (c.jamMulai || '08:00').split(':').map(Number);
     const [endH, endM] = (c.jamSelesai || '10:00').split(':').map(Number);
@@ -706,16 +720,48 @@ export default function AcademicSchedulePage() {
             </span>
           </div>
 
-          {/* New Course Button */}
-          <button
-            type="button"
-            onClick={handleOpenAddModal}
-            className="glass-button"
-            style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '5px', borderColor: 'rgba(0, 173, 181, 0.4)', color: '#00FFF5' }}
-          >
-            <Plus size={13} />
-            <span>Tambah Matkul</span>
-          </button>
+          {/* Actions: Sync & New Course Button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <button
+              type="button"
+              onClick={async () => {
+                setIsSyncing(true);
+                try {
+                  await reloadData();
+                  toast.success('Data jadwal kuliah tersinkron!');
+                } catch {
+                  toast.error('Gagal menyinkronkan data.');
+                } finally {
+                  setTimeout(() => setIsSyncing(false), 400);
+                }
+              }}
+              className="glass-button"
+              style={{
+                fontSize: '11px',
+                padding: '4px 10px',
+                borderRadius: '0px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                borderColor: 'rgba(0, 173, 181, 0.35)',
+                color: '#b0b8c1'
+              }}
+              title="Sinkronkan data dengan Cloud / HP"
+            >
+              <RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
+              <span>{isSyncing ? 'Menyinkron...' : 'Sinkron'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenAddModal}
+              className="glass-button"
+              style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '5px', borderColor: 'rgba(0, 173, 181, 0.4)', color: '#00FFF5' }}
+            >
+              <Plus size={13} />
+              <span>Tambah Matkul</span>
+            </button>
+          </div>
         </div>
 
         {/* Day Tabs: Permanent Grid Layout (All 7 Days + All Always Visible) */}
@@ -740,8 +786,8 @@ export default function AcademicSchedulePage() {
             Semua ({courses.length})
           </button>
           {DAYS_OF_WEEK.map(day => {
-            const count = courses.filter(c => c.hari === day).length;
-            const isToday = day === todayName;
+            const count = courses.filter(c => normalizeDay(c.hari) === day).length;
+            const isToday = day === normalizeDay(todayName);
             const isSelected = selectedDayFilter === day;
             return (
               <button
@@ -786,7 +832,7 @@ export default function AcademicSchedulePage() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '8px' }}>
           {filteredCourses.map((c) => {
-            const isToday = c.hari === todayName;
+            const isToday = normalizeDay(c.hari) === normalizeDay(todayName);
             const liveStatus = getLiveClassStatus(c);
 
             // Attendance calculations

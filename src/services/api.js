@@ -191,7 +191,10 @@ export function logoutUser() {
 
 export async function getMoodHistory() {
   try {
-    const res = await fetch(`${BASE_URL}/mood`, { headers: authHeader() });
+    const res = await fetch(`${BASE_URL}/mood?_t=${Date.now()}`, {
+      headers: { ...authHeader(), 'Cache-Control': 'no-cache' },
+      cache: 'no-store'
+    });
     if (res.ok) return await res.json();
   } catch (e) {
     console.warn("Using offline fallback for getMoodHistory");
@@ -253,7 +256,10 @@ export async function deleteMood(id) {
 
 export async function getSchedules() {
   try {
-    const res = await fetch(`${BASE_URL}/schedule`, { headers: authHeader() });
+    const res = await fetch(`${BASE_URL}/schedule?_t=${Date.now()}`, {
+      headers: { ...authHeader(), 'Cache-Control': 'no-cache' },
+      cache: 'no-store'
+    });
     if (res.ok) return await res.json();
   } catch (e) {
     console.warn("Using offline fallback for getSchedules");
@@ -331,7 +337,10 @@ export async function deleteSchedule(id) {
 // Academic Courses (Jadwal Kuliah) API
 export async function getAcademicCourses() {
   try {
-    const res = await fetch(`${BASE_URL}/academic-courses`, { headers: authHeader() });
+    const res = await fetch(`${BASE_URL}/academic-courses?_t=${Date.now()}`, {
+      headers: { ...authHeader(), 'Cache-Control': 'no-cache' },
+      cache: 'no-store'
+    });
     if (res.ok) {
       let serverCourses = await res.json();
       if (!Array.isArray(serverCourses)) serverCourses = [];

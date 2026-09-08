@@ -54,6 +54,32 @@ export function DataProvider({ children }) {
     reloadData();
   }, [reloadData]);
 
+  // Auto-sync multi-perangkat (Laptop <-> HP): Refetch saat window difokuskan, tab aktif, atau interval 15 detik
+  useEffect(() => {
+    if (!user) return;
+
+    const handleSync = () => {
+      if (document.visibilityState === 'visible') {
+        reloadData();
+      }
+    };
+
+    window.addEventListener('focus', handleSync);
+    document.addEventListener('visibilitychange', handleSync);
+
+    const syncInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        reloadData();
+      }
+    }, 15000);
+
+    return () => {
+      window.removeEventListener('focus', handleSync);
+      document.removeEventListener('visibilitychange', handleSync);
+      clearInterval(syncInterval);
+    };
+  }, [user, reloadData]);
+
   // Pengingat Otomatis Mandiri: 30 Menit Sebelum Tiap Kelas & Deadline Hari Ini
   useEffect(() => {
     if (!user) return;

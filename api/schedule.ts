@@ -17,6 +17,7 @@ export default async function handler(req: any, res: any) {
 
   if (req.method === 'GET') {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       const schedules = await prisma.schedule.findMany({
         where: { userId },
         orderBy: { tanggal: 'asc' }
