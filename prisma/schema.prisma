@@ -104,4 +104,10 @@ model AcademicCourse {
   @@index([userId, hari])
 }
 
+model NotificationLog {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  createdAt DateTime @default(now())
 
+  @@index([key])
+}

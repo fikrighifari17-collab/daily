@@ -89,8 +89,8 @@ export function DataProvider({ children }) {
             const classMinutes = parseInt(hStr, 10) * 60 + parseInt(mStr, 10);
             const diffMinutes = classMinutes - nowMinutes;
 
-            // Kirim pesan pengingat tersendiri bila tersisa 25 - 30 menit
-            if (diffMinutes >= 25 && diffMinutes <= 30) {
+            // Kirim pesan pengingat tersendiri bila kelas akan mulai dalam rentang <= 30 menit
+            if (diffMinutes > 0 && diffMinutes <= 30) {
               const sentKey = `tg_sent_course_${c.id}_${todayDateStr}`;
               if (!localStorage.getItem(sentKey)) {
                 localStorage.setItem(sentKey, 'true');
@@ -149,8 +149,8 @@ export function DataProvider({ children }) {
             const deadlineMinutes = parseInt(hStr, 10) * 60 + parseInt(mStr || '0', 10);
             const diffMinutes = deadlineMinutes - nowMinutes;
 
-            // Trigger jika dalam rentang toleransi [targetMinutes - 10, targetMinutes]
-            if (diffMinutes > 0 && diffMinutes <= targetMinutes && diffMinutes >= (targetMinutes - 10)) {
+            // Trigger jika dalam rentang <= targetMinutes (belum lewat)
+            if (diffMinutes > 0 && diffMinutes <= targetMinutes) {
               const sentImpendingKey = `tg_sent_impending_${s.id}_${targetMinutes}_${todayDateStr}`;
               if (!localStorage.getItem(sentImpendingKey)) {
                 localStorage.setItem(sentImpendingKey, 'true');
