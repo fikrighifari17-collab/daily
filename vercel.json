@@ -6,8 +6,6 @@
     { "source": "/api/academic-courses/:id", "destination": "/api/academic-courses?id=:id" },
     { "source": "/api/schedule/:id", "destination": "/api/schedule?id=:id" },
     { "source": "/api/mood/:id", "destination": "/api/mood?id=:id" },
-    { "source": "/api/cron/reminders", "destination": "/api/cron/reminders" },
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
