@@ -195,7 +195,13 @@ export async function getMoodHistory() {
       headers: { ...authHeader(), 'Cache-Control': 'no-cache' },
       cache: 'no-store'
     });
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setLocal(STORAGE_KEYS.MOODS, data);
+      }
+      return data;
+    }
   } catch (e) {
     console.warn("Using offline fallback for getMoodHistory");
   }
@@ -260,7 +266,13 @@ export async function getSchedules() {
       headers: { ...authHeader(), 'Cache-Control': 'no-cache' },
       cache: 'no-store'
     });
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setLocal(STORAGE_KEYS.SCHEDULES, data);
+      }
+      return data;
+    }
   } catch (e) {
     console.warn("Using offline fallback for getSchedules");
   }
@@ -345,43 +357,7 @@ export async function getAcademicCourses() {
       let serverCourses = await res.json();
       if (!Array.isArray(serverCourses)) serverCourses = [];
 
-      // Auto-sync mechanism:
-      // If user has existing courses in device localStorage not yet stored on server (e.g., entered on HP before backend table was created),
-      // automatically upload them to the cloud database so both devices stay synchronized.
-      const localCourses = getLocal(STORAGE_KEYS.COURSES, []);
-      if (Array.isArray(localCourses) && localCourses.length > 0) {
-        const unsynced = localCourses.filter(localItem => {
-          if (!localItem || !localItem.mataKuliah) return false;
-          return !serverCourses.some(sc =>
-            sc.mataKuliah?.trim().toLowerCase() === localItem.mataKuliah?.trim().toLowerCase() &&
-            sc.hari?.trim().toLowerCase() === localItem.hari?.trim().toLowerCase()
-          );
-        });
-
-        if (unsynced.length > 0) {
-          try {
-            let currentUsername = "";
-            try {
-              currentUsername = JSON.parse(localStorage.getItem("daily_user_info") || "{}").username || "";
-            } catch {}
-
-            const syncRes = await fetch(`${BASE_URL}/academic-courses`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", ...authHeader() },
-              body: JSON.stringify({ bulkCourses: unsynced, username: currentUsername })
-            });
-            if (syncRes.ok) {
-              const uploaded = await syncRes.json();
-              if (Array.isArray(uploaded)) {
-                serverCourses.push(...uploaded);
-              }
-            }
-          } catch (syncErr) {
-            console.warn("Auto-syncing local courses to server failed:", syncErr);
-          }
-        }
-      }
-
+      // Server is the single source of truth. Always sync local cache to match server state.
       setLocal(STORAGE_KEYS.COURSES, serverCourses);
       return serverCourses;
     }
@@ -489,7 +465,13 @@ export async function deleteAcademicCourse(id) {
 export async function getTags() {
   try {
     const res = await fetch(`${BASE_URL}/tags`, { headers: authHeader() });
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setLocal(STORAGE_KEYS.TAGS, data);
+      }
+      return data;
+    }
   } catch (e) {
     console.warn("Using offline fallback for getTags");
   }
@@ -518,7 +500,13 @@ export async function addTag(nama) {
 export async function getCopingStrategies() {
   try {
     const res = await fetch(`${BASE_URL}/coping`, { headers: authHeader() });
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setLocal(STORAGE_KEYS.COPING, data);
+      }
+      return data;
+    }
   } catch (e) {
     console.warn("Using offline fallback for getCopingStrategies");
   }
@@ -547,7 +535,13 @@ export async function addCopingStrategy(namaStrategi, deskripsi) {
 export async function getBrainDumps() {
   try {
     const res = await fetch(`${BASE_URL}/braindump`, { headers: authHeader() });
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setLocal(STORAGE_KEYS.DUMPS, data);
+      }
+      return data;
+    }
   } catch (e) {
     console.warn("Using offline fallback for getBrainDumps");
   }

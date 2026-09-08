@@ -63,7 +63,7 @@ export function DataProvider({ children }) {
     reloadData();
   }, [reloadData]);
 
-  // Auto-sync multi-perangkat (Laptop <-> HP): Silent background sync saat window difokuskan atau interval 15 detik
+  // Auto-sync multi-perangkat (Laptop <-> HP): Silent background sync saat window/tab aktif atau interval 10 detik
   useEffect(() => {
     if (!user) return;
 
@@ -74,16 +74,20 @@ export function DataProvider({ children }) {
     };
 
     window.addEventListener('focus', handleSync);
+    window.addEventListener('pageshow', handleSync);
+    window.addEventListener('online', handleSync);
     document.addEventListener('visibilitychange', handleSync);
 
     const syncInterval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         reloadData(true);
       }
-    }, 15000);
+    }, 10000);
 
     return () => {
       window.removeEventListener('focus', handleSync);
+      window.removeEventListener('pageshow', handleSync);
+      window.removeEventListener('online', handleSync);
       document.removeEventListener('visibilitychange', handleSync);
       clearInterval(syncInterval);
     };
@@ -206,78 +210,108 @@ export function DataProvider({ children }) {
 
   const addMoodEntry = async (entryData) => {
     const res = await api.submitMood(entryData);
-    await reloadData();
+    if (res) {
+      setMoods(prev => [res, ...prev.filter(m => m.id !== res.id)]);
+    }
+    reloadData(true);
     return res;
   };
 
   const removeMoodEntry = async (id) => {
+    // Optimistic delete: instantly remove from screen
+    setMoods(prev => prev.filter(m => m.id !== id));
     await api.deleteMood(id);
-    await reloadData();
+    reloadData(true);
   };
 
   const addScheduleItem = async (schedData) => {
     const res = await api.submitSchedule(schedData);
+    if (res) {
+      setSchedules(prev => [...prev.filter(s => s.id !== res.id), res]);
+    }
     try {
       const displayName = user?.nama || user?.username || 'demo';
-      notifyNewTask(schedData, user?.telegramChatId, displayName);
-    } catch (e) {
-      console.warn('Telegram notify error:', e);
-    }
-    await reloadData();
+      notifyNewTask(schedData, user?.telegramChatId, displayName).catch(() => {});
+    } catch {}
+    reloadData(true);
     return res;
   };
 
   const updateScheduleItem = async (id, schedData) => {
+    // Optimistic update: reflect immediately
+    setSchedules(prev => prev.map(s => (s.id === id ? { ...s, ...schedData } : s)));
     const res = await api.updateSchedule(id, schedData);
+    if (res) {
+      setSchedules(prev => prev.map(s => (s.id === id ? { ...s, ...res } : s)));
+    }
     try {
       if (schedData.progress === 100 || schedData.selesai) {
         const displayName = user?.nama || user?.username || 'demo';
-        notifyTaskCompleted(schedData, user?.telegramChatId, displayName);
+        notifyTaskCompleted(schedData, user?.telegramChatId, displayName).catch(() => {});
       }
-    } catch (e) {
-      console.warn('Telegram notify error:', e);
-    }
-    await reloadData();
+    } catch {}
+    reloadData(true);
     return res;
   };
 
   const removeScheduleItem = async (id) => {
+    // Optimistic delete: instantly remove from screen
+    setSchedules(prev => prev.filter(s => s.id !== id));
     await api.deleteSchedule(id);
-    await reloadData();
+    reloadData(true);
   };
 
   const addAcademicCourse = async (courseData) => {
     const res = await api.submitAcademicCourse(courseData);
-    await reloadData();
+    if (res) {
+      setCourses(prev => [...prev.filter(c => c.id !== res.id), res]);
+    }
+    reloadData(true);
     return res;
   };
 
   const updateAcademicCourse = async (id, courseData) => {
+    // Optimistic update: reflect immediately
+    setCourses(prev => prev.map(c => (c.id === id ? { ...c, ...courseData } : c)));
     const res = await api.updateAcademicCourse(id, courseData);
-    await reloadData();
+    if (res) {
+      setCourses(prev => prev.map(c => (c.id === id ? { ...c, ...res } : c)));
+    }
+    reloadData(true);
     return res;
   };
 
   const removeAcademicCourse = async (id) => {
+    // Optimistic delete: instantly remove from screen
+    setCourses(prev => prev.filter(c => c.id !== id));
     await api.deleteAcademicCourse(id);
-    await reloadData();
+    reloadData(true);
   };
 
   const createTag = async (nama) => {
     const res = await api.addTag(nama);
-    await reloadData();
+    if (res) {
+      setTags(prev => [...prev.filter(t => t.id !== res.id), res]);
+    }
+    reloadData(true);
     return res;
   };
 
   const createCopingStrategy = async (nama, deskripsi) => {
     const res = await api.addCopingStrategy(nama, deskripsi);
-    await reloadData();
+    if (res) {
+      setCopingList(prev => [...prev.filter(c => c.id !== res.id), res]);
+    }
+    reloadData(true);
     return res;
   };
 
   const createBrainDump = async (isi) => {
     const res = await api.addBrainDump(isi);
-    await reloadData();
+    if (res) {
+      setBrainDumps(prev => [res, ...prev.filter(b => b.id !== res.id)]);
+    }
+    reloadData(true);
     return res;
   };
 

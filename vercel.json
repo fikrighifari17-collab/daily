@@ -1,5 +1,11 @@
 {
   "framework": "vite",
+  "crons": [
+    {
+      "path": "/api/monitor-supabase",
+      "schedule": "0 1 * * *"
+    }
+  ],
   "rewrites": [
     { "source": "/api/academic-courses/:id", "destination": "/api/academic-courses?id=:id" },
     { "source": "/api/schedule/:id", "destination": "/api/schedule?id=:id" },
