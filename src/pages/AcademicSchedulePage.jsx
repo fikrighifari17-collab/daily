@@ -912,7 +912,7 @@ export default function AcademicSchedulePage() {
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '10px' }}>
           {filteredCourses.map((c) => {
             const isToday = normalizeDay(c.hari) === normalizeDay(todayName);
             const liveStatus = getLiveClassStatus(c);
@@ -938,23 +938,32 @@ export default function AcademicSchedulePage() {
                 key={c.id}
                 className="glass-panel glass-panel-hover"
                 style={{
-                  padding: '14px 18px',
+                  padding: '14px 16px',
                   borderRadius: '0px',
                   borderLeft: `4px solid ${c.warna || '#00ADB5'}`,
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  gap: '10px'
+                  boxSizing: 'border-box'
                 }}
               >
-                <div>
-                  {/* Card Header: Title, Day badge, SKS, Action Buttons */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                        <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#EEEEEE', margin: 0 }}>
-                          {c.mataKuliah}
-                        </h4>
+                {/* Top Section: Title, Badges, Details, Links */}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {/* Header Row: Title & Action Buttons */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h4 style={{
+                        fontSize: '15px',
+                        fontWeight: 700,
+                        color: '#EEEEEE',
+                        margin: 0,
+                        lineHeight: 1.35,
+                        wordBreak: 'break-word'
+                      }}>
+                        {c.mataKuliah}
+                      </h4>
+                      {/* Day & SKS Badges always consistently below title */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
                         <span style={{
                           fontSize: '9px',
                           fontWeight: 700,
@@ -975,17 +984,10 @@ export default function AcademicSchedulePage() {
                           {c.sks} SKS
                         </span>
                       </div>
-
-                      {c.dosen && (
-                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '4px' }}>
-                          <User size={12} color="var(--text-muted)" />
-                          <span>{c.dosen}</span>
-                        </div>
-                      )}
                     </div>
 
                     {/* Edit & Delete Actions */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
                       <button
                         type="button"
                         onClick={() => handleOpenEditModal(c)}
@@ -1009,7 +1011,7 @@ export default function AcademicSchedulePage() {
                     </div>
                   </div>
 
-                  {/* Live Class Status Badge (if today) */}
+                  {/* Live Class Status Badge (if active today) */}
                   {liveStatus && (
                     <div style={{
                       marginTop: '8px',
@@ -1022,55 +1024,72 @@ export default function AcademicSchedulePage() {
                       color: liveStatus.color,
                       background: liveStatus.bg,
                       border: `1px solid ${liveStatus.border}`,
-                      borderRadius: '0px'
+                      borderRadius: '0px',
+                      alignSelf: 'flex-start'
                     }}>
                       <Radio size={12} className={liveStatus.type === 'ongoing' ? 'animate-pulse' : ''} />
                       <span>{liveStatus.label}</span>
                     </div>
                   )}
 
-                  {/* Time and Room */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginTop: '8px', fontSize: '11px', color: '#EEEEEE' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <Clock size={12} color="#00FFF5" />
-                      <span>{c.jamMulai} - {c.jamSelesai}</span>
+                  {/* Course Details: Dosen, Time, Room */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: '8px', fontSize: '11px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: c.dosen && c.dosen !== 'Dosen Pengampu' ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
+                      <User size={12} style={{ flexShrink: 0, opacity: 0.7 }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {c.dosen && c.dosen !== 'Dosen Pengampu' ? c.dosen : 'Dosen belum ditentukan'}
+                      </span>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <MapPin size={12} color="#f59e0b" />
-                      <span>{c.ruangan || 'Ruang Kuliah'}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', color: '#EEEEEE' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
+                        <Clock size={12} color="#00FFF5" style={{ flexShrink: 0 }} />
+                        <span>{c.jamMulai && c.jamSelesai ? `${c.jamMulai} - ${c.jamSelesai}` : '08:00 - 10:30'}</span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: c.ruangan && c.ruangan !== 'Ruang Kuliah' ? '#EEEEEE' : 'var(--text-muted)' }}>
+                        <MapPin size={12} color="#f59e0b" style={{ flexShrink: 0 }} />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {c.ruangan && c.ruangan !== 'Ruang Kuliah' ? c.ruangan : 'Ruang belum diatur'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   {/* Quick Link Button & Linked Tasks Pill */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
-                    {c.link && (
-                      <a
-                        href={c.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="glass-button"
-                        style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '0px', color: '#00FFF5', borderColor: 'rgba(0, 173, 181, 0.4)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
-                        title={c.link}
-                      >
-                        <ExternalLink size={11} />
-                        <span>Buka Link Zoom/Gmeet</span>
-                      </a>
-                    )}
+                  {(c.link || linkedTasks.length > 0) && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                      {c.link && (
+                        <a
+                          href={c.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="glass-button"
+                          style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '0px', color: '#00FFF5', borderColor: 'rgba(0, 173, 181, 0.4)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          title={c.link}
+                        >
+                          <ExternalLink size={11} />
+                          <span>Buka Link Zoom/Gmeet</span>
+                        </a>
+                      )}
 
-                    {linkedTasks.length > 0 && (
-                      <NavLink
-                        to="/schedule"
-                        className="glass-button"
-                        style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '0px', color: '#f59e0b', borderColor: 'rgba(245, 158, 11, 0.4)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
-                        title="Lihat tugas dan ujian terkait di menu Tugas & Deadline"
-                      >
-                        <CheckSquare size={11} />
-                        <span>{linkedTasks.length} Tugas Terkait</span>
-                      </NavLink>
-                    )}
-                  </div>
+                      {linkedTasks.length > 0 && (
+                        <NavLink
+                          to="/schedule"
+                          className="glass-button"
+                          style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '0px', color: '#f59e0b', borderColor: 'rgba(245, 158, 11, 0.4)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          title="Lihat tugas dan ujian terkait di menu Tugas & Deadline"
+                        >
+                          <CheckSquare size={11} />
+                          <span>{linkedTasks.length} Tugas Terkait</span>
+                        </NavLink>
+                      )}
+                    </div>
+                  )}
                 </div>
+
+                {/* Bottom Section: Presensi Widget + Materi Perkuliahan Widget (Anchored Together) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '12px' }}>
 
                 {/* Attendance Tracker Widget */}
                 <div style={{
@@ -1268,44 +1287,45 @@ export default function AcademicSchedulePage() {
                         </button>
                       </div>
 
-                      {uniqueMeetings.length > 0 ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Tersedia:</span>
-                          {uniqueMeetings.slice(0, 5).map(p => (
-                            <span
-                              key={p}
-                              onClick={() => {
-                                setSelectedCourseForMaterials(c);
-                                setMaterialPertemuanFilter(String(p));
-                                setMaterialTypeFilter('ALL');
-                                setIsAddMaterialOpen(false);
-                              }}
-                              style={{
-                                fontSize: '9px',
-                                padding: '1px 5px',
-                                background: 'rgba(0, 173, 181, 0.15)',
-                                border: '1px solid rgba(0, 173, 181, 0.3)',
-                                color: '#00FFF5',
-                                cursor: 'pointer'
-                              }}
-                              title={`Klik untuk lihat Pertemuan ${p}`}
-                            >
-                              P.{p}
-                            </span>
-                          ))}
-                          {uniqueMeetings.length > 5 && (
-                            <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>+{uniqueMeetings.length - 5} lainnya</span>
-                          )}
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                          Belum ada file materi. Simpan slide, modul, atau link referensi di sini.
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
+                        {uniqueMeetings.length > 0 ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Tersedia:</span>
+                            {uniqueMeetings.slice(0, 5).map(p => (
+                              <span
+                                key={p}
+                                onClick={() => {
+                                  setSelectedCourseForMaterials(c);
+                                  setMaterialPertemuanFilter(String(p));
+                                  setMaterialTypeFilter('ALL');
+                                  setIsAddMaterialOpen(false);
+                                }}
+                                style={{
+                                  fontSize: '9px',
+                                  padding: '1px 5px',
+                                  background: 'rgba(0, 173, 181, 0.15)',
+                                  border: '1px solid rgba(0, 173, 181, 0.3)',
+                                  color: '#00FFF5',
+                                  cursor: 'pointer'
+                                }}
+                                title={`Klik untuk lihat Pertemuan ${p}`}
+                              >
+                                P.{p}
+                              </span>
+                            ))}
+                            {uniqueMeetings.length > 5 && (
+                              <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>+{uniqueMeetings.length - 5} lainnya</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '9px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            Belum ada file materi terunggah
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
+                </div>
               </div>
             );
           })}
