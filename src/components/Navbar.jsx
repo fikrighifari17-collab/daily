@@ -292,27 +292,45 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* ================= MOBILE EXPANDABLE MENU DRAWER (FLOATING OVERLAY) ================= */}
+        {/* ================= MOBILE EXPANDABLE MENU DRAWER & BACKDROP ================= */}
         {isMobileMenuOpen && (
-          <div 
-            className="animate-fade-in nav-mobile-drawer"
-            style={{
-              position: 'absolute',
-              top: 'calc(100% + 6px)',
-              left: 0,
-              right: 0,
-              padding: '12px 14px 16px 14px',
-              border: '1px solid rgba(0, 173, 181, 0.4)',
-              background: 'rgba(34, 40, 49, 0.98)',
-              backdropFilter: 'blur(25px)',
-              WebkitBackdropFilter: 'blur(25px)',
-              borderRadius: '8px',
-              boxShadow: '0 16px 45px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 173, 181, 0.25)',
-              zIndex: 100,
-              maxHeight: 'calc(100vh - 85px)',
-              overflowY: 'auto'
-            }}
-          >
+          <>
+            <div 
+              onClick={closeMobileMenu}
+              aria-label="Tutup menu"
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                width: '100vw',
+                height: '100vh',
+                background: 'rgba(0, 0, 0, 0.65)',
+                backdropFilter: 'blur(3px)',
+                WebkitBackdropFilter: 'blur(3px)',
+                zIndex: 105
+              }}
+            />
+            <div 
+              className="animate-fade-in nav-mobile-drawer"
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 6px)',
+                left: 0,
+                right: 0,
+                padding: '12px 14px 16px 14px',
+                border: '1px solid rgba(0, 173, 181, 0.4)',
+                background: 'rgba(34, 40, 49, 0.98)',
+                backdropFilter: 'blur(25px)',
+                WebkitBackdropFilter: 'blur(25px)',
+                borderRadius: '8px',
+                boxShadow: '0 16px 45px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 173, 181, 0.25)',
+                zIndex: 110,
+                maxHeight: 'calc(100vh - 85px)',
+                overflowY: 'auto'
+              }}
+            >
             {/* User Greeting & Status Card (Links to Privacy & PIN) */}
             {user && (
               <Link
@@ -447,30 +465,9 @@ export default function Navbar() {
               )}
             </div>
           </div>
-        )}
-      </header>
-
-      {/* Full-screen Backdrop rendered at document.body level so clicking anywhere outside closes the menu */}
-      {isMobileMenuOpen && typeof document !== 'undefined' && createPortal(
-        <div 
-          onClick={closeMobileMenu}
-          aria-label="Tutup menu"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100vw',
-            height: '100vh',
-            background: 'rgba(0, 0, 0, 0.65)',
-            backdropFilter: 'blur(3px)',
-            WebkitBackdropFilter: 'blur(3px)',
-            zIndex: 99
-          }}
-        />,
-        document.body
+        </>
       )}
+      </header>
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </>
