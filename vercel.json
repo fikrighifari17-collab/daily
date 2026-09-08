@@ -1,7 +1,5 @@
 {
   "framework": "vite",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
   "rewrites": [
     { "source": "/api/academic-courses/:id", "destination": "/api/academic-courses?id=:id" },
     { "source": "/api/schedule/:id", "destination": "/api/schedule?id=:id" },
