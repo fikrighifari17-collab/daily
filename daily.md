@@ -1,120 +1,220 @@
-# Kalender Emosi Pribadi
+# Semestara — Kalender Emosi & Pendamping Akademik Mahasiswa
 
-Aplikasi self-tracking mood untuk mahasiswa, dikorelasikan dengan jadwal akademik pribadi. Seluruh data bersifat privat milik pengguna — tidak ada fitur pelaporan ke pihak kampus atau institusi manapun.
+> *"I hope this makes things a little easier for you."*
 
-**Versi ini: Full-stack di Vercel** (React + Vercel Serverless Functions + Vercel Postgres), tanpa perlu XAMPP atau server terpisah.
+Aplikasi self-tracking mood dan pengorganisir jadwal akademik pribadi mahasiswa yang terintegrasi secara privat. Aplikasi ini membantu mahasiswa menjaga keseimbangan kesehatan mental dan performa akademik tanpa pelaporan ke pihak ketiga manapun.
 
-## Tech Stack
+- **URL Deployment Live:** `https://daily-pink-gamma.vercel.app/`
+- **Repositori:** `https://github.com/fikrighifari17-collab/daily`
+- **Arsitektur:** Full-stack di Vercel (React + Serverless Functions) + Supabase PostgreSQL + Telegram Bot Service
+
+---
+
+## Ringkasan Progres & Fitur yang Telah Diimplementasikan
+
+Berikut adalah daftar lengkap fitur, arsitektur, dan perbaikan yang sudah selesai dibangun sejauh ini:
+
+### 1. Fondasi Backend, Serverless, & Database Supabase
+- **Vercel Serverless Functions:** Seluruh route backend aktif di folder `api/` (`/api/auth/*`, `/api/academic-courses`, `/api/schedule`, `/api/mood`, `/api/cron/reminders`, `/api/health`).
+- **Shared Helpers Relocation:** Helper backend (`prisma.ts`, `auth.ts`, `telegram.ts`) dipusatkan di root `lib/` dengan import ESM `.js` eksplisit dan konfigurasi `tsconfig.json` tersendiri, mencegah konflik route Vercel.
+- **Supabase Transaction Pooler (Port 6543):** Koneksi database PostgreSQL menggunakan Transaction Mode Pooler (`aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1`), menyelesaikan problem connection dropped pada serverless Vercel.
+- **Node.js 24 Platform Alignment:** Spesifikasi engine `"engines": { "node": "24.x" }` di `package.json` untuk kompatibilitas jangka panjang Vercel.
+- **Health Check Monitoring:** Endpoint `/api/health` aktif untuk memverifikasi uptime backend dan konektivitas Supabase secara realtime.
+
+### 2. Autentikasi & Akun Multi-User
+- **JWT & Password Security:** Sistem registrasi & login menggunakan hashing `bcryptjs` dan token `jsonwebtoken`.
+- **Akun Aktif di Cloud:** Pengguna terdaftar di Supabase (`demo`, `katerine`, `haerin`, `fikritest`).
+- **Keamanan Profil:** Penyimpanan Telegram Chat ID per user untuk pengiriman pengingat personal.
+
+### 3. Modul Jadwal Kuliah Mingguan (Academic Schedule)
+- **Data Matkul Lengkap:** Menyimpan nama mata kuliah, nama dosen, hari, jam mulai/selesai, ruangan, bobot SKS, kode warna visual, link kelas (Zoom/GMeet/LMS), presensi, dan materi kuliah.
+- **Live Class Indicator:** Status kelas realtime yang terupdate otomatis:
+  - `LAGI KULIAH • Sisa X menit` (saat jam kuliah berlangsung).
+  - `Mulai X menit lagi` (ketika kelas akan dimulai dalam waktu dekat).
+  - `Kuliah Sudah Selesai` (setelah jam selesai).
+- **Manajemen Presensi 16 Pertemuan:**
+  - Tracking kehadiran per sesi (Hadir, Izin, Alpa, Pending) dengan alasan izin opsional.
+  - Perhitungan persentase kehadiran semester dan deteksi dini jika kehadiran di bawah 75%.
+  - Tombol aksi cepat *"Tandai Semua Hadir"*.
+- **Manajemen Materi & PPT Dosen:**
+  - Penyimpanan file materi (PDF, PPT, Word) dan tautan eksternal per pertemuan (Pertemuan 1–16).
+  - Fitur filter materi per nomor pertemuan dan per tipe file, serta tombol download langsung.
+- **Ekspor Kalender:** Integrasi ekspor ke format `.ics` untuk sinkronisasi ke Google Calendar, Outlook, atau Apple Calendar.
+
+### 4. Modul Tugas & Deadline Akademik (Schedule / Tasks)
+- **Pencatatan Tugas:** Kategori tugas, UTS, UAS, kuis, presentasi, dan kegiatan belajar.
+- **Kalkulasi Tenggat:** Penghitungan sisa hari, indikator prioritas tinggi/sedang/rendah, dan filter status (Belum Selesai vs Selesai).
+- **Attachment Storage Terisolasi:** Penyimpanan lampiran file/dokumen tugas menggunakan IndexedDB browser yang aman dan hemat kuota transfer cloud.
+
+### 5. Modul Kalender Emosi & Check-in Mood Harian
+- **Check-in Mood Komprehensif:** Pilihan skor emosi (1-5), waktu pencatatan (pagi, siang, sore, malam), catatan refleksi, rekaman audio voice note, dan lampiran foto.
+- **Tag Pemicu Emosi:** Pengelompokan pemicu emosi (Akademik, Tugas, Teman, Keluarga, Finansial, Tidur, dll.).
+- **Visualisasi Kalender Emosi:** Kalender visual berwarna untuk melihat tren fluktuasi emosi bulanan yang dikorelasikan dengan hari-hari sibuk perkuliahan.
+- **Coping Strategies & Brain Dump:** Kotak pencatatan cepat pembuang beban pikiran dan kumpulan strategi menenangkan diri.
+
+### 6. Notifikasi Telegram Bot Terintegrasi (@SemestaraBot)
+- **Tugas Baru & Tugas Selesai:** Bot otomatis mengirim pesan konfirmasi ke Telegram pengguna saat tugas baru ditambahkan atau diselesaikan.
+- **Pengingat Kelas (30 Menit Sebelum Mulai):** Deteksi otomatis jadwal kuliah hari ini yang mengirim pengingat ke Telegram 30 menit sebelum kelas dimulai.
+- **Vercel Cron Reminder (`/api/cron/reminders`):**
+  - Pengingat otomatis untuk tugas yang mendekati deadline (tenggat dalam 24 jam).
+  - Pengingat tugas yang terlewat (overdue) agar mahasiswa tidak ketinggalan pengumpulan.
+
+### 7. Sinkronisasi Real-Time Multi-Perangkat (HP & Laptop)
+- **Auto-Sync Lintas Perangkat:**
+  - `window.focus` & `visibilitychange`: Laptop otomatis menyinkronkan data terbaru dari Supabase begitu jendela atau tab dibuka.
+  - Polling latar belakang berkala setiap 15 detik agar perubahan yang dimasukkan dari HP otomatis tampil di laptop tanpa refresh manual.
+- **Tombol "Sinkron" Manual:** Tombol 1-klik di toolbar filter Jadwal Kuliah untuk memicu sinkronisasi instan kapan saja.
+- **Normalisasi Nama Hari (`normalizeDay`):** Penyeragaman format hari bahasa Indonesia (`Senin`, `Rabu`) dan bahasa Inggris (`Monday`, `Wednesday`) sehingga data tidak pernah hilang pada filter tab hari.
+- **Header Anti-Cache Realtime:** Penerapan header `Cache-Control: no-store, no-cache` di backend dan parameter query unik `?_t=...` di frontend untuk mencegah cache usang browser.
+- **Desain Responsif & Perbaikan Mobile Menu Drawer:** Penataan ulang stacking context `z-index` (drawer `110`, backdrop `105`) memastikan menu burger di layar HP berfungsi lancar dan tidak membeku.
+
+---
+
+## Tech Stack Saat Ini
 
 | Layer | Teknologi |
 |---|---|
-| Frontend | React (Vite), React Router, Recharts |
-| Backend | Vercel Serverless Functions (Node.js/TypeScript, folder `/api`) |
-| Database | Vercel Postgres (didukung oleh Neon) |
-| ORM | Prisma |
-| Auth | JWT (jsonwebtoken + bcrypt) |
-| Styling | Tailwind CSS |
-| Hosting | Vercel (frontend + backend + database, satu platform) |
+| **Frontend** | React (Vite), React Router, Lucide Icons, Canvas Confetti |
+| **Styling** | Vanilla CSS Glassmorphism kustom (Teal/Dark Mode Palette) |
+| **Backend** | Vercel Serverless Functions (Node.js 24, TypeScript, folder `/api`) |
+| **Database** | PostgreSQL di Supabase (via Transaction Pooler port 6543) |
+| **ORM** | Prisma Client (v6.19.3) |
+| **Autentikasi** | JWT (`jsonwebtoken`) + enkripsi `bcryptjs` |
+| **Notifikasi** | Telegram Bot API (`node-fetch`) + Vercel Cron Jobs |
+| **Hosting & CI/CD** | Vercel (Auto-deploy dari branch `main` GitHub) |
 
 ---
 
-## Struktur Folder Proyek (Monorepo Vercel)
+## Struktur Folder Proyek
 
 ```
-kalender-emosi/
-├── api/                          # Serverless Functions (auto-detect oleh Vercel)
+daily/
+├── api/                          # Vercel Serverless Functions
 │   ├── auth/
-│   │   ├── register.ts
-│   │   └── login.ts
-│   ├── mood/
-│   │   ├── index.ts              # GET (list) & POST (create)
-│   │   └── [id].ts               # PUT & DELETE by id
-│   ├── schedule/
-│   │   ├── index.ts
-│   │   └── [id].ts
-│   ├── tags/
-│   │   └── index.ts
-│   ├── coping/
-│   │   └── index.ts
-│   ├── braindump/
-│   │   └── index.ts
-│   ├── insight/
-│   │   └── analytics.ts
-│   └── _lib/
-│       ├── prisma.ts             # Prisma client singleton
-│       └── auth-middleware.ts    # Verifikasi JWT
+│   │   ├── login.ts              # Login & pengembalian JWT
+│   │   ├── register.ts           # Registrasi akun baru
+│   │   └── me.ts                 # Update profil & Telegram Chat ID
+│   ├── academic-courses.ts       # CRUD Jadwal Kuliah, presensi, dan materi
+│   ├── schedule.ts               # CRUD Tugas & Deadline akademik
+│   ├── mood.ts                   # CRUD Riwayat & Check-in Mood
+│   ├── health.ts                 # Healthcheck koneksi Supabase & backend
+│   └── cron/
+│       └── reminders.ts          # Cron pengingat deadline & overdue Telegram
+│
+├── lib/                          # Shared Serverless Modules (bukan route Vercel)
+│   ├── prisma.ts                 # Prisma Client singleton
+│   ├── auth.ts                   # Middleware verifikasi JWT
+│   └── telegram.ts               # Telegram notification engine
 │
 ├── prisma/
-│   └── schema.prisma
+│   └── schema.prisma             # Skema model Supabase PostgreSQL
 │
-├── src/                           # Frontend React
+├── src/                          # Frontend Application (React)
 │   ├── components/
-│   │   ├── MoodCheckin.jsx
-│   │   ├── MoodChart.jsx
-│   │   ├── CalendarOverlay.jsx
-│   │   ├── TagManager.jsx
-│   │   ├── BrainDump.jsx
-│   │   ├── CopingLibrary.jsx
-│   │   └── PinLock.jsx
+│   │   ├── Navbar.jsx            # Header & responsive mobile drawer navigation
+│   │   ├── SemestaraLogo.jsx     # Komponen logo Semestara SVG modern
+│   │   ├── CalendarOverlay.jsx   # Modal overlay kalender
+│   │   ├── PinLock.jsx           # Fitur kunci PIN lokal
+│   │   └── MoodCheckin.jsx       # Form input emosi & mood harian
+│   ├── context/
+│   │   ├── AuthContext.jsx       # State session user & token
+│   │   ├── DataContext.jsx       # State data global & listener auto-sync 15s
+│   │   └── ToastContext.jsx      # Notifikasi pop-up toast
 │   ├── pages/
-│   │   ├── Dashboard.jsx
-│   │   ├── CheckinPage.jsx
-│   │   ├── InsightPage.jsx
-│   │   ├── SchedulePage.jsx
-│   │   └── SettingsPage.jsx
+│   │   ├── Dashboard.jsx         # Ringkasan mood harian & kelas hari ini
+│   │   ├── AcademicSchedulePage.jsx # Jadwal kuliah, presensi, materi, & tombol sync
+│   │   ├── SchedulePage.jsx      # Tugas & deadline, lampiran, filter prioritas
+│   │   ├── CheckinPage.jsx       # Riwayat & analitik emosi
+│   │   ├── SettingsPage.jsx      # Profil, set Telegram ID, export data, tema
+│   │   └── LoginPage.jsx         # Halaman masuk & registrasi
 │   ├── services/
-│   │   └── api.js
-│   ├── App.jsx
-│   └── main.jsx
+│   │   ├── api.js                # Client API calls dengan anti-cache headers
+│   │   └── telegramService.js    # Client-side trigger notifikasi Telegram
+│   ├── utils/
+│   │   ├── scheduleUtils.js      # Serializer & parser data tugas
+│   │   ├── calendarExport.js     # Generator file .ics
+│   │   └── attachmentStorage.js  # Penyimpanan file IndexedDB lokal
+│   ├── App.jsx                   # Routing aplikasi
+│   └── main.jsx                  # Entry point
 │
-├── index.html
-├── package.json
-├── vite.config.js
-├── vercel.json
-└── .env.local                     # DATABASE_URL, JWT_SECRET (jangan di-commit)
+├── tsconfig.json                 # Konfigurasi TypeScript untuk serverless api/
+├── vercel.json                   # Konfigurasi rewrite & Vercel Cron schedule
+├── package.json                  # Dependencies & script build (prisma generate + vite build)
+└── .env                          # Variabel lingkungan lokal (DATABASE_URL port 6543)
 ```
 
 ---
 
-## Skema Database (Prisma — PostgreSQL)
+## Skema Database Terpasang (Supabase PostgreSQL)
 
 ```prisma
-// prisma/schema.prisma
-generator client {
-  provider = "prisma-client-js"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id          Int       @id @default(autoincrement())
-  nama        String
-  email       String    @unique
-  password    String
-  pinLock     String?
-  createdAt   DateTime  @default(now())
+generator client {
+  provider = "prisma-client-js"
+}
 
-  moodEntries      MoodEntry[]
-  schedules        Schedule[]
-  tags             Tag[]
+model User {
+  id             Int       @id @default(autoincrement())
+  username       String    @unique
+  nama           String
+  email          String?   @unique
+  password       String
+  pinLock        String?
+  telegramChatId String?
+  createdAt      DateTime  @default(now())
+
+  moodEntries     MoodEntry[]
+  schedules       Schedule[]
+  academicCourses AcademicCourse[]
+  tags            Tag[]
   copingStrategies CopingStrategy[]
-  brainDumps       BrainDump[]
+  brainDumps      BrainDump[]
+}
+
+model AcademicCourse {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  mataKuliah  String
+  dosen       String   @default("Dosen Pengampu")
+  hari        String   @default("Monday")
+  jamMulai    String   @default("08:00")
+  jamSelesai  String   @default("10:00")
+  ruangan     String   @default("Ruang Kuliah")
+  sks         Int      @default(3)
+  warna       String   @default("#00ADB5")
+  link        String   @default("")
+  attendance  Json?    // Sesi 1-16, status hadir/izin/alpa, materi & file PPT
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Schedule {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  judul     String
+  jenis     String   // tugas, uts, uas, presentasi, belajar
+  tanggal   DateTime @db.Date
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model MoodEntry {
-  id            Int       @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   userId        Int
-  moodScore     Int       // skala 1-5
+  moodScore     Int      // skala 1-5
   catatan       String?
   voiceNotePath String?
-  waktu         String    // "pagi" | "siang" | "malam"
-  tanggal       DateTime  @db.Date
-  createdAt     DateTime  @default(now())
+  photoUrl      String?
+  waktu         String   @default("08:00 AM")
+  tanggal       DateTime @db.Date
+  createdAt     DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   tags MoodTag[]
 }
 
@@ -137,21 +237,11 @@ model MoodTag {
   @@id([moodId, tagId])
 }
 
-model Schedule {
-  id      Int      @id @default(autoincrement())
-  userId  Int
-  judul   String
-  jenis   String   // "tugas" | "uts" | "uas" | "presentasi" | "lainnya"
-  tanggal DateTime @db.Date
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
 model CopingStrategy {
-  id            Int     @id @default(autoincrement())
-  userId        Int
-  namaStrategi  String
-  deskripsi     String?
+  id           Int     @id @default(autoincrement())
+  userId       Int
+  namaStrategi String
+  deskripsi    String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -168,196 +258,26 @@ model BrainDump {
 
 ---
 
-## Contoh Serverless Function (api/mood/index.ts)
+## Daftar Endpoint API Vercel
 
-```typescript
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { prisma } from '../_lib/prisma';
-import { verifyToken } from '../_lib/auth-middleware';
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const userId = verifyToken(req);
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-
-  if (req.method === 'POST') {
-    const { moodScore, catatan, waktu, tanggal, tagIds } = req.body;
-    const entry = await prisma.moodEntry.create({
-      data: {
-        userId,
-        moodScore,
-        catatan,
-        waktu,
-        tanggal: new Date(tanggal),
-        tags: { create: (tagIds || []).map((tagId: number) => ({ tagId })) },
-      },
-    });
-    return res.status(201).json(entry);
-  }
-
-  if (req.method === 'GET') {
-    const { range = 'month' } = req.query;
-    const entries = await prisma.moodEntry.findMany({
-      where: { userId },
-      include: { tags: { include: { tag: true } } },
-      orderBy: { tanggal: 'desc' },
-    });
-    return res.status(200).json(entries);
-  }
-
-  return res.status(405).json({ error: 'Method not allowed' });
-}
-```
-
-## Prisma Client Singleton (api/_lib/prisma.ts)
-
-```typescript
-import { PrismaClient } from '@prisma/client';
-
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient();
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
-```
-
-## Middleware Verifikasi JWT (api/_lib/auth-middleware.ts)
-
-```typescript
-import jwt from 'jsonwebtoken';
-import type { VercelRequest } from '@vercel/node';
-
-export function verifyToken(req: VercelRequest): number | null {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return null;
-  try {
-    const token = authHeader.replace('Bearer ', '');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: number };
-    return decoded.userId;
-  } catch {
-    return null;
-  }
-}
-```
-
----
-
-## Daftar Endpoint API
-
-| Endpoint | Method | Fungsi |
+| Endpoint | Method | Deskripsi & Fungsi |
 |---|---|---|
-| `/api/auth/register` | POST | Registrasi user baru |
-| `/api/auth/login` | POST | Login, mengembalikan JWT |
-| `/api/mood` | GET/POST | List mood / tambah mood baru |
-| `/api/mood/[id]` | PUT/DELETE | Update / hapus entri mood |
-| `/api/schedule` | GET/POST | List / tambah jadwal akademik pribadi |
-| `/api/schedule/[id]` | DELETE | Hapus jadwal |
-| `/api/tags` | GET/POST | Kelola tag pemicu custom |
-| `/api/coping` | GET/POST | Kelola strategi coping personal |
-| `/api/braindump` | GET/POST | Simpan/ambil catatan brain dump |
-| `/api/insight/analytics` | GET | Tren mood, korelasi jadwal, skor beban mingguan |
+| `/api/health` | GET | Cek status serverless backend & koneksi Supabase |
+| `/api/auth/register` | POST | Pendaftaran user baru (enkripsi bcrypt) |
+| `/api/auth/login` | POST | Login user, mengembalikan token JWT |
+| `/api/auth/me` | GET / PUT | Ambil profil & simpan Telegram Chat ID |
+| `/api/academic-courses` | GET / POST | Ambil seluruh jadwal kuliah user / tambah matkul baru / upload bulk |
+| `/api/academic-courses?id=:id` | PUT / DELETE | Update detail matkul, presensi, materi PPT / hapus matkul |
+| `/api/schedule` | GET / POST | Ambil daftar tugas & deadline / tambah tugas baru |
+| `/api/schedule?id=:id` | PUT / DELETE | Update status selesai tugas / hapus tugas |
+| `/api/mood` | GET / POST | Ambil riwayat mood / simpan check-in emosi |
+| `/api/cron/reminders` | GET | Cron job otomatis untuk pengingat deadline <24 jam & overdue |
 
 ---
 
-## Pemanggilan API dari React (src/services/api.js)
+## Prinsip Keamanan & Privasi
 
-```javascript
-const BASE_URL = "/api"; // relatif, karena frontend & backend satu domain di Vercel
-
-function authHeader() {
-  const token = localStorage.getItem("token");
-  return { Authorization: `Bearer ${token}` };
-}
-
-export async function submitMood(data) {
-  const res = await fetch(`${BASE_URL}/mood`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeader() },
-    body: JSON.stringify(data),
-  });
-  return res.json();
-}
-
-export async function getMoodHistory(range = "month") {
-  const res = await fetch(`${BASE_URL}/mood?range=${range}`, {
-    headers: authHeader(),
-  });
-  return res.json();
-}
-```
-
----
-
-## Konfigurasi vercel.json
-
-```json
-{
-  "framework": "vite",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" }
-  ]
-}
-```
-
----
-
-## Environment Variables (diisi di Vercel Dashboard → Settings → Environment Variables)
-
-```
-DATABASE_URL=      # otomatis terisi kalau pakai Vercel Postgres integration
-JWT_SECRET=        # string acak yang panjang & rahasia
-```
-
----
-
-## Langkah Deploy ke Vercel
-
-1. **Inisialisasi project**
-   ```bash
-   npm create vite@latest kalender-emosi -- --template react
-   cd kalender-emosi
-   npm install @vercel/node @prisma/client prisma jsonwebtoken bcrypt
-   ```
-
-2. **Setup Prisma & database**
-   ```bash
-   npx prisma init
-   # isi schema.prisma seperti di atas
-   npx prisma migrate dev --name init
-   ```
-
-3. **Tambahkan Vercel Postgres**
-   - Buka dashboard Vercel → project → tab **Storage** → **Create Database** → pilih **Postgres**.
-   - Vercel otomatis mengisi `DATABASE_URL` ke environment variables project.
-
-4. **Push ke GitHub, lalu import project di Vercel**
-   ```bash
-   git init
-   git add .
-   git commit -m "init kalender emosi"
-   git remote add origin <repo-url>
-   git push -u origin main
-   ```
-   - Buka [vercel.com/new](https://vercel.com/new), pilih repo, klik **Deploy**.
-
-5. **Generate Prisma Client saat build**
-   Tambahkan di `package.json`:
-   ```json
-   "scripts": {
-     "build": "prisma generate && vite build"
-   }
-   ```
-
-6. **Selesai** — frontend, backend (serverless functions), dan database semuanya jalan di satu domain Vercel, otomatis HTTPS dan auto-scaling.
-
----
-
-## Prinsip Privasi
-
-1. Data hanya bisa diakses lewat akun masing-masing pengguna (autentikasi JWT wajib di semua endpoint kecuali register/login).
-2. Tidak ada endpoint yang mengirim data ke pihak ketiga atau institusi kampus.
-3. Export data (CSV/JSON) hanya dipicu manual oleh pengguna dari halaman Settings.
-4. PIN lock opsional untuk mengunci akses ke aplikasi di sisi frontend.
+1. **Privasi Absolut:** Data bersifat pribadi mahasiswa, tidak terhubung dan tidak dilaporkan ke sistem kampus.
+2. **Validasi JWT Ketat:** Setiap operasi data mewajibkan verifikasi token JWT valid yang terikat langsung ke `userId`.
+3. **Database Cloud Terisolasi:** Menggunakan Supabase dengan otentikasi role aman dan parameter koneksi terkontrol.
+4. **Isolasi File Lampiran Tugas:** Dokumen/file tugas disimpan secara lokal pada IndexedDB perangkat pengguna untuk menjaga kerahasiaan dan privasi dokumen akademik.
