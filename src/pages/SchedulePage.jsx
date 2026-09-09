@@ -383,6 +383,7 @@ export default function SchedulePage() {
   // Submit Add Form
   const handleSubmit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    if (isSubmitting) return;
     if (!judul.trim() || !tanggal || !jenis.trim()) {
       toast.error('Mohon lengkapi judul, kategori, dan batas pengumpulan (deadline).');
       return;
@@ -426,6 +427,7 @@ export default function SchedulePage() {
   // Submit Edit Form
   const handleSaveEdit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    if (isUpdating) return;
     if (!editJudul.trim() || !editTanggal || !editJenis.trim()) {
       toast.error('Mohon lengkapi judul, kategori, dan tanggal deadline.');
       return;

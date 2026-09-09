@@ -246,8 +246,14 @@ export function DataProvider({ children }) {
     }
     try {
       if (schedData.progress === 100 || schedData.selesai) {
-        const displayName = user?.nama || user?.username || 'demo';
-        notifyTaskCompleted(schedData, user?.telegramChatId, displayName).catch(() => {});
+        const completedKey = `tg_completed_${id}_${user?.id || 'demo'}`;
+        if (!localStorage.getItem(completedKey)) {
+          localStorage.setItem(completedKey, 'true');
+          const displayName = user?.nama || user?.username || 'demo';
+          notifyTaskCompleted(schedData, user?.telegramChatId, displayName).catch(() => {});
+        }
+      } else if (schedData.progress !== undefined && schedData.progress < 100) {
+        localStorage.removeItem(`tg_completed_${id}_${user?.id || 'demo'}`);
       }
     } catch {}
     reloadData(true);

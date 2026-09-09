@@ -1,8 +1,60 @@
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8921487742:AAHhTul_2PYhlZBxlYmDa9-BtM0q8FVKoTc';
 
+const recentlySentServerMessages = new Map<string, number>();
+
+function extractServerCleanTaskInfo(task: any) {
+  let title = task?.judul || 'Tanpa Judul';
+  let deadlineTime = '';
+  let reminderBefore = '';
+
+  const metaIdx = title.lastIndexOf('[Meta:');
+  if (metaIdx !== -1) {
+    const after = title.substring(metaIdx + 6);
+    const end = after.lastIndexOf(']');
+    if (end !== -1) {
+      try {
+        const parsed = JSON.parse(after.substring(0, end));
+        if (parsed.reminderBefore) {
+          const m = Number(parsed.reminderBefore);
+          reminderBefore = m >= 60 ? `${Math.round(m / 60)} Jam sebelumnya` : `${m} Menit sebelumnya`;
+        }
+      } catch {}
+    }
+    title = title.substring(0, metaIdx).trim();
+  }
+
+  title = title.replace(/\(Mulai:\s*[^\)]+\)/i, '').trim();
+
+  const deadlineMatch = title.match(/\[Deadline:\s*([^\]]+)\]/i);
+  if (deadlineMatch) {
+    deadlineTime = deadlineMatch[1].trim();
+    title = title.replace(deadlineMatch[0], '').trim();
+  }
+
+  title = title.replace(/(\s*\}[\}\]\s]*)+$/g, '').trim();
+
+  return { cleanTitle: title || 'Tanpa Judul', deadlineTime, reminderBefore };
+}
+
 export async function sendServerTelegramMessage(text: string, customChatId?: string | null) {
   const chatId = customChatId || process.env.TELEGRAM_CHAT_ID || null;
   if (!chatId || !BOT_TOKEN) return { ok: false, error: 'Missing token or chatId' };
+
+  // Anti-double protection
+  const dedupKey = `${chatId}::${text.trim()}`;
+  const now = Date.now();
+  const lastSent = recentlySentServerMessages.get(dedupKey) || 0;
+  if (now - lastSent < 15000) {
+    console.warn('Blocked duplicate server Telegram notification');
+    return { ok: true, skipped: 'duplicate_prevented' };
+  }
+  recentlySentServerMessages.set(dedupKey, now);
+
+  if (recentlySentServerMessages.size > 50) {
+    for (const [k, time] of recentlySentServerMessages.entries()) {
+      if (now - time > 60000) recentlySentServerMessages.delete(k);
+    }
+  }
 
   try {
     const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -24,6 +76,7 @@ export async function sendServerTelegramMessage(text: string, customChatId?: str
 
 export async function notifyServerNewTask(task: any, customChatId?: string | null, userName?: string | null) {
   const greetingName = userName || 'Sobat Semestara';
+  const { cleanTitle, deadlineTime, reminderBefore } = extractServerCleanTaskInfo(task);
   const deadlineStr = task.tanggal ? new Date(task.tanggal).toLocaleDateString('id-ID', {
     weekday: 'long',
     day: 'numeric',
@@ -31,14 +84,17 @@ export async function notifyServerNewTask(task: any, customChatId?: string | nul
     year: 'numeric'
   }) : 'Belum ditentukan';
 
+  const timeSuffix = deadlineTime ? ` (pukul ${deadlineTime} WIB)` : '';
+  const reminderRow = reminderBefore ? `\n🔔 <b>Pengingat:</b> ${reminderBefore}` : '';
+
   const message = `
 Halo <b>${greetingName}</b>, ini Semestara!!! 🚀
 
 📌 <b>TUGAS BARU DITAMBAHKAN</b>
 ━━━━━━━━━━━━━━━━━━━━
-📝 <b>Judul:</b> ${task.judul || 'Tanpa Judul'}
+📝 <b>Judul:</b> ${cleanTitle}
 📂 <b>Kategori:</b> ${task.jenis || 'Tugas'}
-📅 <b>Deadline:</b> ${deadlineStr}
+📅 <b>Deadline:</b> ${deadlineStr}${timeSuffix}${reminderRow}
 
 <i>Pemberitahuan otomatis dari Semestara. Semangat menyelesaikannya!</i>
 `.trim();
@@ -69,6 +125,7 @@ ${linkRow}━━━━━━━━━━━━━━━━━━━━
 
 export async function notifyServerDeadlineReminder(task: any, customChatId?: string | null, userName?: string | null) {
   const greetingName = userName || 'Sobat Semestara';
+  const { cleanTitle, deadlineTime } = extractServerCleanTaskInfo(task);
   const deadlineStr = task.tanggal ? new Date(task.tanggal).toLocaleDateString('id-ID', {
     weekday: 'long',
     day: 'numeric',
@@ -76,14 +133,16 @@ export async function notifyServerDeadlineReminder(task: any, customChatId?: str
     year: 'numeric'
   }) : 'Hari ini';
 
+  const timeSuffix = deadlineTime ? ` (pukul ${deadlineTime} WIB)` : '';
+
   const message = `
 Halo <b>${greetingName}</b>, ini Semestara!!! ⚠️
 
 ⏰ <b>PENGINGAT DEADLINE TUGAS (HARI INI)</b>
 ━━━━━━━━━━━━━━━━━━━━
-📝 <b>Tugas:</b> ${task.judul || 'Tanpa Judul'}
+📝 <b>Tugas:</b> ${cleanTitle}
 📂 <b>Kategori:</b> ${task.jenis || 'Tugas'}
-📅 <b>Batas Akhir:</b> ${deadlineStr}
+📅 <b>Batas Akhir:</b> ${deadlineStr}${timeSuffix}
 ━━━━━━━━━━━━━━━━━━━━
 <i>Tugas ini memiliki tenggat waktu hari ini. Yuk cicil dan kumpulkan sebelum deadline berakhir! Semangat ya! 💪🔥</i>
 `.trim();
@@ -93,6 +152,7 @@ Halo <b>${greetingName}</b>, ini Semestara!!! ⚠️
 
 export async function notifyServerOverdueTaskReminder(task: any, customChatId?: string | null, userName?: string | null) {
   const greetingName = userName || 'Sobat Semestara';
+  const { cleanTitle } = extractServerCleanTaskInfo(task);
   const deadlineStr = task.tanggal ? new Date(task.tanggal).toLocaleDateString('id-ID', {
     weekday: 'long',
     day: 'numeric',
@@ -105,7 +165,7 @@ Halo <b>${greetingName}</b>, ini Semestara!!! ⚠️
 
 ⏰ <b>PERINGATAN: TUGAS MELEWATI DEADLINE</b>
 ━━━━━━━━━━━━━━━━━━━━
-📝 <b>Tugas:</b> ${task.judul || 'Tanpa Judul'}
+📝 <b>Tugas:</b> ${cleanTitle}
 📂 <b>Kategori:</b> ${task.jenis || 'Tugas'}
 📅 <b>Tenggat:</b> ${deadlineStr} (Sudah Lewat)
 ━━━━━━━━━━━━━━━━━━━━

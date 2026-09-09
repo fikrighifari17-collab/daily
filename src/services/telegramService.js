@@ -64,10 +64,80 @@ export function getUserDisplayName() {
   return 'demo';
 }
 
+// In-memory anti-double notification cache: prevent sending identical messages to the same chat within 15 seconds
+const recentlySentMessages = new Map();
+
+export function extractCleanTitle(task) {
+  if (!task) return 'Tanpa Judul';
+  let title = task.cleanTitle || task.judul || 'Tanpa Judul';
+
+  // 1. Remove [Meta:...]
+  const metaIdx = title.lastIndexOf('[Meta:');
+  if (metaIdx !== -1) {
+    title = title.substring(0, metaIdx).trim();
+  }
+
+  // 2. Remove (Mulai: ...)
+  title = title.replace(/\(Mulai:\s*[^\)]+\)/i, '').trim();
+
+  // 3. Remove [Deadline: ...]
+  title = title.replace(/\[Deadline:\s*[^\]]+\]/i, '').trim();
+
+  // 4. Remove trailing leaked braces/brackets
+  title = title.replace(/(\s*\}[\}\]\s]*)+$/g, '').trim();
+
+  return title || 'Tanpa Judul';
+}
+
+export function extractDeadlineTime(task) {
+  if (task?.deadlineTime) return task.deadlineTime;
+  const match = (task?.judul || '').match(/\[Deadline:\s*([^\]]+)\]/i);
+  return match ? match[1].trim() : '';
+}
+
+export function extractReminderBefore(task) {
+  if (task?.reminderBefore) {
+    const m = Number(task.reminderBefore);
+    return m >= 60 ? `${Math.round(m / 60)} Jam sebelumnya` : `${m} Menit sebelumnya`;
+  }
+  const metaIdx = (task?.judul || '').lastIndexOf('[Meta:');
+  if (metaIdx !== -1) {
+    try {
+      const after = task.judul.substring(metaIdx + 6);
+      const end = after.lastIndexOf(']');
+      if (end !== -1) {
+        const parsed = JSON.parse(after.substring(0, end));
+        if (parsed.reminderBefore) {
+          const m = Number(parsed.reminderBefore);
+          return m >= 60 ? `${Math.round(m / 60)} Jam sebelumnya` : `${m} Menit sebelumnya`;
+        }
+      }
+    } catch {}
+  }
+  return '';
+}
+
 export async function sendTelegramMessage(htmlText, customChatId = null) {
   const chatId = customChatId || getStoredChatId();
   if (!chatId) {
     return { ok: false, error: 'Chat ID Telegram belum diatur.' };
+  }
+
+  // Anti-double protection: if identical message was sent to this chatId within 15 seconds, ignore
+  const dedupKey = `${chatId}::${htmlText.trim()}`;
+  const now = Date.now();
+  const lastSent = recentlySentMessages.get(dedupKey) || 0;
+  if (now - lastSent < 15000) {
+    console.warn('Blocked duplicate Telegram notification:', dedupKey);
+    return { ok: true, skipped: 'duplicate_prevented' };
+  }
+  recentlySentMessages.set(dedupKey, now);
+
+  // Clean old entries
+  if (recentlySentMessages.size > 50) {
+    for (const [k, time] of recentlySentMessages.entries()) {
+      if (now - time > 60000) recentlySentMessages.delete(k);
+    }
   }
 
   try {
@@ -92,6 +162,9 @@ export async function sendTelegramMessage(htmlText, customChatId = null) {
 export async function notifyNewTask(task, customChatId = null, customUserName = null) {
   if (!isTelegramNotificationEnabled()) return;
   const userName = customUserName || getUserDisplayName();
+  const cleanTitle = extractCleanTitle(task);
+  const deadlineTime = extractDeadlineTime(task);
+  const reminderBefore = extractReminderBefore(task);
   const deadlineStr = task.tanggal ? new Date(task.tanggal).toLocaleDateString('id-ID', {
     weekday: 'long',
     day: 'numeric',
@@ -99,14 +172,17 @@ export async function notifyNewTask(task, customChatId = null, customUserName = 
     year: 'numeric'
   }) : 'Belum ditentukan';
 
+  const timeSuffix = deadlineTime ? ` (pukul ${deadlineTime} WIB)` : '';
+  const reminderRow = reminderBefore ? `\n🔔 <b>Pengingat:</b> ${reminderBefore}` : '';
+
   const message = `
 Halo <b>${userName}</b>, ini Semestara!!! 🚀
 
 📌 <b>TUGAS BARU DITAMBAHKAN</b>
 ━━━━━━━━━━━━━━━━━━━━
-📝 <b>Judul:</b> ${task.judul || 'Tanpa Judul'}
+📝 <b>Judul:</b> ${cleanTitle}
 📂 <b>Kategori:</b> ${task.jenis || 'Tugas'}
-📅 <b>Deadline:</b> ${deadlineStr}
+📅 <b>Deadline:</b> ${deadlineStr}${timeSuffix}${reminderRow}
 
 <i>Pemberitahuan otomatis dari Semestara. Semangat menyelesaikannya!</i>
 `.trim();
@@ -117,12 +193,14 @@ Halo <b>${userName}</b>, ini Semestara!!! 🚀
 export async function notifyTaskCompleted(task, customChatId = null, customUserName = null) {
   if (!isTelegramNotificationEnabled()) return;
   const userName = customUserName || getUserDisplayName();
+  const cleanTitle = extractCleanTitle(task);
+
   const message = `
 Halo <b>${userName}</b>, ini Semestara!!! 🎉
 
 ⭐ <b>TUGAS BERHASIL DISELESAIKAN!</b>
 ━━━━━━━━━━━━━━━━━━━━
-✅ <b>Judul:</b> ${task.judul || 'Tanpa Judul'}
+✅ <b>Judul:</b> ${cleanTitle}
 📂 <b>Kategori:</b> ${task.jenis || 'Tugas'}
 🏆 <b>Status:</b> 100% Selesai
 
@@ -177,6 +255,8 @@ ${linkRow}━━━━━━━━━━━━━━━━━━━━
 export async function notifyDeadlineReminder(task, customChatId = null, customUserName = null) {
   if (!isTelegramNotificationEnabled()) return;
   const userName = customUserName || getUserDisplayName();
+  const cleanTitle = extractCleanTitle(task);
+  const deadlineTime = extractDeadlineTime(task);
   const deadlineStr = task.tanggal ? new Date(task.tanggal).toLocaleDateString('id-ID', {
     weekday: 'long',
     day: 'numeric',
@@ -184,14 +264,16 @@ export async function notifyDeadlineReminder(task, customChatId = null, customUs
     year: 'numeric'
   }) : 'Hari ini';
 
+  const timeSuffix = deadlineTime ? ` (pukul ${deadlineTime} WIB)` : '';
+
   const message = `
 Halo <b>${userName}</b>, ini Semestara!!! ⚠️
 
 ⏰ <b>PENGINGAT DEADLINE TUGAS (HARI INI)</b>
 ━━━━━━━━━━━━━━━━━━━━
-📝 <b>Tugas:</b> ${task.judul || 'Tanpa Judul'}
+📝 <b>Tugas:</b> ${cleanTitle}
 📂 <b>Kategori:</b> ${task.jenis || 'Tugas'}
-📅 <b>Batas Akhir:</b> ${deadlineStr}
+📅 <b>Batas Akhir:</b> ${deadlineStr}${timeSuffix}
 ━━━━━━━━━━━━━━━━━━━━
 <i>Tugas ini memiliki tenggat waktu hari ini. Yuk cicil dan kumpulkan sebelum deadline berakhir! Semangat ya! 💪🔥</i>
 `.trim();
@@ -202,6 +284,7 @@ Halo <b>${userName}</b>, ini Semestara!!! ⚠️
 export async function notifyOverdueTaskReminder(task, customChatId = null, customUserName = null) {
   if (!isTelegramNotificationEnabled()) return;
   const userName = customUserName || getUserDisplayName();
+  const cleanTitle = extractCleanTitle(task);
   const deadlineStr = task.tanggal ? new Date(task.tanggal).toLocaleDateString('id-ID', {
     weekday: 'long',
     day: 'numeric',
@@ -214,7 +297,7 @@ Halo <b>${userName}</b>, ini Semestara!!! ⚠️
 
 ⏰ <b>PERINGATAN: TUGAS MELEWATI DEADLINE</b>
 ━━━━━━━━━━━━━━━━━━━━
-📝 <b>Tugas:</b> ${task.judul || 'Tanpa Judul'}
+📝 <b>Tugas:</b> ${cleanTitle}
 📂 <b>Kategori:</b> ${task.jenis || 'Tugas'}
 📅 <b>Tenggat:</b> ${deadlineStr} (Sudah Lewat)
 ━━━━━━━━━━━━━━━━━━━━
@@ -228,8 +311,8 @@ export async function notifyImpendingDeadlineReminder(task, minutesBefore, custo
   if (!isTelegramNotificationEnabled()) return;
   const userName = customUserName || getUserDisplayName();
   const sisaWaktuStr = minutesBefore >= 60 ? `${Math.round(minutesBefore / 60)} jam` : `${minutesBefore} menit`;
-  const jamDeadline = task.deadlineTime || '23:59';
-  const taskTitle = task.cleanTitle || task.judul || 'Tanpa Judul';
+  const jamDeadline = task.deadlineTime || extractDeadlineTime(task) || '23:59';
+  const taskTitle = extractCleanTitle(task);
 
   const message = `
 Halo <b>${userName}</b>, Semestara mau ngingetin nih! ⌛

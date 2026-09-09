@@ -50,19 +50,6 @@ export default async function handler(req: any, res: any) {
         }
       });
 
-      // Kirim notifikasi Telegram secara asinkron
-      try {
-        const { notifyServerNewTask } = await import('../lib/telegram.js');
-        const user = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { telegramChatId: true, nama: true, username: true }
-        });
-        const displayName = user?.nama || user?.username || 'demo';
-        await notifyServerNewTask(schedule, user?.telegramChatId, displayName);
-      } catch (tgErr) {
-        console.warn('Telegram notification failed:', tgErr);
-      }
-
       return res.status(201).json(schedule);
     } catch (err: any) {
       console.error('Create schedule error:', err);
