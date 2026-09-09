@@ -71,22 +71,22 @@ export function extractCleanTitle(task) {
   if (!task) return 'Tanpa Judul';
   let title = task.cleanTitle || task.judul || 'Tanpa Judul';
 
-  // 1. Remove [Meta:...]
-  const metaIdx = title.lastIndexOf('[Meta:');
+  // 1. Remove [Meta:... (case insensitive)
+  const metaIdx = title.search(/\[Meta:/i);
   if (metaIdx !== -1) {
     title = title.substring(0, metaIdx).trim();
   }
 
   // 2. Remove (Mulai: ...)
-  title = title.replace(/\(Mulai:\s*[^\)]+\)/i, '').trim();
+  title = title.replace(/\(Mulai:\s*[^\)]+\)/gi, '').trim();
 
   // 3. Remove [Deadline: ...]
-  title = title.replace(/\[Deadline:\s*[^\]]+\]/i, '').trim();
+  title = title.replace(/\[Deadline:\s*[^\]]+\]/gi, '').trim();
 
   // 4. Remove trailing leaked braces/brackets
   title = title.replace(/(\s*\}[\}\]\s]*)+$/g, '').trim();
 
-  return title || 'Tanpa Judul';
+  return title.trim() || 'Tanpa Judul';
 }
 
 export function extractDeadlineTime(task) {

@@ -231,7 +231,8 @@ export function DataProvider({ children }) {
     }
     try {
       const displayName = user?.nama || user?.username || 'demo';
-      notifyNewTask(schedData, user?.telegramChatId, displayName).catch(() => {});
+      const parsedTask = parseScheduleItem(schedData);
+      notifyNewTask(parsedTask, user?.telegramChatId, displayName).catch(() => {});
     } catch {}
     reloadData(true);
     return res;
@@ -250,7 +251,8 @@ export function DataProvider({ children }) {
         if (!localStorage.getItem(completedKey)) {
           localStorage.setItem(completedKey, 'true');
           const displayName = user?.nama || user?.username || 'demo';
-          notifyTaskCompleted(schedData, user?.telegramChatId, displayName).catch(() => {});
+          const parsedTask = parseScheduleItem(schedData);
+          notifyTaskCompleted(parsedTask, user?.telegramChatId, displayName).catch(() => {});
         }
       } else if (schedData.progress !== undefined && schedData.progress < 100) {
         localStorage.removeItem(`tg_completed_${id}_${user?.id || 'demo'}`);
