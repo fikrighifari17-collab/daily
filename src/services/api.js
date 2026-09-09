@@ -186,6 +186,7 @@ export function logoutUser() {
   localStorage.removeItem("token");
   localStorage.removeItem("daily_user_info");
   localStorage.removeItem("telegram_chat_id");
+  localStorage.removeItem("daily_last_active_at");
   localStorage.removeItem(STORAGE_KEYS.USER);
 }
 

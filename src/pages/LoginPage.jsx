@@ -36,10 +36,15 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [sessionExpired, setSessionExpired] = useState(() => {
+    return localStorage.getItem('daily_session_expired_flag') === 'true';
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
+    localStorage.removeItem('daily_session_expired_flag');
+    setSessionExpired(false);
     setLoading(true);
 
     try {
@@ -173,6 +178,26 @@ export default function LoginPage() {
               Bikin Akun
             </button>
           </div>
+
+          {/* Session Expired Banner */}
+          {sessionExpired && !errorMsg && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'rgba(0, 173, 181, 0.12)',
+              border: '1px solid rgba(0, 255, 245, 0.4)',
+              borderRadius: '8px',
+              padding: '7px 10px',
+              fontSize: '11px',
+              color: '#00FFF5',
+              marginBottom: '10px',
+              lineHeight: 1.4
+            }}>
+              <ShieldCheck size={15} style={{ flexShrink: 0 }} />
+              <span>Sesi login kamu telah berakhir karena tidak dibuka lebih dari 12 jam. Silakan masuk kembali.</span>
+            </div>
+          )}
 
           {/* Error Banner */}
           {errorMsg && (
