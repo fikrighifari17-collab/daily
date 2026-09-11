@@ -154,7 +154,7 @@ export default function CalendarOverlay({
         style={{
           padding: isOpen ? '16px 20px' : '12px 18px',
           borderRadius: '0px',
-          border: '1px solid rgba(0, 173, 181, 0.3)',
+          border: '1px solid var(--border-glass)',
           transition: 'all 0.25s ease'
         }}
       >
@@ -180,8 +180,8 @@ export default function CalendarOverlay({
               userSelect: 'none'
             }}
           >
-            <CalendarIcon size={18} color="#00FFF5" style={{ flexShrink: 0 }} />
-            <span className="calendar-header-title" style={{ fontWeight: 700, color: '#EEEEEE', fontSize: '14px', whiteSpace: 'nowrap' }}>
+            <CalendarIcon size={18} color="var(--accent-teal)" style={{ flexShrink: 0 }} />
+            <span className="calendar-header-title" style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '14px', whiteSpace: 'nowrap' }}>
               Kalender & Filter Tanggal
             </span>
 
@@ -189,9 +189,9 @@ export default function CalendarOverlay({
               <span
                 style={{
                   fontSize: '11px',
-                  color: '#00FFF5',
-                  background: 'rgba(0, 173, 181, 0.15)',
-                  border: '1px solid rgba(0, 173, 181, 0.35)',
+                  color: 'var(--accent-teal)',
+                  background: 'rgba(0, 173, 181, 0.12)',
+                  border: '1px solid var(--border-glass)',
                   padding: '2px 8px',
                   borderRadius: '0px',
                   fontWeight: 600,
@@ -220,7 +220,7 @@ export default function CalendarOverlay({
                   style={{
                     fontSize: '13px',
                     fontWeight: 700,
-                    color: '#00FFF5',
+                    color: 'var(--accent-teal)',
                     minWidth: '120px',
                     textAlign: 'center',
                     textTransform: 'capitalize'
@@ -251,9 +251,9 @@ export default function CalendarOverlay({
                 alignItems: 'center',
                 gap: '5px',
                 fontSize: '11px',
-                color: isOpen ? 'var(--text-muted)' : '#00FFF5',
-                borderColor: isOpen ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 173, 181, 0.4)',
-                background: isOpen ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 173, 181, 0.12)',
+                color: isOpen ? 'var(--text-muted)' : 'var(--accent-teal)',
+                borderColor: 'var(--border-glass)',
+                background: isOpen ? 'var(--bg-glass)' : 'rgba(0, 173, 181, 0.12)',
                 flexShrink: 0
               }}
               title={isOpen ? 'Tutup Kalender (Mode Minimalis)' : 'Buka Kalender'}
@@ -282,8 +282,8 @@ export default function CalendarOverlay({
                   key={idx}
                   style={{
                     fontSize: '12px',
-                    fontWeight: 700,
-                    color: idx === 0 ? '#f87171' : 'var(--text-muted)'
+                    fontWeight: 800,
+                    color: idx === 0 ? '#ef4444' : 'var(--text-secondary)'
                   }}
                 >
                   {w}
@@ -313,18 +313,18 @@ export default function CalendarOverlay({
                   <div
                     key={cell.dateStr}
                     onClick={() => handleCellClick(cell)}
-                    className="calendar-cell"
+                    className={`calendar-cell ${cell.isToday ? 'is-today' : ''}`}
                     style={{
                       background: cell.isToday
                         ? 'rgba(0, 173, 181, 0.15)'
                         : moodColor
                         ? `${moodColor}22`
-                        : 'rgba(255, 255, 255, 0.03)',
+                        : undefined,
                       border: cell.isToday
-                        ? '1.5px solid #00FFF5'
+                        ? '2px solid var(--accent-teal)'
                         : moodColor
-                        ? `1px solid ${moodColor}66`
-                        : '1px solid rgba(255, 255, 255, 0.06)',
+                        ? `1.5px solid ${moodColor}88`
+                        : undefined,
                       boxShadow: cell.isToday ? '0 0 10px rgba(0, 255, 245, 0.25)' : 'none'
                     }}
                     title={`Lihat detail tugas tanggal ${cell.day}`}
@@ -335,7 +335,7 @@ export default function CalendarOverlay({
                         style={{
                           fontSize: '12px',
                           fontWeight: cell.isToday ? 800 : 700,
-                          color: cell.isToday ? '#00FFF5' : '#EEEEEE',
+                          color: cell.isToday ? 'var(--accent-teal)' : 'var(--text-primary)',
                           lineHeight: 1
                         }}
                       >
@@ -380,8 +380,8 @@ export default function CalendarOverlay({
                             width: '5px',
                             height: '5px',
                             borderRadius: '50%',
-                            backgroundColor: '#00FFF5',
-                            boxShadow: '0 0 4px #00FFF5'
+                            backgroundColor: 'var(--accent-teal)',
+                            boxShadow: '0 0 4px var(--accent-teal)'
                           }}
                         />
                       )}
@@ -398,7 +398,7 @@ export default function CalendarOverlay({
                               fontSize: '9px',
                               padding: '1px 4px',
                               background: 'rgba(0, 173, 181, 0.2)',
-                              color: '#EEEEEE',
+                              color: 'var(--text-primary)',
                               borderRadius: '0px',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
@@ -410,7 +410,7 @@ export default function CalendarOverlay({
                             }}
                             title={`${s.jenis.toUpperCase()}: ${parsed.cleanTitle}`}
                           >
-                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, fontWeight: 600 }}>
                               {parsed.cleanTitle}
                             </span>
                             <span
@@ -418,7 +418,7 @@ export default function CalendarOverlay({
                                 width: '4px',
                                 height: '4px',
                                 borderRadius: '50%',
-                                backgroundColor: '#00FFF5',
+                                backgroundColor: 'var(--accent-teal)',
                                 flexShrink: 0
                               }}
                             />

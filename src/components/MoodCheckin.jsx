@@ -431,7 +431,7 @@ export default function MoodCheckin({ onSuccess }) {
   return (
     <div className="glass-panel mood-checkin-card">
       <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span>Catat Mood Hari Ini</span>
         </h2>
         <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
@@ -510,9 +510,9 @@ export default function MoodCheckin({ onSuccess }) {
               placeholder={`Beri nama perasaanmu (bawaan: ${currentMoodInfo.label})...`}
               className="mood-name-input"
               style={{
-                background: 'rgba(0, 0, 0, 0.45)',
-                border: `1px solid ${currentMoodInfo.color}`,
-                color: '#ffffff',
+                background: 'var(--bg-input)',
+                border: `1.5px solid ${currentMoodInfo.color}`,
+                color: 'var(--text-primary)',
                 fontWeight: 700,
                 fontSize: '13px',
                 padding: '8px 12px',
@@ -584,18 +584,18 @@ export default function MoodCheckin({ onSuccess }) {
               alignItems: 'center',
               gap: '8px',
               padding: '10px 14px',
-              background: 'rgba(0, 173, 181, 0.15)',
-              border: '1px solid rgba(0, 173, 181, 0.4)',
-              color: '#00FFF5',
+              background: 'rgba(0, 173, 181, 0.12)',
+              border: '1px solid rgba(0, 173, 181, 0.35)',
+              color: 'var(--accent-teal)',
               fontSize: '13px',
               fontWeight: 700,
               borderRadius: '0px',
               width: '100%',
               boxSizing: 'border-box'
             }}>
-              <Clock size={16} color="#00FFF5" style={{ flexShrink: 0 }} />
+              <Clock size={16} color="var(--accent-teal)" style={{ flexShrink: 0 }} />
               <span>{timeFormatted}</span>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 400, marginLeft: 'auto', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500, marginLeft: 'auto', whiteSpace: 'nowrap' }}>
                 (Otomatis Real-time)
               </span>
             </div>
@@ -621,8 +621,8 @@ export default function MoodCheckin({ onSuccess }) {
                     fontSize: '12px',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    background: isSelected ? 'linear-gradient(135deg, #00ADB5, #00888f)' : 'rgba(255, 255, 255, 0.05)',
-                    border: `1px solid ${isSelected ? '#00FFF5' : 'var(--border-glass)'}`,
+                    background: isSelected ? 'linear-gradient(135deg, #00ADB5, #00888f)' : 'var(--bg-inner)',
+                    border: `1px solid ${isSelected ? 'var(--accent-teal)' : 'var(--border-glass)'}`,
                     color: isSelected ? 'white' : 'var(--text-secondary)',
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -682,7 +682,7 @@ export default function MoodCheckin({ onSuccess }) {
           </label>
 
           {photoUrl ? (
-            <div style={{ position: 'relative', width: '100%', maxWidth: '420px', borderRadius: '0px', overflow: 'hidden', border: '1px solid rgba(0, 173, 181, 0.4)', background: 'rgba(0, 0, 0, 0.45)', padding: '6px' }}>
+            <div style={{ position: 'relative', width: '100%', maxWidth: '420px', borderRadius: '0px', overflow: 'hidden', border: '1px solid var(--border-glass)', background: 'var(--bg-inner)', padding: '6px' }}>
               {isVideoUrl(photoUrl) ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <video
@@ -732,8 +732,8 @@ export default function MoodCheckin({ onSuccess }) {
             <div style={{
               padding: '14px',
               borderRadius: '0px',
-              background: 'rgba(34, 40, 49, 0.4)',
-              border: '1px dashed rgba(0, 173, 181, 0.35)',
+              background: 'var(--bg-inner)',
+              border: '1px dashed var(--border-glass)',
               display: 'flex',
               flexDirection: 'column',
               gap: '12px'
@@ -744,17 +744,17 @@ export default function MoodCheckin({ onSuccess }) {
                   height: '38px',
                   borderRadius: '0px',
                   background: 'rgba(0, 173, 181, 0.15)',
-                  border: '1px solid rgba(0, 173, 181, 0.3)',
+                  border: '1px solid var(--border-glass)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#00FFF5',
+                  color: 'var(--accent-teal)',
                   flexShrink: 0
                 }}>
                   <Video size={20} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
                     Abadikan Momen & Suasana (Foto & Video)
                   </div>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
@@ -799,7 +799,7 @@ export default function MoodCheckin({ onSuccess }) {
                   className="glass-button"
                   style={{ fontSize: '12px', padding: '9px 12px', justifyContent: 'center', cursor: 'pointer' }}
                 >
-                  <Upload size={15} color="#00FFF5" />
+                  <Upload size={15} color="var(--accent-teal)" />
                   <span>Pilih Berkas</span>
                   <input
                     type="file"
@@ -819,15 +819,15 @@ export default function MoodCheckin({ onSuccess }) {
                 gap: '8px',
                 flexWrap: 'wrap',
                 paddingTop: '6px',
-                borderTop: '1px dashed rgba(255, 255, 255, 0.08)'
+                borderTop: '1px dashed var(--border-glass)'
               }}>
                 <span>Kamera langsung HP:</span>
                 <label style={{
-                  color: '#00FFF5',
+                  color: 'var(--accent-teal)',
                   cursor: 'pointer',
                   padding: '4px 10px',
                   background: 'rgba(0, 173, 181, 0.12)',
-                  border: '1px solid rgba(0, 173, 181, 0.3)',
+                  border: '1px solid var(--border-glass)',
                   fontSize: '11px',
                   fontWeight: 600,
                   display: 'inline-flex',
@@ -906,7 +906,7 @@ export default function MoodCheckin({ onSuccess }) {
               onClick={(e) => e.stopPropagation()}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {cameraMode === 'video' ? (
                     <>
                       <Video size={16} color="#ef4444" />
@@ -914,7 +914,7 @@ export default function MoodCheckin({ onSuccess }) {
                     </>
                   ) : (
                     <>
-                      <Camera size={16} color="#00FFF5" />
+                      <Camera size={16} color="var(--accent-teal)" />
                       <span>Kamera Foto Langsung</span>
                     </>
                   )}

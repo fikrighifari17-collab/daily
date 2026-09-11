@@ -755,16 +755,17 @@ export default function SchedulePage() {
     return (
       <div
         key={s.id}
+        className={`schedule-task-card ${isCompleted ? 'is-completed' : ''}`}
         style={{
-          padding: '14px 16px',
+          padding: '12px 14px',
           borderRadius: '0px',
-          background: isCompleted ? 'rgba(22, 35, 30, 0.75)' : 'rgba(34, 40, 49, 0.65)',
-          border: isCompleted ? '1px solid rgba(16, 185, 129, 0.45)' : '1px solid rgba(0, 173, 181, 0.25)',
+          background: isCompleted ? 'rgba(22, 35, 30, 0.75)' : 'var(--bg-inner)',
+          border: isCompleted ? '1px solid rgba(16, 185, 129, 0.45)' : '1px solid var(--border-glass)',
           display: 'flex',
           flexDirection: 'column',
           gap: '10px',
           transition: 'all 0.2s ease',
-          boxShadow: isCompleted ? '0 2px 10px rgba(16, 185, 129, 0.1)' : '0 2px 10px rgba(0, 0, 0, 0.2)'
+          boxShadow: isCompleted ? '0 2px 10px rgba(16, 185, 129, 0.1)' : '0 2px 10px rgba(0, 0, 0, 0.1)'
         }}
       >
         {/* Top Row: Quick Complete Toggle, Title & Action Buttons */}
@@ -786,7 +787,7 @@ export default function SchedulePage() {
             <span style={{
               fontSize: '15px',
               fontWeight: 700,
-              color: isCompleted ? '#9ca3af' : '#EEEEEE',
+              color: isCompleted ? 'var(--text-muted)' : 'var(--text-primary)',
               textDecoration: isCompleted ? 'line-through' : 'none',
               wordBreak: 'break-word',
               lineHeight: '1.3'
@@ -802,8 +803,8 @@ export default function SchedulePage() {
               className="glass-button"
               style={{
                 padding: '5px 10px',
-                color: isCompleted ? '#10b981' : '#00FFF5',
-                borderColor: isCompleted ? 'rgba(16, 185, 129, 0.4)' : 'rgba(0, 173, 181, 0.4)',
+                color: isCompleted ? '#10b981' : 'var(--accent-teal)',
+                borderColor: isCompleted ? 'rgba(16, 185, 129, 0.4)' : 'var(--border-glass)',
                 fontSize: '11px',
                 background: isCompleted ? 'rgba(16, 185, 129, 0.1)' : 'rgba(0, 173, 181, 0.1)',
                 borderRadius: '0px',
@@ -838,7 +839,7 @@ export default function SchedulePage() {
               SELESAI (100%)
             </span>
           ) : (
-            <span style={{ fontSize: '10px', fontWeight: 700, color: '#00FFF5', background: 'rgba(0, 173, 181, 0.15)', border: '1px solid rgba(0, 173, 181, 0.4)', padding: '1px 7px' }}>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--accent-teal)', background: 'rgba(0, 173, 181, 0.12)', border: '1px solid var(--border-glass)', padding: '1px 7px' }}>
               {parsed.progress}% SELESAI
             </span>
           )}
@@ -880,7 +881,7 @@ export default function SchedulePage() {
 
         {/* Dates Row: Deadline & Mulai */}
         <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: isCompleted ? '#10b981' : '#00FFF5', fontWeight: 600 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: isCompleted ? '#10b981' : 'var(--accent-teal)', fontWeight: 600 }}>
             <Clock size={12} />
             Deadline: {dateStr} {parsed.deadlineTime ? `(Pukul ${parsed.deadlineTime})` : ''}
           </span>
@@ -906,14 +907,14 @@ export default function SchedulePage() {
           <div style={{
             marginTop: '4px',
             padding: '8px 12px',
-            background: 'rgba(0, 0, 0, 0.25)',
-            border: '1px solid rgba(0, 173, 181, 0.15)',
+            background: 'var(--bg-inner)',
+            border: '1px solid var(--border-glass)',
             display: 'flex',
             flexDirection: 'column',
             gap: '6px'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px' }}>
-              <span style={{ color: isCompleted ? '#10b981' : '#00FFF5', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ color: isCompleted ? '#10b981' : 'var(--accent-teal)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <CheckSquare size={12} />
                 <span>Checklist Pengerjaan:</span>
               </span>
@@ -947,7 +948,7 @@ export default function SchedulePage() {
                     gap: '8px',
                     fontSize: '12px',
                     cursor: 'pointer',
-                    color: st.done ? 'var(--text-muted)' : '#EEEEEE',
+                    color: st.done ? 'var(--text-muted)' : 'var(--text-primary)',
                     textDecoration: st.done ? 'line-through' : 'none'
                   }}
                 >
@@ -955,7 +956,7 @@ export default function SchedulePage() {
                     type="checkbox"
                     checked={st.done}
                     onChange={() => handleToggleSubtaskQuick(s, st.id)}
-                    style={{ cursor: 'pointer', accentColor: '#00FFF5', width: '14px', height: '14px' }}
+                    style={{ cursor: 'pointer', accentColor: 'var(--accent-teal)', width: '14px', height: '14px' }}
                   />
                   <span>{st.text}</span>
                   {!st.done && (
@@ -987,13 +988,13 @@ export default function SchedulePage() {
           <div style={{
             marginTop: '2px',
             padding: '6px 8px',
-            background: 'rgba(0, 0, 0, 0.2)',
-            border: '1px solid rgba(0, 173, 181, 0.15)',
+            background: 'var(--bg-inner)',
+            border: '1px solid var(--border-glass)',
             display: 'flex',
             flexDirection: 'column',
             gap: '4px'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#00FFF5', fontWeight: 600, padding: '0 2px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: 'var(--accent-teal)', fontWeight: 600, padding: '0 2px' }}>
               <Paperclip size={12} />
               <span>Berkas / Materi ({attachments.length}):</span>
             </div>
@@ -1011,7 +1012,7 @@ export default function SchedulePage() {
                       justifyContent: 'space-between',
                       gap: '8px',
                       padding: '4px 8px',
-                      background: 'rgba(34, 40, 49, 0.65)',
+                      background: 'var(--bg-inner)',
                       border: `1px solid ${badge.border}`,
                       borderRadius: '0px'
                     }}
@@ -1052,7 +1053,7 @@ export default function SchedulePage() {
                       <span
                         style={{
                           fontSize: '11px',
-                          color: '#EEEEEE',
+                          color: 'var(--text-primary)',
                           fontWeight: 500,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -1140,15 +1141,15 @@ export default function SchedulePage() {
     <div className="animate-fade-in" style={{ width: '100%', margin: '0 auto', padding: '0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
       
       {/* Header Banner */}
-      <div className="glass-panel" style={{ padding: '12px 16px', background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.2), rgba(57, 62, 70, 0.8))', border: '1px solid rgba(0, 173, 181, 0.3)', borderRadius: '0px' }}>
+      <div className="glass-panel schedule-header-panel" style={{ padding: '12px 16px', borderRadius: '0px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ padding: '8px', borderRadius: '0px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)', flexShrink: 0 }}>
-              <CheckSquare size={18} color="#00FFF5" />
+            <div style={{ padding: '8px', borderRadius: '0px', background: 'rgba(0, 173, 181, 0.15)', border: '1px solid var(--border-glass)', flexShrink: 0 }}>
+              <CheckSquare size={18} color="var(--accent-teal)" />
             </div>
             <div>
-              <h2 style={{ fontSize: '17px', fontWeight: 800, color: '#EEEEEE', margin: 0 }}>Tugas & Deadline Kuliah</h2>
-              <p className="mobile-hide" style={{ fontSize: '11px', color: '#b0b8c1', margin: '2px 0 0 0' }}>
+              <h2 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Tugas & Deadline Kuliah</h2>
+              <p className="mobile-hide" style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
                 Tugas yang sudah selesai otomatis terhapus dari kalender dan tersimpan di list tugas beres.
               </p>
             </div>
@@ -1160,7 +1161,7 @@ export default function SchedulePage() {
               className="glass-button"
               style={{ fontSize: '12px', padding: '7px 12px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              <BookOpen size={13} color="#00FFF5" />
+              <BookOpen size={13} color="var(--accent-teal)" />
               <span>Jadwal Kuliah &rarr;</span>
             </NavLink>
           </div>
@@ -1196,9 +1197,9 @@ export default function SchedulePage() {
                 gap: '7px',
                 padding: '6px 13px',
                 borderRadius: '0px',
-                border: currentTab === 'active' ? '1px solid #00FFF5' : '1px solid rgba(255,255,255,0.1)',
-                background: currentTab === 'active' ? 'rgba(0, 173, 181, 0.25)' : 'rgba(34, 40, 49, 0.4)',
-                color: currentTab === 'active' ? '#00FFF5' : 'var(--text-secondary)',
+                border: currentTab === 'active' ? '1.5px solid var(--accent-teal)' : '1px solid var(--border-glass)',
+                background: currentTab === 'active' ? 'rgba(0, 173, 181, 0.18)' : 'var(--bg-inner)',
+                color: currentTab === 'active' ? 'var(--accent-teal)' : 'var(--text-secondary)',
                 fontWeight: currentTab === 'active' ? 700 : 500,
                 fontSize: '12px',
                 cursor: 'pointer',
@@ -1211,8 +1212,8 @@ export default function SchedulePage() {
                 fontSize: '11px',
                 padding: '1px 6px',
                 borderRadius: '0px',
-                background: currentTab === 'active' ? 'rgba(0, 255, 245, 0.2)' : 'rgba(255,255,255,0.08)',
-                color: currentTab === 'active' ? '#00FFF5' : 'var(--text-muted)'
+                background: currentTab === 'active' ? 'rgba(0, 173, 181, 0.25)' : 'var(--bg-glass)',
+                color: currentTab === 'active' ? 'var(--accent-teal)' : 'var(--text-muted)'
               }}>
                 {allActiveCount}
               </span>
@@ -1227,8 +1228,8 @@ export default function SchedulePage() {
                 gap: '7px',
                 padding: '6px 13px',
                 borderRadius: '0px',
-                border: currentTab === 'completed' ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.1)',
-                background: currentTab === 'completed' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(34, 40, 49, 0.4)',
+                border: currentTab === 'completed' ? '1.5px solid #10b981' : '1px solid var(--border-glass)',
+                background: currentTab === 'completed' ? 'rgba(16, 185, 129, 0.18)' : 'var(--bg-inner)',
                 color: currentTab === 'completed' ? '#10b981' : 'var(--text-secondary)',
                 fontWeight: currentTab === 'completed' ? 700 : 500,
                 fontSize: '12px',
@@ -1242,7 +1243,7 @@ export default function SchedulePage() {
                 fontSize: '11px',
                 padding: '1px 6px',
                 borderRadius: '0px',
-                background: currentTab === 'completed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.08)',
+                background: currentTab === 'completed' ? 'rgba(16, 185, 129, 0.25)' : 'var(--bg-glass)',
                 color: currentTab === 'completed' ? '#10b981' : 'var(--text-muted)'
               }}>
                 {allCompletedCount}
@@ -1285,13 +1286,13 @@ export default function SchedulePage() {
           gap: '10px',
           marginBottom: '12px',
           padding: '8px 10px',
-          background: 'rgba(34, 40, 49, 0.5)',
-          border: currentTab === 'completed' ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(0, 173, 181, 0.2)'
+          background: 'var(--bg-inner)',
+          border: currentTab === 'completed' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--border-glass)'
         }}>
           {/* Category Filter Tabs */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, marginRight: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Filter size={12} color={currentTab === 'completed' ? '#10b981' : '#00FFF5'} />
+              <Filter size={12} color={currentTab === 'completed' ? '#10b981' : 'var(--accent-teal)'} />
               <span>Filter:</span>
             </span>
 
@@ -1304,13 +1305,13 @@ export default function SchedulePage() {
                 fontSize: '11px',
                 borderRadius: '0px',
                 background: selectedCategory === 'all'
-                  ? (currentTab === 'completed' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(0, 173, 181, 0.35)')
+                  ? (currentTab === 'completed' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(0, 173, 181, 0.2)')
                   : 'transparent',
                 borderColor: selectedCategory === 'all'
-                  ? (currentTab === 'completed' ? '#10b981' : '#00FFF5')
-                  : 'rgba(255, 255, 255, 0.1)',
+                  ? (currentTab === 'completed' ? '#10b981' : 'var(--accent-teal)')
+                  : 'var(--border-glass)',
                 color: selectedCategory === 'all'
-                  ? (currentTab === 'completed' ? '#10b981' : '#00FFF5')
+                  ? (currentTab === 'completed' ? '#10b981' : 'var(--accent-teal)')
                   : 'var(--text-secondary)',
                 fontWeight: selectedCategory === 'all' ? 700 : 500
               }}
@@ -1329,13 +1330,13 @@ export default function SchedulePage() {
                   fontSize: '11px',
                   borderRadius: '0px',
                   background: selectedCategory === cat.toLowerCase()
-                    ? (currentTab === 'completed' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(0, 173, 181, 0.35)')
+                    ? (currentTab === 'completed' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(0, 173, 181, 0.2)')
                     : 'transparent',
                   borderColor: selectedCategory === cat.toLowerCase()
-                    ? (currentTab === 'completed' ? '#10b981' : '#00FFF5')
-                    : 'rgba(255, 255, 255, 0.1)',
+                    ? (currentTab === 'completed' ? '#10b981' : 'var(--accent-teal)')
+                    : 'var(--border-glass)',
                   color: selectedCategory === cat.toLowerCase()
-                    ? (currentTab === 'completed' ? '#10b981' : '#00FFF5')
+                    ? (currentTab === 'completed' ? '#10b981' : 'var(--accent-teal)')
                     : 'var(--text-secondary)',
                   fontWeight: selectedCategory === cat.toLowerCase() ? 700 : 500
                 }}
@@ -1347,7 +1348,7 @@ export default function SchedulePage() {
 
           {/* Search Box */}
           <div style={{ position: 'relative', minWidth: '160px', flex: '1 1 160px', maxWidth: '240px' }}>
-            <Search size={13} color={currentTab === 'completed' ? '#10b981' : '#00FFF5'} style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', opacity: 0.7 }} />
+            <Search size={13} color={currentTab === 'completed' ? '#10b981' : 'var(--accent-teal)'} style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', opacity: 0.7 }} />
             <input
               type="text"
               placeholder={currentTab === 'completed' ? 'Cari tugas selesai...' : 'Cari tugas aktif...'}

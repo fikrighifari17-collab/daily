@@ -773,20 +773,16 @@ export default function AcademicSchedulePage() {
     <div className="animate-fade-in" style={{ width: '100%', margin: '0 auto', padding: '0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       
       {/* Header Banner - Responsive: Minimalist on Mobile, Full on Laptop */}
-      <div className="glass-panel academic-header-panel" style={{ 
-        background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.2), rgba(57, 62, 70, 0.8))', 
-        border: '1px solid rgba(0, 173, 181, 0.3)', 
-        borderRadius: '0px' 
-      }}>
+      <div className="glass-panel academic-header-panel">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
           {/* Left: Icon, Title, Subtitle (Laptop), and Compact Badges (Mobile) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ padding: '7px', borderRadius: '0px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <BookOpen size={18} color="#00FFF5" />
+            <div style={{ padding: '7px', borderRadius: '0px', background: 'rgba(0, 173, 181, 0.15)', border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <BookOpen size={18} color="var(--accent-teal)" />
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <h2 className="academic-header-title" style={{ fontWeight: 800, color: '#EEEEEE', margin: 0, letterSpacing: '-0.01em' }}>
+                <h2 className="academic-header-title" style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.01em' }}>
                   Jadwal Kuliah
                 </h2>
 
@@ -795,9 +791,9 @@ export default function AcademicSchedulePage() {
                   <span style={{ 
                     fontSize: '10px', 
                     fontWeight: 700, 
-                    color: '#00FFF5', 
-                    background: 'rgba(0, 173, 181, 0.15)', 
-                    border: '1px solid rgba(0, 173, 181, 0.35)', 
+                    color: 'var(--accent-teal)', 
+                    background: 'rgba(0, 173, 181, 0.12)', 
+                    border: '1px solid var(--border-glass)', 
                     padding: '2px 7px' 
                   }}>
                     {courses.length} Kelas
@@ -816,7 +812,7 @@ export default function AcademicSchedulePage() {
               </div>
 
               {/* Laptop-only Subtitle */}
-              <p className="academic-header-desc" style={{ fontSize: '12px', color: '#b0b8c1', margin: '4px 0 0 0' }}>
+              <p className="academic-header-desc" style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
                 Pantau jadwal kuliah mingguan, presensi pertemuan, link Zoom/LMS, dan materi dosen kamu.
               </p>
             </div>
@@ -826,11 +822,11 @@ export default function AcademicSchedulePage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             {/* Laptop-only Large Metric Cards */}
             <div className="academic-header-metrics-large" style={{ gap: '8px' }}>
-              <div style={{ padding: '6px 14px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(0, 173, 181, 0.3)', textAlign: 'center', borderRadius: '0px' }}>
-                <div style={{ fontSize: '16px', fontWeight: 800, color: '#00FFF5', lineHeight: 1.1 }}>{courses.length}</div>
+              <div style={{ padding: '6px 14px', background: 'var(--bg-inner)', border: '1px solid var(--border-glass)', textAlign: 'center', borderRadius: '0px' }}>
+                <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--accent-teal)', lineHeight: 1.1 }}>{courses.length}</div>
                 <div style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Kelas</div>
               </div>
-              <div style={{ padding: '6px 14px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(0, 173, 181, 0.3)', textAlign: 'center', borderRadius: '0px' }}>
+              <div style={{ padding: '6px 14px', background: 'var(--bg-inner)', border: '1px solid var(--border-glass)', textAlign: 'center', borderRadius: '0px' }}>
                 <div style={{ fontSize: '16px', fontWeight: 800, color: '#10b981', lineHeight: 1.1 }}>{totalSks}</div>
                 <div style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total SKS</div>
               </div>
@@ -844,11 +840,11 @@ export default function AcademicSchedulePage() {
         {/* Filter Toolbar: Title and New Course */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Calendar size={13} color="#00FFF5" />
-            <span style={{ fontSize: '11px', fontWeight: 700, color: '#EEEEEE' }}>
+            <Calendar size={13} color="var(--accent-teal)" />
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>
               Filter Hari:
             </span>
-            <span style={{ fontSize: '10px', color: '#00FFF5', fontWeight: 600 }}>
+            <span style={{ fontSize: '10px', color: 'var(--accent-teal)', fontWeight: 600 }}>
               {selectedDayFilter === 'ALL' 
                 ? `Semua Hari (${courses.length})` 
                 : `${getDayFull(selectedDayFilter)} ${selectedDayFilter === todayName ? '(Hari Ini)' : ''}`}
@@ -918,7 +914,7 @@ export default function AcademicSchedulePage() {
               type="button"
               onClick={handleOpenAddModal}
               className="glass-button"
-              style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '5px', borderColor: 'rgba(0, 173, 181, 0.4)', color: '#00FFF5' }}
+              style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '0px', display: 'flex', alignItems: 'center', gap: '5px', borderColor: 'var(--border-glass)', color: 'var(--accent-teal)' }}
             >
               <Plus size={13} />
               <span>Tambah Matkul</span>
@@ -963,12 +959,12 @@ export default function AcademicSchedulePage() {
                   textAlign: 'center',
                   whiteSpace: 'nowrap',
                   fontWeight: isSelected ? 700 : 500,
-                  borderColor: isToday && !isSelected ? '#00FFF5' : undefined
+                  borderColor: isToday && !isSelected ? 'var(--accent-teal)' : undefined
                 }}
               >
                 <span>{getDayShort(day)}</span>
                 {count > 0 && <span style={{ opacity: 0.85, marginLeft: '3px', fontSize: '10px' }}>({count})</span>}
-                {isToday && <span style={{ fontSize: '9px', color: isSelected ? '#ffffff' : '#00FFF5', marginLeft: '3px' }}>•</span>}
+                {isToday && <span style={{ fontSize: '9px', color: isSelected ? '#ffffff' : 'var(--accent-teal)', marginLeft: '3px' }}>•</span>}
               </button>
             );
           })}
@@ -979,7 +975,7 @@ export default function AcademicSchedulePage() {
       {filteredCourses.length === 0 ? (
         <div className="glass-panel" style={{ padding: '48px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', borderRadius: '0px' }}>
           <BookOpen size={32} style={{ opacity: 0.35, margin: '0 auto 10px auto' }} />
-          <div style={{ fontSize: '14px', fontWeight: 600, color: '#EEEEEE' }}>Belum ada jadwal kuliah untuk {selectedDayFilter === 'ALL' ? 'semester ini' : getDayFull(selectedDayFilter)}.</div>
+          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Belum ada jadwal kuliah untuk {selectedDayFilter === 'ALL' ? 'semester ini' : getDayFull(selectedDayFilter)}.</div>
           <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '16px' }}>Klik tombol di bawah buat nambahin jadwal kuliah kamu ya.</div>
           <button
             type="button"

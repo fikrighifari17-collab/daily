@@ -72,8 +72,8 @@ export default function Dashboard() {
       <div className="glass-panel dashboard-hero-panel">
         <div style={{ position: 'relative', zIndex: 2, maxWidth: '650px' }}>
           <div className="dashboard-hero-badge">
-            <Sparkles size={13} color="#00FFF5" />
-            <span style={{ fontSize: '11px', fontWeight: 700, color: '#00FFF5' }}>Kabar Mood & Kuliah</span>
+            <Sparkles size={13} color="var(--accent-teal)" />
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent-teal)' }}>Kabar Mood & Kuliah</span>
           </div>
           <h2 className="dashboard-hero-title">
             {greeting}, <span className="text-gradient-teal">{user?.nama || 'Sobat'}!</span>
@@ -89,7 +89,7 @@ export default function Dashboard() {
             <span>Catat Mood</span>
           </NavLink>
           <NavLink to="/checkin" className="glass-button dashboard-hero-btn">
-            <History size={15} color="#00ADB5" />
+            <History size={15} color="var(--accent-teal)" />
             <span>Riwayat Mood</span>
           </NavLink>
         </div>
@@ -103,10 +103,10 @@ export default function Dashboard() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
               <div>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#00ADB5', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent-teal)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Kondisi Hari Ini
                 </span>
-                <h3 style={{ fontSize: '19px', fontWeight: 800, color: '#EEEEEE', marginTop: '4px' }}>
+                <h3 style={{ fontSize: '19px', fontWeight: 800, color: 'var(--text-primary)', marginTop: '4px' }}>
                   {todayMood ? MOOD_LABELS[todayMood.moodScore] : 'Belum Catat Mood'}
                 </h3>
               </div>
@@ -128,11 +128,11 @@ export default function Dashboard() {
 
             {todayMood ? (
               <>
-                <p style={{ fontSize: '13px', color: '#EEEEEE', marginBottom: '10px', lineHeight: 1.5, background: 'rgba(34, 40, 49, 0.6)', padding: '10px 12px', borderRadius: '0px', border: '1px solid rgba(0, 173, 181, 0.15)' }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-primary)', marginBottom: '10px', lineHeight: 1.5, background: 'var(--bg-inner)', padding: '10px 12px', borderRadius: '0px', border: '1px solid var(--border-glass)' }}>
                   "{todayMood.catatan || 'Nggak ada catatan tambahan.'}"
                 </p>
                 {todayMood.photoUrl && (
-                  <div style={{ marginBottom: '14px', border: '1px solid rgba(0, 173, 181, 0.3)', overflow: 'hidden', maxHeight: '140px', background: '#000' }}>
+                  <div style={{ marginBottom: '14px', border: '1px solid var(--border-glass)', overflow: 'hidden', maxHeight: '140px', background: '#000' }}>
                     {isVideoUrl(todayMood.photoUrl) ? (
                       <video
                         src={todayMood.photoUrl}
@@ -171,11 +171,11 @@ export default function Dashboard() {
         <div className="glass-panel glass-panel-hover dashboard-overview-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRadius: '0px' }}>
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                <BookOpen size={17} color="#00FFF5" />
+              <h4 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                <BookOpen size={17} color="var(--accent-teal)" />
                 <span>Kelas Kuliah Hari Ini ({todayDayNameId})</span>
               </h4>
-              <NavLink to="/academic-schedule" style={{ fontSize: '12px', color: '#00FFF5', textDecoration: 'none', fontWeight: 600 }}>
+              <NavLink to="/academic-schedule" style={{ fontSize: '12px', color: 'var(--accent-teal)', textDecoration: 'none', fontWeight: 700 }}>
                 Lihat Jadwal
               </NavLink>
             </div>
@@ -187,12 +187,12 @@ export default function Dashboard() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {todayClasses.map((c) => (
-                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', padding: '8px 10px', borderRadius: '0px', background: 'rgba(34, 40, 49, 0.6)', borderLeft: `3px solid ${c.warna || '#00ADB5'}` }}>
+                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', padding: '8px 10px', borderRadius: '0px', background: 'var(--bg-inner)', borderLeft: `3px solid ${c.warna || 'var(--accent-teal)'}`, border: '1px solid var(--border-glass)', borderLeftWidth: '3px' }}>
                     <div>
-                      <div style={{ color: '#EEEEEE', fontWeight: 600 }}>{c.mataKuliah}</div>
+                      <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{c.mataKuliah}</div>
                       <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{c.ruangan}</div>
                     </div>
-                    <span style={{ fontSize: '11px', color: '#00FFF5', fontWeight: 600 }}>{c.jamMulai}</span>
+                    <span style={{ fontSize: '11px', color: 'var(--accent-teal)', fontWeight: 700 }}>{c.jamMulai}</span>
                   </div>
                 ))}
               </div>
@@ -210,11 +210,11 @@ export default function Dashboard() {
         <div className="glass-panel glass-panel-hover dashboard-overview-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRadius: '0px' }}>
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                <CheckSquare size={17} color="#00ADB5" />
+              <h4 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                <CheckSquare size={17} color="var(--accent-teal)" />
                 <span>Tugas & Deadline Terdekat</span>
               </h4>
-              <NavLink to="/schedule" style={{ fontSize: '12px', color: '#00FFF5', textDecoration: 'none', fontWeight: 600 }}>
+              <NavLink to="/schedule" style={{ fontSize: '12px', color: 'var(--accent-teal)', textDecoration: 'none', fontWeight: 700 }}>
                 Lihat Semua
               </NavLink>
             </div>
@@ -240,12 +240,12 @@ export default function Dashboard() {
                         fontSize: '12px',
                         padding: '9px 12px',
                         borderRadius: '0px',
-                        background: isOverdue ? 'rgba(239, 68, 68, 0.08)' : 'rgba(34, 40, 49, 0.65)',
-                        border: isOverdue ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(0, 173, 181, 0.2)'
+                        background: isOverdue ? 'rgba(239, 68, 68, 0.08)' : 'var(--bg-inner)',
+                        border: isOverdue ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-glass)'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ color: '#EEEEEE', fontWeight: 700, fontSize: '13px', wordBreak: 'break-word' }}>
+                        <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '13px', wordBreak: 'break-word' }}>
                           {parsed.cleanTitle}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
@@ -271,11 +271,11 @@ export default function Dashboard() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--text-muted)', flexWrap: 'wrap', gap: '6px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{
-                            color: isOverdue ? '#f87171' : isToday ? '#f59e0b' : '#00FFF5',
+                            color: isOverdue ? '#f87171' : isToday ? '#f59e0b' : 'var(--accent-teal)',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '4px',
-                            fontWeight: isOverdue || isToday ? 600 : 400
+                            fontWeight: isOverdue || isToday ? 600 : 700
                           }}>
                             {isOverdue ? <AlertCircle size={11} /> : <Clock size={11} />}
                             {isOverdue 
@@ -296,9 +296,9 @@ export default function Dashboard() {
 
                         <span style={{
                           fontSize: '10px',
-                          color: isOverdue ? '#f87171' : '#00FFF5',
+                          color: isOverdue ? '#f87171' : 'var(--accent-teal)',
                           background: isOverdue ? 'rgba(239, 68, 68, 0.15)' : 'rgba(0, 173, 181, 0.15)',
-                          border: isOverdue ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(0, 173, 181, 0.35)',
+                          border: isOverdue ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-glass)',
                           padding: '1px 6px',
                           fontWeight: 700
                         }}>

@@ -106,14 +106,14 @@ export default function CheckinPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ padding: '7px', borderRadius: '0px', background: 'rgba(0, 173, 181, 0.2)', border: '1px solid rgba(0, 173, 181, 0.4)', flexShrink: 0 }}>
-              <History size={18} color="#00FFF5" />
+            <div style={{ padding: '7px', borderRadius: '0px', background: 'rgba(0, 173, 181, 0.15)', border: '1px solid var(--border-glass)', flexShrink: 0 }}>
+              <History size={18} color="var(--accent-teal)" />
             </div>
             <div>
-              <h2 className="mobile-text-sm" style={{ fontSize: '18px', fontWeight: 800, color: '#EEEEEE', margin: 0, lineHeight: 1.2 }}>
+              <h2 className="mobile-text-sm" style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2 }}>
                 Riwayat Mood & Jurnal Hati
               </h2>
-              <p className="mobile-hide" style={{ fontSize: '11px', color: '#b0b8c1', margin: '2px 0 0 0' }}>
+              <p className="mobile-hide" style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
                 Pantau perjalanan emosimu dari hari ke hari, lengkap dengan catatan dan berkas lampirannya.
               </p>
             </div>
@@ -135,8 +135,8 @@ export default function CheckinPage() {
       <div className="glass-panel checkin-content-panel">
         <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <History size={15} color="#00ADB5" />
-            <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#EEEEEE', margin: 0 }}>
+            <History size={15} color="var(--accent-teal)" />
+            <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
               Daftar Catatan Mood
             </h3>
             <p className="mobile-hide" style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 0 4px' }}>
@@ -144,7 +144,7 @@ export default function CheckinPage() {
             </p>
           </div>
 
-          <div style={{ fontSize: '11px', color: '#00FFF5', background: 'rgba(0, 173, 181, 0.15)', padding: '2px 8px', border: '1px solid rgba(0, 173, 181, 0.3)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--accent-teal)', background: 'rgba(0, 173, 181, 0.12)', padding: '2px 8px', border: '1px solid var(--border-glass)' }}>
             {filteredMoods.length} dari {moods.length} catatan
           </div>
         </div>
@@ -154,7 +154,7 @@ export default function CheckinPage() {
           {/* Top Search & Reset */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
             <div style={{ flex: 1, position: 'relative' }}>
-              <Search size={14} color="#00FFF5" style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)' }} />
+              <Search size={14} color="var(--accent-teal)" style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="text"
                 value={searchQuery}
@@ -162,9 +162,9 @@ export default function CheckinPage() {
                 placeholder="Cari catatan, tanggal, atau waktu..."
                 style={{
                   width: '100%',
-                  background: 'rgba(0, 0, 0, 0.35)',
-                  border: '1px solid rgba(0, 173, 181, 0.3)',
-                  color: '#EEEEEE',
+                  background: 'var(--bg-input)',
+                  border: '1px solid var(--border-glass)',
+                  color: 'var(--text-primary)',
                   fontSize: '12px',
                   padding: '6px 26px 6px 28px',
                   outline: 'none',
@@ -174,7 +174,7 @@ export default function CheckinPage() {
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#b0b8c1', cursor: 'pointer', padding: 0 }}
+                  style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}
                 >
                   <X size={13} />
                 </button>
@@ -190,9 +190,9 @@ export default function CheckinPage() {
                 fontSize: '11px',
                 padding: '6px 11px',
                 borderRadius: '0px',
-                color: isFilterActive ? '#00FFF5' : 'var(--text-secondary)',
-                borderColor: isFilterActive ? '#00FFF5' : 'rgba(0, 173, 181, 0.3)',
-                background: isFilterActive ? 'rgba(0, 255, 245, 0.12)' : 'transparent',
+                color: isFilterActive ? 'var(--accent-teal)' : 'var(--text-secondary)',
+                borderColor: isFilterActive ? 'var(--accent-teal)' : 'var(--border-glass)',
+                background: isFilterActive ? 'rgba(8, 145, 178, 0.12)' : 'transparent',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '5px',
@@ -203,7 +203,7 @@ export default function CheckinPage() {
               <SlidersHorizontal size={12} />
               <span>Filter{activeFiltersCount > 0 ? ` (${activeFiltersCount})` : ''}</span>
               {isFilterActive && (
-                <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#00FFF5' }} />
+                <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--accent-teal)' }} />
               )}
             </button>
 
@@ -258,9 +258,9 @@ export default function CheckinPage() {
               onChange={(e) => setFilterScore(e.target.value)}
               style={{
                 width: '100%',
-                background: 'rgba(0, 0, 0, 0.5)',
-                border: filterScore !== 'ALL' ? '1px solid #00FFF5' : '1px solid rgba(0, 173, 181, 0.25)',
-                color: filterScore !== 'ALL' ? '#00FFF5' : '#EEEEEE',
+                background: 'var(--bg-input)',
+                border: filterScore !== 'ALL' ? '1.5px solid var(--accent-teal)' : '1px solid var(--border-glass)',
+                color: filterScore !== 'ALL' ? 'var(--accent-teal)' : 'var(--text-primary)',
                 fontSize: '11px',
                 padding: '5px 6px',
                 borderRadius: '0px',
@@ -282,9 +282,9 @@ export default function CheckinPage() {
               onChange={(e) => setFilterTagId(e.target.value)}
               style={{
                 width: '100%',
-                background: 'rgba(0, 0, 0, 0.5)',
-                border: filterTagId !== 'ALL' ? '1px solid #00FFF5' : '1px solid rgba(0, 173, 181, 0.25)',
-                color: filterTagId !== 'ALL' ? '#00FFF5' : '#EEEEEE',
+                background: 'var(--bg-input)',
+                border: filterTagId !== 'ALL' ? '1.5px solid var(--accent-teal)' : '1px solid var(--border-glass)',
+                color: filterTagId !== 'ALL' ? 'var(--accent-teal)' : 'var(--text-primary)',
                 fontSize: '11px',
                 padding: '5px 6px',
                 borderRadius: '0px',
@@ -304,9 +304,9 @@ export default function CheckinPage() {
               onChange={(e) => setFilterMedia(e.target.value)}
               style={{
                 width: '100%',
-                background: 'rgba(0, 0, 0, 0.5)',
-                border: filterMedia !== 'ALL' ? '1px solid #00FFF5' : '1px solid rgba(0, 173, 181, 0.25)',
-                color: filterMedia !== 'ALL' ? '#00FFF5' : '#EEEEEE',
+                background: 'var(--bg-input)',
+                border: filterMedia !== 'ALL' ? '1.5px solid var(--accent-teal)' : '1px solid var(--border-glass)',
+                color: filterMedia !== 'ALL' ? 'var(--accent-teal)' : 'var(--text-primary)',
                 fontSize: '11px',
                 padding: '5px 6px',
                 borderRadius: '0px',
@@ -327,9 +327,9 @@ export default function CheckinPage() {
               onChange={(e) => setSortOrder(e.target.value)}
               style={{
                 width: '100%',
-                background: 'rgba(0, 0, 0, 0.5)',
-                border: '1px solid rgba(0, 173, 181, 0.25)',
-                color: '#EEEEEE',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border-glass)',
+                color: 'var(--text-primary)',
                 fontSize: '11px',
                 padding: '5px 6px',
                 borderRadius: '0px',
