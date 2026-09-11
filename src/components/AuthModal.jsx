@@ -326,8 +326,8 @@ export default function AuthModal({ isOpen, onClose }) {
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', fontSize: '11px', color: '#b0b8c1', marginTop: '16px', marginBottom: 0 }}>
-          🔒 100% Private Student Data &bull; No Email Required
+        <p style={{ textAlign: 'center', fontSize: '11px', color: '#b0b8c1', marginTop: '16px', marginBottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+          <Lock size={12} /> <span>100% Private Student Data &bull; No Email Required</span>
         </p>
       </div>
     </div>,

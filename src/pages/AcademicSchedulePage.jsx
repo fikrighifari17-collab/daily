@@ -2388,7 +2388,7 @@ export default function AcademicSchedulePage() {
                             </div>
 
                             <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                              {m.namaFile && <span>📄 {m.namaFile}</span>}
+                              {m.namaFile && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}><FileText size={11} /> {m.namaFile}</span>}
                               {m.ukuranFile && <span>&bull; {m.ukuranFile}</span>}
                               <span>&bull; Ditambahkan {new Date(m.createdAt || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                             </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { HeartPulse, Calendar, PlusCircle, Sparkles, ArrowRight, ShieldCheck, CheckCircle2, TrendingUp, Sun, Moon, Clock, BookOpen, CheckSquare, AlertCircle, History } from 'lucide-react';
+import { HeartPulse, Calendar, PlusCircle, Sparkles, ArrowRight, ShieldCheck, CheckCircle2, TrendingUp, Sun, Moon, Clock, BookOpen, CheckSquare, AlertCircle, History, Paperclip } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -288,8 +288,8 @@ export default function Dashboard() {
                             }
                           </span>
                           {parsed.attachments && parsed.attachments.length > 0 && (
-                            <span style={{ color: 'var(--text-muted)' }}>
-                              📎 {parsed.attachments.length} berkas
+                            <span style={{ color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <Paperclip size={11} /> {parsed.attachments.length} berkas
                             </span>
                           )}
                         </div>

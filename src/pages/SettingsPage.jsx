@@ -22,7 +22,8 @@ import {
   Moon,
   Sun,
   Palette,
-  CheckCircle2
+  CheckCircle2,
+  Info
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -46,7 +47,7 @@ export default function SettingsPage() {
   const handleThemeChange = (newTheme) => {
     if (newTheme === theme) return;
     setTheme(newTheme);
-    toast.success(newTheme === 'dark' ? 'Mode Gelap diaktifkan 🌙' : 'Mode Terang diaktifkan ☀️');
+    toast.success(newTheme === 'dark' ? 'Mode Gelap diaktifkan' : 'Mode Terang diaktifkan');
   };
 
   // Profile Edit State
@@ -467,34 +468,35 @@ export default function SettingsPage() {
       {/* ================= TAMPILAN & TEMA (DARK / LIGHT MODE) ================= */}
       <div className="glass-panel" style={{
         width: '100%',
-        borderRadius: '8px',
-        padding: '16px 18px',
+        borderRadius: '12px',
+        padding: '20px 22px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '14px',
+        gap: '16px',
         border: '1px solid var(--border-glass)',
         boxShadow: 'var(--shadow-card)'
       }}>
         {/* Section Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
-              padding: '7px',
-              borderRadius: '8px',
-              background: 'rgba(0, 173, 181, 0.18)',
-              border: '1px solid rgba(0, 173, 181, 0.4)',
+              width: '38px',
+              height: '38px',
+              borderRadius: '10px',
+              background: 'rgba(0, 173, 181, 0.15)',
+              border: '1px solid var(--border-glass)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0
             }}>
-              <Palette size={18} color="#00FFF5" />
+              <Palette size={19} color="var(--accent-teal)" />
             </div>
             <div>
               <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2 }}>
                 Tampilan & Mode Tema
               </h3>
-              <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>
+              <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
                 Pilih mode visual yang paling pas dan nyaman untuk mata Anda.
               </p>
             </div>
@@ -506,11 +508,11 @@ export default function SettingsPage() {
             gap: '6px',
             fontSize: '11px',
             fontWeight: 800,
-            padding: '4px 10px',
-            borderRadius: '6px',
-            background: theme === 'dark' ? 'rgba(0, 173, 181, 0.2)' : 'rgba(0, 136, 143, 0.15)',
-            color: theme === 'dark' ? '#00FFF5' : '#00888f',
-            border: theme === 'dark' ? '1px solid rgba(0, 173, 181, 0.4)' : '1px solid rgba(0, 136, 143, 0.3)'
+            padding: '5px 12px',
+            borderRadius: '20px',
+            background: theme === 'dark' ? 'rgba(0, 173, 181, 0.18)' : 'rgba(8, 145, 178, 0.12)',
+            color: 'var(--accent-teal)',
+            border: '1px solid var(--border-glass)'
           }}>
             {theme === 'dark' ? <Moon size={12} /> : <Sun size={12} />}
             <span>{theme === 'dark' ? 'Mode Gelap Aktif' : 'Mode Terang Aktif'}</span>
@@ -520,8 +522,8 @@ export default function SettingsPage() {
         {/* 2 Theme Selection Cards */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-          gap: '12px'
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '16px'
         }}>
           {/* 1. Mode Gelap */}
           <div
@@ -531,81 +533,128 @@ export default function SettingsPage() {
             className={`theme-selector-card ${theme === 'dark' ? 'active' : ''}`}
             title="Klik untuk mengaktifkan Mode Gelap"
           >
-            {/* Top Row: Icon & Status */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {/* Visual Mini Mockup Preview */}
+            <div className="theme-card-preview theme-preview-dark">
+              {/* Window Header */}
+              <div className="theme-preview-window-header">
+                <div className="theme-preview-dots">
+                  <span style={{ background: '#ef4444' }} />
+                  <span style={{ background: '#f59e0b' }} />
+                  <span style={{ background: '#10b981' }} />
+                </div>
+                <div className="theme-preview-search-pill" style={{ background: 'rgba(255, 255, 255, 0.08)' }} />
+              </div>
+
+              {/* Window Content */}
+              <div className="theme-preview-content">
+                {/* Mini Top Banner */}
                 <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '8px',
-                  background: 'rgba(0, 173, 181, 0.2)',
-                  border: '1px solid rgba(0, 173, 181, 0.45)',
+                  padding: '6px 8px',
+                  borderRadius: '4px',
+                  background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.25), rgba(34, 40, 49, 0.8))',
+                  border: '1px solid rgba(0, 173, 181, 0.35)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#00FFF5'
+                  justifyContent: 'space-between'
                 }}>
-                  <Moon size={18} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <div style={{ width: '48px', height: '5px', borderRadius: '2px', background: '#00FFF5' }} />
+                    <div style={{ width: '76px', height: '4px', borderRadius: '2px', background: 'rgba(238, 238, 238, 0.45)' }} />
+                  </div>
+                  <div style={{ width: '22px', height: '12px', borderRadius: '3px', background: 'linear-gradient(135deg, #00ADB5, #00888f)' }} />
                 </div>
-                <div>
-                  <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                    Mode Gelap (Dark)
-                  </h4>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Cyberpunk Deep Charcoal
-                  </span>
+
+                {/* Mini Cards Row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
+                  <div style={{
+                    padding: '5px 6px',
+                    borderRadius: '4px',
+                    background: '#222831',
+                    border: '1px solid rgba(0, 173, 181, 0.2)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '3px'
+                  }}>
+                    <div style={{ width: '28px', height: '4px', borderRadius: '2px', background: '#00FFF5' }} />
+                    <div style={{ width: '44px', height: '3px', borderRadius: '2px', background: 'rgba(255, 255, 255, 0.3)' }} />
+                  </div>
+                  <div style={{
+                    padding: '5px 6px',
+                    borderRadius: '4px',
+                    background: '#222831',
+                    border: '1px solid rgba(0, 173, 181, 0.2)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '3px'
+                  }}>
+                    <div style={{ width: '32px', height: '4px', borderRadius: '2px', background: '#10b981' }} />
+                    <div style={{ width: '40px', height: '3px', borderRadius: '2px', background: 'rgba(255, 255, 255, 0.3)' }} />
+                  </div>
                 </div>
               </div>
-
-              {theme === 'dark' ? (
-                <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  fontSize: '10px',
-                  fontWeight: 800,
-                  color: '#00FFF5',
-                  background: 'rgba(0, 173, 181, 0.25)',
-                  border: '1px solid #00FFF5',
-                  padding: '2px 7px',
-                  borderRadius: '4px'
-                }}>
-                  <CheckCircle2 size={11} />
-                  <span>Aktif</span>
-                </span>
-              ) : (
-                <span style={{
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  color: 'var(--text-muted)',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid var(--border-glass)',
-                  padding: '2px 7px',
-                  borderRadius: '4px'
-                }}>
-                  Pilih
-                </span>
-              )}
             </div>
 
-            {/* Description */}
-            <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-              Tampilan gelap futuristik khas Semestara yang nyaman di malam hari dan teduh bagi mata.
-            </p>
-
-            {/* Mini Swatch Mockup */}
-            <div className="theme-preview-box theme-preview-dark">
+            {/* Bottom Info & Selection Area */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00FFF5' }} />
-                  <div style={{ width: '40px', height: '6px', borderRadius: '3px', background: 'rgba(255, 255, 255, 0.3)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '6px',
+                    background: 'rgba(0, 173, 181, 0.15)',
+                    border: '1px solid rgba(0, 173, 181, 0.35)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--accent-teal)'
+                  }}>
+                    <Moon size={15} />
+                  </div>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                      Mode Gelap (Dark)
+                    </h4>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      Cyberpunk Deep Charcoal
+                    </span>
+                  </div>
                 </div>
-                <div style={{ width: '28px', height: '12px', borderRadius: '3px', background: 'rgba(0, 173, 181, 0.4)' }} />
+
+                {theme === 'dark' ? (
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    color: '#ffffff',
+                    background: 'linear-gradient(135deg, #00ADB5, #00888f)',
+                    padding: '3px 9px',
+                    borderRadius: '12px',
+                    boxShadow: '0 2px 8px rgba(0, 173, 181, 0.35)'
+                  }}>
+                    <Check size={12} />
+                    <span>Aktif</span>
+                  </span>
+                ) : (
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: 'var(--text-muted)',
+                    background: 'var(--bg-inner)',
+                    border: '1px solid var(--border-glass)',
+                    padding: '3px 9px',
+                    borderRadius: '12px'
+                  }}>
+                    Pilih
+                  </span>
+                )}
               </div>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <div style={{ flex: 1, height: '14px', borderRadius: '4px', background: '#222831', border: '1px solid rgba(0, 173, 181, 0.3)' }} />
-                <div style={{ width: '38px', height: '14px', borderRadius: '4px', background: 'linear-gradient(135deg, #00ADB5, #00888f)' }} />
-              </div>
+
+              <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                Tampilan gelap futuristik khas Semestara yang nyaman di malam hari dan teduh bagi mata.
+              </p>
             </div>
           </div>
 
@@ -617,95 +666,145 @@ export default function SettingsPage() {
             className={`theme-selector-card ${theme === 'light' ? 'active' : ''}`}
             title="Klik untuk mengaktifkan Mode Terang"
           >
-            {/* Top Row: Icon & Status */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {/* Visual Mini Mockup Preview */}
+            <div className="theme-card-preview theme-preview-light">
+              {/* Window Header */}
+              <div className="theme-preview-window-header" style={{ borderBottom: '1px solid #cbd5e1' }}>
+                <div className="theme-preview-dots">
+                  <span style={{ background: '#ef4444' }} />
+                  <span style={{ background: '#f59e0b' }} />
+                  <span style={{ background: '#10b981' }} />
+                </div>
+                <div className="theme-preview-search-pill" style={{ background: '#e2e8f0' }} />
+              </div>
+
+              {/* Window Content */}
+              <div className="theme-preview-content">
+                {/* Mini Top Banner */}
                 <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '8px',
-                  background: 'rgba(245, 158, 11, 0.15)',
-                  border: '1px solid rgba(245, 158, 11, 0.4)',
+                  padding: '6px 8px',
+                  borderRadius: '4px',
+                  background: 'linear-gradient(135deg, #e0f2fe, #f0fdfa, #ffffff)',
+                  border: '1px solid #99f6e4',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#f59e0b'
+                  justifyContent: 'space-between'
                 }}>
-                  <Sun size={18} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <div style={{ width: '48px', height: '5px', borderRadius: '2px', background: '#0891b2' }} />
+                    <div style={{ width: '76px', height: '4px', borderRadius: '2px', background: '#64748b' }} />
+                  </div>
+                  <div style={{ width: '22px', height: '12px', borderRadius: '3px', background: 'linear-gradient(135deg, #0891b2, #00757b)' }} />
                 </div>
-                <div>
-                  <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                    Mode Terang (Light)
-                  </h4>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Clean Pearl Slate & Teal
-                  </span>
+
+                {/* Mini Cards Row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
+                  <div style={{
+                    padding: '5px 6px',
+                    borderRadius: '4px',
+                    background: '#ffffff',
+                    border: '1.5px solid #cbd5e1',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '3px'
+                  }}>
+                    <div style={{ width: '28px', height: '4px', borderRadius: '2px', background: '#0891b2' }} />
+                    <div style={{ width: '44px', height: '3px', borderRadius: '2px', background: '#94a3b8' }} />
+                  </div>
+                  <div style={{
+                    padding: '5px 6px',
+                    borderRadius: '4px',
+                    background: '#ffffff',
+                    border: '1.5px solid #cbd5e1',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '3px'
+                  }}>
+                    <div style={{ width: '32px', height: '4px', borderRadius: '2px', background: '#10b981' }} />
+                    <div style={{ width: '40px', height: '3px', borderRadius: '2px', background: '#94a3b8' }} />
+                  </div>
                 </div>
               </div>
-
-              {theme === 'light' ? (
-                <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  fontSize: '10px',
-                  fontWeight: 800,
-                  color: '#00888f',
-                  background: 'rgba(0, 173, 181, 0.18)',
-                  border: '1px solid #00888f',
-                  padding: '2px 7px',
-                  borderRadius: '4px'
-                }}>
-                  <CheckCircle2 size={11} />
-                  <span>Aktif</span>
-                </span>
-              ) : (
-                <span style={{
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  color: 'var(--text-muted)',
-                  background: 'rgba(0, 0, 0, 0.04)',
-                  border: '1px solid var(--border-glass)',
-                  padding: '2px 7px',
-                  borderRadius: '4px'
-                }}>
-                  Pilih
-                </span>
-              )}
             </div>
 
-            {/* Description */}
-            <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-              Tampilan cerah, jernih, dan elegan dengan kontras tinggi yang pas digunakan di siang hari.
-            </p>
-
-            {/* Mini Swatch Mockup */}
-            <div className="theme-preview-box theme-preview-light">
+            {/* Bottom Info & Selection Area */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00888f' }} />
-                  <div style={{ width: '40px', height: '6px', borderRadius: '3px', background: 'rgba(0, 0, 0, 0.25)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '6px',
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    border: '1px solid rgba(245, 158, 11, 0.35)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#f59e0b'
+                  }}>
+                    <Sun size={15} />
+                  </div>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                      Mode Terang (Light)
+                    </h4>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      Clean Pearl Slate & Teal
+                    </span>
+                  </div>
                 </div>
-                <div style={{ width: '28px', height: '12px', borderRadius: '3px', background: 'rgba(0, 173, 181, 0.25)' }} />
+
+                {theme === 'light' ? (
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    color: '#ffffff',
+                    background: 'linear-gradient(135deg, #0891b2, #00757b)',
+                    padding: '3px 9px',
+                    borderRadius: '12px',
+                    boxShadow: '0 2px 8px rgba(8, 145, 178, 0.35)'
+                  }}>
+                    <Check size={12} />
+                    <span>Aktif</span>
+                  </span>
+                ) : (
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: 'var(--text-muted)',
+                    background: 'var(--bg-inner)',
+                    border: '1px solid var(--border-glass)',
+                    padding: '3px 9px',
+                    borderRadius: '12px'
+                  }}>
+                    Pilih
+                  </span>
+                )}
               </div>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <div style={{ flex: 1, height: '14px', borderRadius: '4px', background: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.12)' }} />
-                <div style={{ width: '38px', height: '14px', borderRadius: '4px', background: 'linear-gradient(135deg, #00ADB5, #00888f)' }} />
-              </div>
+
+              <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                Tampilan cerah, jernih, dan elegan dengan kontras tinggi yang pas digunakan di siang hari.
+              </p>
             </div>
           </div>
         </div>
 
         {/* Informative note */}
         <div style={{
-          fontSize: '11px',
-          color: 'var(--text-muted)',
+          fontSize: '11.5px',
+          color: 'var(--text-secondary)',
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
-          paddingTop: '2px'
+          gap: '8px',
+          padding: '10px 14px',
+          background: 'var(--bg-inner)',
+          border: '1px solid var(--border-glass)',
+          borderRadius: '8px'
         }}>
-          <span>💡</span>
+          <Info size={15} color="var(--accent-teal)" style={{ flexShrink: 0 }} />
           <span>Preferensi tema disimpan secara otomatis di peramban dan langsung sinkron di seluruh menu aplikasi.</span>
         </div>
       </div>
@@ -997,7 +1096,7 @@ export default function SettingsPage() {
               <input
                 type="text"
                 maxLength={80}
-                placeholder="e.g. Best emoji to describe your day? atau Lagi fokus ngoding 💻"
+                placeholder="e.g. Ceritakan harimu atau status fokus belajar..."
                 value={describe}
                 onChange={(e) => setDescribe(e.target.value)}
                 style={{
@@ -1136,8 +1235,9 @@ export default function SettingsPage() {
                 </label>
               </div>
 
-              <div style={{ fontSize: '10px', color: '#94a3b8', background: 'rgba(0,0,0,0.3)', padding: '6px 8px', borderRadius: '6px' }}>
-                💡 <em>Catatan:</em> Pastikan Anda sudah membuka <a href={BOT_URL} target="_blank" rel="noreferrer" style={{ color: '#00FFF5' }}>@{BOT_USERNAME}</a> dan menekan tombol <strong>Start</strong> di Telegram agar bot diizinkan mengirim pesan.
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', background: 'var(--bg-inner)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                <Info size={14} color="var(--accent-teal)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <span><strong>Catatan:</strong> Pastikan Anda sudah membuka <a href={BOT_URL} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-teal)' }}>@{BOT_USERNAME}</a> dan menekan tombol <strong>Start</strong> di Telegram agar bot diizinkan mengirim pesan.</span>
               </div>
             </div>
 
