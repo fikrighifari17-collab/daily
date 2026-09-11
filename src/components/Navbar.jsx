@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -26,28 +25,11 @@ export default function Navbar() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const headerRef = React.useRef(null);
-  const [headerBottom, setHeaderBottom] = useState(64);
 
   // Close menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
-
-  // Update header bottom coordinate when mobile menu opens or on resize
-  useEffect(() => {
-    const updateHeaderPos = () => {
-      if (headerRef.current) {
-        const rect = headerRef.current.getBoundingClientRect();
-        setHeaderBottom(rect.bottom);
-      }
-    };
-    if (isMobileMenuOpen) {
-      updateHeaderPos();
-      window.addEventListener('resize', updateHeaderPos);
-      return () => window.removeEventListener('resize', updateHeaderPos);
-    }
-  }, [isMobileMenuOpen]);
 
   // Lock body scroll when mobile drawer is open
   useEffect(() => {
@@ -73,10 +55,10 @@ export default function Navbar() {
 
   return (
     <>
-      <header ref={headerRef} className="glass-panel" style={{
+      <header className="glass-panel" style={{
         position: 'sticky',
         top: '8px',
-        zIndex: 120,
+        zIndex: 1000,
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         border: '1px solid rgba(0, 173, 181, 0.3)',
@@ -93,7 +75,7 @@ export default function Navbar() {
           justifyContent: 'space-between',
           gap: '12px',
           position: 'relative',
-          zIndex: 120
+          zIndex: 1020
         }}>
           {/* Brand Logo */}
           <Link 
@@ -311,48 +293,42 @@ export default function Navbar() {
             </button>
           </div>
         </div>
-      </header>
 
-      {/* ================= MOBILE EXPANDABLE MENU DRAWER & BACKDROP ================= */}
-      {isMobileMenuOpen && typeof document !== 'undefined' && createPortal(
-        <>
-          <div 
-            onClick={closeMobileMenu}
-            className="nav-mobile-backdrop"
-            aria-label="Tutup menu"
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(0, 0, 0, 0.45)',
-              backdropFilter: 'blur(4px)',
-              WebkitBackdropFilter: 'blur(4px)',
-              zIndex: 105
-            }}
-          />
-          <div 
-            className="animate-fade-in nav-mobile-drawer"
-            style={{
-              position: 'fixed',
-              top: `${headerBottom + 6}px`,
-              left: '8px',
-              right: '8px',
-              maxWidth: '480px',
-              margin: '0 auto',
-              padding: '14px 14px 16px 14px',
-              border: '1.5px solid var(--border-glass)',
-              background: 'var(--bg-card)',
-              backdropFilter: 'blur(25px)',
-              WebkitBackdropFilter: 'blur(25px)',
-              borderRadius: '12px',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35), 0 0 25px rgba(0, 173, 181, 0.15)',
-              zIndex: 110,
-              maxHeight: `calc(100vh - ${headerBottom + 16}px)`,
-              overflowY: 'auto'
-            }}
-          >
+        {/* ================= MOBILE EXPANDABLE MENU DRAWER & BACKDROP ================= */}
+        {isMobileMenuOpen && (
+          <>
+            <div 
+              onClick={closeMobileMenu}
+              className="nav-mobile-backdrop"
+              aria-label="Tutup menu"
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 1010
+              }}
+            />
+            <div 
+              className="animate-fade-in nav-mobile-drawer"
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                left: 0,
+                right: 0,
+                padding: '14px 14px 16px 14px',
+                border: '1.5px solid var(--border-glass)',
+                background: 'var(--bg-card)',
+                backdropFilter: 'blur(25px)',
+                WebkitBackdropFilter: 'blur(25px)',
+                borderRadius: '12px',
+                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35), 0 0 25px rgba(0, 173, 181, 0.15)',
+                zIndex: 1015,
+                maxHeight: 'calc(100dvh - 85px)',
+                overflowY: 'auto'
+              }}
+            >
             {/* User Greeting & Status Card (Links to Privacy & PIN) */}
             {user && (
               <Link
@@ -496,9 +472,9 @@ export default function Navbar() {
               )}
             </div>
           </div>
-        </>,
-        document.body
+        </>
       )}
+      </header>
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </>
