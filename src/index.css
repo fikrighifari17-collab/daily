@@ -110,7 +110,8 @@ html, body {
   .nav-mobile-toggle {
     display: none !important;
   }
-  .nav-mobile-drawer {
+  .nav-mobile-drawer,
+  .nav-mobile-backdrop {
     display: none !important;
   }
 }
@@ -1490,9 +1491,15 @@ html, body, .app-shell, .glass-panel, .discord-profile-card {
 
 /* Header & Navbar in Light Mode */
 [data-theme="light"] header.glass-panel {
-  background: #ffffff !important;
+  background: rgba(255, 255, 255, 0.94) !important;
   border-color: #cbd5e1 !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
   box-shadow: 0 4px 20px rgba(15, 23, 42, 0.07) !important;
+}
+
+[data-theme="light"] .navbar-brand-text {
+  color: #0f172a !important;
 }
 
 [data-theme="light"] .nav-desktop {
@@ -1500,16 +1507,61 @@ html, body, .app-shell, .glass-panel, .discord-profile-card {
   border: 1px solid #cbd5e1 !important;
 }
 
-/* Mobile Navigation Drawer in Light Mode */
-[data-theme="light"] .nav-mobile-drawer {
-  background: #ffffff !important;
+[data-theme="light"] .navbar-mobile-user-badge {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0891b2 !important;
+}
+
+[data-theme="light"] .navbar-mobile-user-badge:not(.active) .navbar-mobile-user-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .navbar-mobile-user-badge.active {
+  background: linear-gradient(135deg, #0891b2, #00757b) !important;
+  border-color: #0891b2 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .navbar-mobile-menu-btn {
+  background: #f8fafc !important;
   border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .navbar-mobile-menu-btn.open {
+  background: rgba(8, 145, 178, 0.15) !important;
+  border-color: #0891b2 !important;
+  color: #0891b2 !important;
+}
+
+/* Mobile Navigation Backdrop - Translucent dimming so background content is visible */
+.nav-mobile-backdrop {
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+[data-theme="light"] .nav-mobile-backdrop {
+  background: rgba(15, 23, 42, 0.35) !important;
+  backdrop-filter: blur(5px) !important;
+  -webkit-backdrop-filter: blur(5px) !important;
+}
+
+/* Mobile Navigation Drawer in Light Mode - Semi-transparent frosted glass */
+[data-theme="light"] .nav-mobile-drawer {
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(25px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
+  border: 1.5px solid rgba(203, 213, 225, 0.85) !important;
   box-shadow: 0 20px 45px rgba(15, 23, 42, 0.16), 0 4px 15px rgba(8, 145, 178, 0.08) !important;
 }
 
 [data-theme="light"] .nav-mobile-user-card {
-  background: #f8fafc !important;
+  background: rgba(248, 250, 252, 0.88) !important;
   border: 1.5px solid #cbd5e1 !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
 }
 
 [data-theme="light"] .nav-mobile-user-card:hover {
@@ -1518,13 +1570,15 @@ html, body, .app-shell, .glass-panel, .discord-profile-card {
 }
 
 [data-theme="light"] .nav-mobile-item {
-  background: #ffffff !important;
+  background: rgba(255, 255, 255, 0.85) !important;
   border: 1.5px solid #cbd5e1 !important;
   color: #0f172a !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
 }
 
 [data-theme="light"] .nav-mobile-item:hover {
-  background: #f0fdfa !important;
+  background: rgba(240, 253, 250, 0.95) !important;
   border-color: #0891b2 !important;
   color: #0891b2 !important;
 }
@@ -1540,20 +1594,16 @@ html, body, .app-shell, .glass-panel, .discord-profile-card {
 }
 
 [data-theme="light"] .nav-mobile-logout-btn {
-  background: #fef2f2 !important;
+  background: rgba(254, 242, 242, 0.92) !important;
   border: 1.5px solid #fecaca !important;
   color: #ef4444 !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
 }
 
 [data-theme="light"] .nav-mobile-logout-btn:hover {
   background: #fee2e2 !important;
   border-color: #f87171 !important;
-}
-
-[data-theme="light"] .navbar-mobile-menu-btn {
-  background: #f8fafc !important;
-  border: 1.5px solid #cbd5e1 !important;
-  color: #0f172a !important;
 }
 
 /* Header Banners in Light Mode - Fresh daylight gradient, dark text, sharp borders */
