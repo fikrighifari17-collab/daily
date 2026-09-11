@@ -18,10 +18,15 @@ import {
   MessageSquare,
   Send,
   Bell,
-  ExternalLink
+  ExternalLink,
+  Moon,
+  Sun,
+  Palette,
+  CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useTheme } from '../context/ThemeContext';
 import AvatarCropModal from '../components/AvatarCropModal';
 import { 
   getStoredChatId, 
@@ -36,6 +41,13 @@ import {
 export default function SettingsPage() {
   const { user, handleUpdateProfile } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
+
+  const handleThemeChange = (newTheme) => {
+    if (newTheme === theme) return;
+    setTheme(newTheme);
+    toast.success(newTheme === 'dark' ? 'Mode Gelap diaktifkan 🌙' : 'Mode Terang diaktifkan ☀️');
+  };
 
   // Profile Edit State
   const [nama, setNama] = useState(user?.nama || '');
@@ -219,20 +231,23 @@ export default function SettingsPage() {
       </div>
 
       {/* DISCORD-STYLE USER PROFILE CARD */}
-      <div style={{
-        width: '100%',
-        background: '#181a20',
-        borderRadius: '8px',
-        overflow: 'hidden',
-        border: '1px solid rgba(0, 173, 181, 0.25)',
-        boxShadow: '0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 173, 181, 0.1)',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
+      <div 
+        className="discord-profile-card"
+        style={{
+          width: '100%',
+          background: 'var(--profile-card-bg, #181a20)',
+          borderRadius: '8px',
+          overflow: 'hidden',
+          border: '1px solid var(--border-glass)',
+          boxShadow: 'var(--shadow-card)',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
         {/* Top Banner (Discord style) */}
         <div style={{
           height: '80px',
-          background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.45), rgba(34, 40, 49, 0.95))',
+          background: 'linear-gradient(135deg, rgba(0, 173, 181, 0.45), var(--bg-primary))',
           position: 'relative',
           borderBottom: '1px solid rgba(0, 173, 181, 0.2)'
         }} />
@@ -249,8 +264,8 @@ export default function SettingsPage() {
                 width: '84px',
                 height: '84px',
                 borderRadius: '50%',
-                border: '6px solid #181a20',
-                background: '#222831',
+                border: '6px solid var(--profile-card-bg, #181a20)',
+                background: 'var(--bg-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -294,13 +309,14 @@ export default function SettingsPage() {
             <div 
               onClick={openEditProfileModal}
               title="Klik untuk ubah status describe"
+              className="discord-speech-bubble"
               style={{
                 position: 'relative',
-                background: '#2b2d31',
+                background: 'var(--profile-bubble-bg, #2b2d31)',
                 borderRadius: '12px',
                 padding: '8px 14px',
                 fontSize: '12px',
-                color: '#b0b8c1',
+                color: 'var(--text-secondary)',
                 maxWidth: '220px',
                 display: 'flex',
                 alignItems: 'center',
@@ -310,21 +326,22 @@ export default function SettingsPage() {
                 cursor: 'pointer',
                 transition: 'background 0.2s'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#32353b'}
-              onMouseLeave={(e) => e.currentTarget.style.background = '#2b2d31'}
             >
               {/* Speech Bubble Arrow */}
-              <div style={{
-                position: 'absolute',
-                left: '-6px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: 0,
-                height: 0,
-                borderTop: '6px solid transparent',
-                borderBottom: '6px solid transparent',
-                borderRight: '6px solid #2b2d31'
-              }} />
+              <div 
+                className="discord-speech-arrow"
+                style={{
+                  position: 'absolute',
+                  left: '-6px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: 0,
+                  height: 0,
+                  borderTop: '6px solid transparent',
+                  borderBottom: '6px solid transparent',
+                  borderRight: '6px solid var(--profile-bubble-bg, #2b2d31)'
+                }} 
+              />
               <span style={{ color: '#00FFF5', fontSize: '13px' }}>+</span>
               <span style={{ fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {user?.describe || 'Best emoji to describe your day?'}
@@ -338,14 +355,14 @@ export default function SettingsPage() {
               margin: 0,
               fontSize: '22px',
               fontWeight: 800,
-              color: '#EEEEEE',
+              color: 'var(--text-primary)',
               letterSpacing: '0.02em',
               lineHeight: 1.2
             }}>
               {user?.nama || 'SAXTON'}
             </h3>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-              <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 600 }}>
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>
                 .{user?.username || 'pikrii'}
               </span>
               <span style={{
@@ -401,12 +418,15 @@ export default function SettingsPage() {
 
 
           {/* Action Card: Edit Profile only */}
-          <div style={{
-            background: '#232428',
-            borderRadius: '8px',
-            overflow: 'hidden',
-            border: '1px solid rgba(255, 255, 255, 0.06)'
-          }}>
+          <div 
+            className="discord-action-card"
+            style={{
+              background: 'var(--profile-action-bg, #232428)',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              border: '1px solid rgba(255, 255, 255, 0.06)'
+            }}
+          >
             <button
               type="button"
               onClick={openEditProfileModal}
@@ -418,7 +438,7 @@ export default function SettingsPage() {
                 padding: '14px 16px',
                 background: 'transparent',
                 border: 'none',
-                color: '#EEEEEE',
+                color: 'var(--text-primary)',
                 fontSize: '14px',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -428,7 +448,7 @@ export default function SettingsPage() {
               onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.07)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
-              <Edit3 size={16} color="#94a3b8" />
+              <Edit3 size={16} color="#00ADB5" />
               <span>Edit Profil</span>
             </button>
           </div>
@@ -441,6 +461,252 @@ export default function SettingsPage() {
             onChange={handlePhotoUpload} 
             style={{ display: 'none' }} 
           />
+        </div>
+      </div>
+
+      {/* ================= TAMPILAN & TEMA (DARK / LIGHT MODE) ================= */}
+      <div className="glass-panel" style={{
+        width: '100%',
+        borderRadius: '8px',
+        padding: '16px 18px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '14px',
+        border: '1px solid var(--border-glass)',
+        boxShadow: 'var(--shadow-card)'
+      }}>
+        {/* Section Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              padding: '7px',
+              borderRadius: '8px',
+              background: 'rgba(0, 173, 181, 0.18)',
+              border: '1px solid rgba(0, 173, 181, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Palette size={18} color="#00FFF5" />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2 }}>
+                Tampilan & Mode Tema
+              </h3>
+              <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                Pilih mode visual yang paling pas dan nyaman untuk mata Anda.
+              </p>
+            </div>
+          </div>
+
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '11px',
+            fontWeight: 800,
+            padding: '4px 10px',
+            borderRadius: '6px',
+            background: theme === 'dark' ? 'rgba(0, 173, 181, 0.2)' : 'rgba(0, 136, 143, 0.15)',
+            color: theme === 'dark' ? '#00FFF5' : '#00888f',
+            border: theme === 'dark' ? '1px solid rgba(0, 173, 181, 0.4)' : '1px solid rgba(0, 136, 143, 0.3)'
+          }}>
+            {theme === 'dark' ? <Moon size={12} /> : <Sun size={12} />}
+            <span>{theme === 'dark' ? 'Mode Gelap Aktif' : 'Mode Terang Aktif'}</span>
+          </div>
+        </div>
+
+        {/* 2 Theme Selection Cards */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: '12px'
+        }}>
+          {/* 1. Mode Gelap */}
+          <div
+            onClick={() => handleThemeChange('dark')}
+            role="button"
+            tabIndex={0}
+            className={`theme-selector-card ${theme === 'dark' ? 'active' : ''}`}
+            title="Klik untuk mengaktifkan Mode Gelap"
+          >
+            {/* Top Row: Icon & Status */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '8px',
+                  background: 'rgba(0, 173, 181, 0.2)',
+                  border: '1px solid rgba(0, 173, 181, 0.45)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#00FFF5'
+                }}>
+                  <Moon size={18} />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    Mode Gelap (Dark)
+                  </h4>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    Cyberpunk Deep Charcoal
+                  </span>
+                </div>
+              </div>
+
+              {theme === 'dark' ? (
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  color: '#00FFF5',
+                  background: 'rgba(0, 173, 181, 0.25)',
+                  border: '1px solid #00FFF5',
+                  padding: '2px 7px',
+                  borderRadius: '4px'
+                }}>
+                  <CheckCircle2 size={11} />
+                  <span>Aktif</span>
+                </span>
+              ) : (
+                <span style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: 'var(--text-muted)',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid var(--border-glass)',
+                  padding: '2px 7px',
+                  borderRadius: '4px'
+                }}>
+                  Pilih
+                </span>
+              )}
+            </div>
+
+            {/* Description */}
+            <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+              Tampilan gelap futuristik khas Semestara yang nyaman di malam hari dan teduh bagi mata.
+            </p>
+
+            {/* Mini Swatch Mockup */}
+            <div className="theme-preview-box theme-preview-dark">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00FFF5' }} />
+                  <div style={{ width: '40px', height: '6px', borderRadius: '3px', background: 'rgba(255, 255, 255, 0.3)' }} />
+                </div>
+                <div style={{ width: '28px', height: '12px', borderRadius: '3px', background: 'rgba(0, 173, 181, 0.4)' }} />
+              </div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ flex: 1, height: '14px', borderRadius: '4px', background: '#222831', border: '1px solid rgba(0, 173, 181, 0.3)' }} />
+                <div style={{ width: '38px', height: '14px', borderRadius: '4px', background: 'linear-gradient(135deg, #00ADB5, #00888f)' }} />
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Mode Terang */}
+          <div
+            onClick={() => handleThemeChange('light')}
+            role="button"
+            tabIndex={0}
+            className={`theme-selector-card ${theme === 'light' ? 'active' : ''}`}
+            title="Klik untuk mengaktifkan Mode Terang"
+          >
+            {/* Top Row: Icon & Status */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '8px',
+                  background: 'rgba(245, 158, 11, 0.15)',
+                  border: '1px solid rgba(245, 158, 11, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#f59e0b'
+                }}>
+                  <Sun size={18} />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    Mode Terang (Light)
+                  </h4>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    Clean Pearl Slate & Teal
+                  </span>
+                </div>
+              </div>
+
+              {theme === 'light' ? (
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  color: '#00888f',
+                  background: 'rgba(0, 173, 181, 0.18)',
+                  border: '1px solid #00888f',
+                  padding: '2px 7px',
+                  borderRadius: '4px'
+                }}>
+                  <CheckCircle2 size={11} />
+                  <span>Aktif</span>
+                </span>
+              ) : (
+                <span style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: 'var(--text-muted)',
+                  background: 'rgba(0, 0, 0, 0.04)',
+                  border: '1px solid var(--border-glass)',
+                  padding: '2px 7px',
+                  borderRadius: '4px'
+                }}>
+                  Pilih
+                </span>
+              )}
+            </div>
+
+            {/* Description */}
+            <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+              Tampilan cerah, jernih, dan elegan dengan kontras tinggi yang pas digunakan di siang hari.
+            </p>
+
+            {/* Mini Swatch Mockup */}
+            <div className="theme-preview-box theme-preview-light">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00888f' }} />
+                  <div style={{ width: '40px', height: '6px', borderRadius: '3px', background: 'rgba(0, 0, 0, 0.25)' }} />
+                </div>
+                <div style={{ width: '28px', height: '12px', borderRadius: '3px', background: 'rgba(0, 173, 181, 0.25)' }} />
+              </div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ flex: 1, height: '14px', borderRadius: '4px', background: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.12)' }} />
+                <div style={{ width: '38px', height: '14px', borderRadius: '4px', background: 'linear-gradient(135deg, #00ADB5, #00888f)' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Informative note */}
+        <div style={{
+          fontSize: '11px',
+          color: 'var(--text-muted)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          paddingTop: '2px'
+        }}>
+          <span>💡</span>
+          <span>Preferensi tema disimpan secara otomatis di peramban dan langsung sinkron di seluruh menu aplikasi.</span>
         </div>
       </div>
 
