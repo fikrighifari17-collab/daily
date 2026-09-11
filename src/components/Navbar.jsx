@@ -271,19 +271,20 @@ export default function Navbar() {
             {/* Mobile Hamburger Menu Toggle Button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="navbar-mobile-menu-btn"
               style={{
                 width: '36px',
                 height: '36px',
                 borderRadius: '8px',
-                background: isMobileMenuOpen ? 'rgba(0, 173, 181, 0.3)' : 'rgba(57, 62, 70, 0.7)',
-                border: '1px solid rgba(0, 173, 181, 0.4)',
-                color: isMobileMenuOpen ? '#00FFF5' : '#EEEEEE',
+                background: isMobileMenuOpen ? 'rgba(0, 173, 181, 0.25)' : 'var(--bg-inner)',
+                border: '1.5px solid var(--border-glass)',
+                color: isMobileMenuOpen ? 'var(--accent-teal)' : 'var(--text-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
-                boxShadow: isMobileMenuOpen ? '0 0 15px rgba(0, 173, 181, 0.4)' : 'none'
+                boxShadow: isMobileMenuOpen ? '0 0 15px rgba(0, 173, 181, 0.3)' : 'none'
               }}
               aria-label="Toggle navigation menu"
             >
@@ -304,9 +305,7 @@ export default function Navbar() {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                width: '100vw',
-                height: '100vh',
-                background: 'rgba(0, 0, 0, 0.65)',
+                background: 'rgba(0, 0, 0, 0.45)',
                 backdropFilter: 'blur(3px)',
                 WebkitBackdropFilter: 'blur(3px)',
                 zIndex: 105
@@ -316,16 +315,16 @@ export default function Navbar() {
               className="animate-fade-in nav-mobile-drawer"
               style={{
                 position: 'absolute',
-                top: 'calc(100% + 6px)',
+                top: 'calc(100% + 8px)',
                 left: 0,
                 right: 0,
-                padding: '12px 14px 16px 14px',
-                border: '1px solid rgba(0, 173, 181, 0.4)',
-                background: 'rgba(34, 40, 49, 0.98)',
+                padding: '14px 14px 16px 14px',
+                border: '1.5px solid var(--border-glass)',
+                background: 'var(--bg-card)',
                 backdropFilter: 'blur(25px)',
                 WebkitBackdropFilter: 'blur(25px)',
-                borderRadius: '8px',
-                boxShadow: '0 16px 45px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 173, 181, 0.25)',
+                borderRadius: '12px',
+                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35), 0 0 25px rgba(0, 173, 181, 0.15)',
                 zIndex: 110,
                 maxHeight: 'calc(100vh - 85px)',
                 overflowY: 'auto'
@@ -336,30 +335,33 @@ export default function Navbar() {
               <Link
                 to="/settings"
                 onClick={closeMobileMenu}
+                className="nav-mobile-user-card"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '10px 14px',
-                  background: 'rgba(57, 62, 70, 0.55)',
-                  border: '1px solid rgba(0, 173, 181, 0.3)',
-                  borderRadius: '8px',
+                  padding: '12px 14px',
+                  background: 'var(--bg-inner)',
+                  border: '1.5px solid var(--border-glass)',
+                  borderRadius: '10px',
                   marginBottom: '12px',
-                  textDecoration: 'none'
+                  textDecoration: 'none',
+                  transition: 'all 0.2s ease'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{
-                    width: '36px',
-                    height: '36px',
+                    width: '38px',
+                    height: '38px',
                     borderRadius: '8px',
-                    background: 'rgba(0, 173, 181, 0.25)',
-                    border: '1px solid rgba(0, 173, 181, 0.4)',
+                    background: 'rgba(0, 173, 181, 0.18)',
+                    border: '1px solid var(--border-glass)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#00FFF5',
-                    overflow: 'hidden'
+                    color: 'var(--accent-teal)',
+                    overflow: 'hidden',
+                    flexShrink: 0
                   }}>
                     {user.avatar ? (
                       user.avatar.startsWith('data:') || user.avatar.startsWith('http') ? (
@@ -368,22 +370,22 @@ export default function Navbar() {
                         <span style={{ fontSize: '20px' }}>{user.avatar}</span>
                       )
                     ) : (
-                      <User size={16} />
+                      <User size={18} />
                     )}
                   </div>
                   <div>
-                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#EEEEEE' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2 }}>
                       {user.nama || user.username}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#00FFF5', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <ShieldCheck size={11} />
+                    <div style={{ fontSize: '11px', color: 'var(--accent-teal)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px', fontWeight: 600 }}>
+                      <ShieldCheck size={12} />
                       Profil & Pengaturan Akun
                     </div>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <ChevronRight size={16} color="#00ADB5" />
+                  <ChevronRight size={16} color="var(--accent-teal)" />
                 </div>
               </Link>
             )}
@@ -398,6 +400,7 @@ export default function Navbar() {
                     to={item.to}
                     end={item.end}
                     onClick={closeMobileMenu}
+                    className={({ isActive }) => `nav-mobile-item ${isActive ? 'active' : ''}`}
                     style={({ isActive }) => ({
                       display: 'flex',
                       alignItems: 'center',
@@ -406,40 +409,45 @@ export default function Navbar() {
                       borderRadius: '8px',
                       textDecoration: 'none',
                       fontSize: '13px',
-                      fontWeight: isActive ? 700 : 500,
+                      fontWeight: isActive ? 700 : 600,
                       background: isActive 
-                        ? 'linear-gradient(135deg, rgba(0, 173, 181, 0.85), rgba(0, 136, 143, 0.85))' 
-                        : 'rgba(57, 62, 70, 0.4)',
+                        ? 'linear-gradient(135deg, #00ADB5, #00888f)' 
+                        : 'var(--bg-inner)',
                       border: isActive 
-                        ? '1px solid rgba(0, 255, 245, 0.5)' 
-                        : '1px solid rgba(255, 255, 255, 0.05)',
-                      color: isActive ? '#ffffff' : '#EEEEEE',
+                        ? '1.5px solid var(--accent-cyan)' 
+                        : '1.5px solid var(--border-glass)',
+                      color: isActive ? '#ffffff' : 'var(--text-primary)',
                       boxShadow: isActive ? '0 4px 14px rgba(0, 173, 181, 0.35)' : 'none',
                       transition: 'all 0.2s ease'
                     })}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Icon size={17} color="#00FFF5" />
-                      <span>{item.label}</span>
-                    </div>
-                    <ChevronRight size={15} opacity={0.6} />
+                    {({ isActive }) => (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <Icon size={17} color={isActive ? '#ffffff' : 'var(--accent-teal)'} />
+                          <span>{item.label}</span>
+                        </div>
+                        <ChevronRight size={15} opacity={isActive ? 0.9 : 0.6} color={isActive ? '#ffffff' : 'var(--text-muted)'} />
+                      </>
+                    )}
                   </NavLink>
                 );
               })}
             </div>
 
             {/* Logout / Sign in Button in Mobile Drawer */}
-            <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(0, 173, 181, 0.2)' }}>
+            <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border-glass)' }}>
               {user ? (
                 <button
                   onClick={() => { closeMobileMenu(); handleLogout(); }}
+                  className="nav-mobile-logout-btn"
                   style={{
                     width: '100%',
                     padding: '10px',
                     borderRadius: '8px',
-                    background: 'rgba(239, 68, 68, 0.12)',
-                    border: '1px solid rgba(239, 68, 68, 0.35)',
-                    color: '#f87171',
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1.5px solid rgba(239, 68, 68, 0.35)',
+                    color: '#ef4444',
                     fontSize: '13px',
                     fontWeight: 600,
                     cursor: 'pointer',
